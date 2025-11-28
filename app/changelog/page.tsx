@@ -1,3 +1,4 @@
+import React from 'react';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import Link from 'next/link';
@@ -19,7 +20,7 @@ export default async function ChangelogPage() {
   // Basic markdown parsing for display
   const parseMarkdown = (text: string) => {
     const lines = text.split('\n');
-    const elements: JSX.Element[] = [];
+    const elements: React.ReactElement[] = [];
     let currentList: string[] = [];
     let inList = false;
     let currentSection = '';
