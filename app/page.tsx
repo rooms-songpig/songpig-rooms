@@ -1,29 +1,492 @@
+'use client';
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { getCurrentUser, getAuthHeaders, logout } from '@/app/lib/auth-helpers';
+import { normalizeText } from '@/app/lib/utils';
+import UserProfile from '@/app/components/UserProfile';
+import ScrollToTop from '@/app/components/ScrollToTop';
+
+interface Room {
+  id: string;
+  name: string;
+  description: string;
+  inviteCode: string;
+  status: 'draft' | 'active' | 'archived' | 'deleted';
+  createdAt: number;
+  updatedAt?: number;
+  lastAccessed?: number;
+  songs: any[];
+  artistId?: string;
+  artistName?: string;
+  artistBio?: string;
+}
+
 export default function Home() {
+  const router = useRouter();
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [roomName, setRoomName] = useState('');
+  const [roomDescription, setRoomDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'draft' | 'archived'>('all');
+  const roomNameRef = useRef<HTMLInputElement | null>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const formatRoomNameWithArtist = useCallback(
+    (value: string) => {
+      const normalizedName = normalizeText(value);
+      if (!normalizedName) return '';
+      const artistName = user?.username ? normalizeText(user.username) : '';
+      if (!artistName) {
+        return normalizedName;
+      }
+      const suffix = ` - ${artistName}`;
+      return normalizedName.toLowerCase().endsWith(suffix.toLowerCase())
+        ? normalizedName
+        : `${normalizedName}${suffix}`;
+    },
+    [user]
+  );
+
+  const applyRoomNameFormatting = useCallback(() => {
+    setRoomName((prev) => {
+      if (!prev.trim()) return prev;
+      return formatRoomNameWithArtist(prev);
+    });
+  }, [formatRoomNameWithArtist]);
+
+  useEffect(() => {
+    // Check authentication
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      router.push('/login');
+      return;
+    }
+    
+    setUser(currentUser);
+    setCheckingAuth(false);
+    fetchRooms();
+  }, [router]);
+
+  useEffect(() => {
+    if (user) {
+      fetchRooms();
+    }
+  }, [statusFilter, user]);
+
+  useEffect(() => {
+    if (showCreateForm && roomNameRef.current) {
+      roomNameRef.current.focus();
+    }
+  }, [showCreateForm]);
+
+  const fetchRooms = async () => {
+    if (!user) return;
+    
+    try {
+      const url = statusFilter === 'all' 
+        ? '/api/rooms' 
+        : `/api/rooms?status=${statusFilter}`;
+      
+      const res = await fetch(url, { 
+        cache: 'no-store',
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      
+      if (data.error) {
+        if (data.error === 'Authentication required') {
+          logout();
+          router.push('/login');
+          return;
+        }
+        console.error('Error fetching rooms:', data.error);
+        return;
+      }
+      
+      console.log('Fetched rooms:', data.rooms?.length || 0, 'rooms', 'filter:', statusFilter);
+      if (data.rooms) {
+        data.rooms.forEach((room: Room) => {
+          console.log('Room ID:', room.id, 'Name:', room.name, 'Status:', room.status);
+        });
+      }
+      setRooms(data.rooms || []);
+    } catch (error) {
+      console.error('Failed to fetch rooms:', error);
+    }
+  };
+
+  const handleCreateRoom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!roomName.trim() || !user) return;
+
+    // Only artists and admins can create rooms
+    if (user.role !== 'artist' && user.role !== 'admin') {
+      alert('Only artists can create rooms. Please register as an artist.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const formattedName = formatRoomNameWithArtist(roomName) || normalizeText(roomName);
+      setRoomName(formattedName);
+      const res = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          name: formattedName,
+          description: roomDescription,
+        }),
+      });
+
+      const data = await res.json();
+      
+      if (data.error) {
+        console.error('Room creation error:', data.error);
+        alert(data.error);
+      } else if (data.room && data.room.id) {
+        console.log('Room created successfully, ID:', data.room.id);
+        // Refresh the room list to show the new room
+        await fetchRooms();
+        // Navigate directly to the room
+        router.push(`/room/${data.room.id}`);
+      } else {
+        console.error('Room creation failed or missing room data:', data);
+        alert('Failed to create room. Please try again.');
+      }
+    } catch (error) {
+      console.error('Failed to create room:', error);
+      alert('Failed to create room. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (checkingAuth) {
+    return (
+      <main
+        style={{
+          minHeight: '100vh',
+          background: '#050816',
+          color: '#f9fafb',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <p>Loading...</p>
+      </main>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect to login
+  }
+
   return (
     <main
       style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#050816",
-        color: "#f9fafb",
+        minHeight: '100vh',
+        background: '#050816',
+        color: '#f9fafb',
         fontFamily:
           "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        padding: '2rem',
       }}
     >
-      <div style={{ textAlign: "center", maxWidth: 480, padding: "1.5rem" }}>
-        <h1 style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>
-          Songpig Listening Rooms
-        </h1>
-        <p style={{ opacity: 0.8, marginBottom: "1.5rem" }}>
-          Private rooms to A/B your songs with friends.
-          Invite-only. Votes and comments stay private.
-        </p>
-        <p style={{ fontSize: "0.9rem", opacity: 0.7 }}>
-          Next step: we’ll add real rooms, invites, and voting.
-        </p>
+      <UserProfile />
+      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <div>
+            <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
+              Songpig Listening Rooms
+            </h1>
+            <p style={{ opacity: 0.8, marginBottom: '0.5rem' }}>
+              Welcome, {user.username} ({user.role})
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            {user.role === 'admin' && (
+              <Link
+                href="/admin"
+                style={{
+                  background: '#1a1a2e',
+                  color: '#f9fafb',
+                  border: '1px solid #333',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.9rem',
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Admin Dashboard
+              </Link>
+            )}
+          </div>
+        </div>
+
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <p style={{ opacity: 0.8, marginBottom: '1.5rem' }}>
+            {user.role === 'artist' || user.role === 'admin'
+              ? 'Create rooms to A/B test your songs and get feedback from listeners.'
+              : 'Join rooms to provide feedback on songs.'}
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+            {(user.role === 'artist' || user.role === 'admin') && (
+              <button
+                onClick={() => setShowCreateForm(!showCreateForm)}
+                style={{
+                  background: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                }}
+              >
+                {showCreateForm ? 'Cancel' : '+ Create Room'}
+              </button>
+            )}
+            <Link
+              href="/join"
+              style={{
+                background: '#1a1a2e',
+                color: '#f9fafb',
+                border: '1px solid #333',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '0.5rem',
+                fontSize: '1rem',
+                textDecoration: 'none',
+                fontWeight: '500',
+                display: 'inline-block',
+              }}
+            >
+              Join Room
+            </Link>
+          </div>
+        </div>
+
+        {showCreateForm && (
+          <form
+            onSubmit={handleCreateRoom}
+            style={{
+              background: '#1a1a2e',
+              padding: '1.5rem',
+              borderRadius: '0.75rem',
+              marginBottom: '2rem',
+            }}
+          >
+            <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>
+              Create New Room
+            </h2>
+            <div style={{ marginBottom: '1rem' }}>
+              <label
+                style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontSize: '0.9rem',
+                  opacity: 0.9,
+                }}
+              >
+                Room Name *
+              </label>
+              <input
+                type="text"
+                ref={roomNameRef}
+                value={roomName}
+                onChange={(e) => setRoomName(e.target.value)}
+                onBlur={applyRoomNameFormatting}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyRoomNameFormatting();
+                    descriptionRef.current?.focus();
+                  }
+                }}
+                required
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  background: '#0f0f1e',
+                  border: '1px solid #333',
+                  borderRadius: '0.5rem',
+                  color: '#f9fafb',
+                  fontSize: '1rem',
+                }}
+                placeholder="e.g., My New Album"
+              />
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label
+                style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontSize: '0.9rem',
+                  opacity: 0.9,
+                }}
+              >
+                Description
+              </label>
+              <textarea
+                ref={descriptionRef}
+                value={roomDescription}
+                onChange={(e) => setRoomDescription(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  background: '#0f0f1e',
+                  border: '1px solid #333',
+                  borderRadius: '0.5rem',
+                  color: '#f9fafb',
+                  fontSize: '1rem',
+                  minHeight: '80px',
+                  resize: 'vertical',
+                }}
+                placeholder="What's this room for?"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading || !roomName.trim()}
+              style={{
+                background: loading ? '#555' : '#3b82f6',
+                color: 'white',
+                border: 'none',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '0.5rem',
+                fontSize: '1rem',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontWeight: '500',
+              }}
+            >
+              {loading ? 'Creating...' : 'Create Room'}
+            </button>
+          </form>
+        )}
+
+        {/* Only show "Your Rooms" section for artists/admins, not listeners */}
+        {(user.role === 'artist' || user.role === 'admin') && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: '1.5rem', margin: 0 }}>
+                Your Rooms
+              </h2>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                style={{
+                  background: '#1a1a2e',
+                  color: '#f9fafb',
+                  border: '1px solid #333',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="all">All</option>
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+            {rooms.length === 0 ? (
+              <p style={{ opacity: 0.7, textAlign: 'center', padding: '2rem' }}>
+                No rooms yet. Create one to get started!
+              </p>
+            ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {rooms.map((room) => (
+                <Link
+                  key={room.id}
+                  href={`/room/${room.id}`}
+                  style={{
+                    display: 'block',
+                    background: '#1a1a2e',
+                    padding: '1.5rem',
+                    borderRadius: '0.75rem',
+                    textDecoration: 'none',
+                    color: '#f9fafb',
+                    border: '1px solid #333',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#3b82f6';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#333';
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                        <h3 style={{ fontSize: '1.25rem', margin: 0 }}>
+                          {room.name}
+                        </h3>
+                        <span
+                          style={{
+                            background: room.status === 'draft' ? '#f59e0b' : room.status === 'active' ? '#10b981' : room.status === 'archived' ? '#6b7280' : '#ef4444',
+                            color: 'white',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.7rem',
+                            fontWeight: '600',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {room.status}
+                        </span>
+                      </div>
+                      {room.artistName && (
+                        <p
+                          style={{ opacity: 0.7, margin: '0 0 0.5rem 0', fontStyle: 'italic', fontSize: '0.85rem' }}
+                          title={room.artistBio || 'Artist bio coming soon'}
+                        >
+                          by {room.artistName}
+                        </p>
+                      )}
+                      {room.description && (
+                        <p style={{ opacity: 0.8, marginBottom: '0.5rem' }}>
+                          {room.description}
+                        </p>
+                      )}
+                      <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', opacity: 0.6 }}>
+                        <span>
+                          Invite code: <strong>{room.inviteCode}</strong>
+                        </span>
+                        <span>
+                          {room.songs.length} song{room.songs.length !== 1 ? 's' : ''}
+                        </span>
+                        {room.status === 'draft' && (
+                          <span>
+                            {room.songs.length}/2 songs
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span style={{ opacity: 0.5 }}>→</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            )}
+          </div>
+        )}
       </div>
+      <ScrollToTop />
     </main>
   );
 }
