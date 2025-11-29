@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const user = userStore.getUser(id);
+    const user = await userStore.getUser(id);
 
     if (!user || user.status === 'deleted') {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -52,7 +52,7 @@ export async function PATCH(
     const body = await request.json();
     const { role, status, username, bio } = body;
 
-    const user = userStore.getUser(id);
+    const user = await userStore.getUser(id);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -78,7 +78,7 @@ export async function PATCH(
         );
       }
 
-      const updatedUser = userStore.updateUser(id, updates);
+      const updatedUser = await userStore.updateUser(id, updates);
       if (!updatedUser) {
         return NextResponse.json(
           { error: 'Failed to update profile' },
@@ -128,7 +128,7 @@ export async function PATCH(
       updates.bio = bio;
     }
 
-    const updatedUser = userStore.updateUser(id, updates);
+    const updatedUser = await userStore.updateUser(id, updates);
 
     if (!updatedUser) {
       return NextResponse.json(

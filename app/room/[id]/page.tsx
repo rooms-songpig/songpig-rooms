@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser, getAuthHeaders } from '@/app/lib/auth-helpers';
+import { getCurrentUser, getAuthHeaders, logout } from '@/app/lib/auth-helpers';
 import { normalizeText, formatTimestamp } from '@/app/lib/utils';
 import { logger } from '@/app/lib/logger';
 import AudioPlayer from '@/app/components/AudioPlayer';
@@ -215,7 +215,8 @@ export default function RoomPage() {
       setHasFetchedPair(false); // Reset when switching away
       calculateWinRates();
     }
-  }, [viewMode, room?.songs.length, comparisonPair.songA, comparisonPair.songB, hasFetchedPair, fetchNextComparisonPair]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, room?.songs.length, comparisonPair.songA, comparisonPair.songB, hasFetchedPair]);
 
   // Check for existing vote when comparison pair changes
   useEffect(() => {
@@ -547,7 +548,7 @@ export default function RoomPage() {
     }
 
     try {
-      const authHeaders = getAuthHeaders();
+      const authHeaders = getAuthHeaders() as Record<string, string>;
       console.log('Song addition request headers:', { 
         'x-user-id': authHeaders['x-user-id'], 
         'x-user-role': authHeaders['x-user-role'] 

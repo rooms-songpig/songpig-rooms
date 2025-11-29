@@ -236,7 +236,7 @@ export const userStore = {
       console.error('getUser error:', {
         message: error.message,
         code: error.code,
-        details: error.details,
+        details: (error as any).details,
         userId: cleanId,
         queryTime,
       });
