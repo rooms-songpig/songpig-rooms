@@ -41,6 +41,16 @@ export default function AdminPage() {
   const [selectedRooms, setSelectedRooms] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<'draft' | 'active' | 'archived' | 'deleted'>('active');
   const [changingBulkStatus, setChangingBulkStatus] = useState(false);
+  
+  // Create user form state
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newRole, setNewRole] = useState<'artist' | 'listener'>('listener');
+  const [showPassword, setShowPassword] = useState(false);
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [createUserMessage, setCreateUserMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -121,6 +131,47 @@ export default function AdminPage() {
 
   const cancelEditing = () => {
     setEditingUser(null);
+  };
+
+  const handleCreateUser = async () => {
+    if (!newUsername.trim() || !newPassword) {
+      setCreateUserMessage({ type: 'error', text: 'Username and password are required' });
+      return;
+    }
+
+    setCreatingUser(true);
+    setCreateUserMessage(null);
+
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          username: newUsername.trim(),
+          password: newPassword,
+          email: newEmail.trim() || undefined,
+          role: newRole,
+        }),
+      });
+
+      const data = await res.json();
+      
+      if (data.error) {
+        setCreateUserMessage({ type: 'error', text: data.error });
+      } else {
+        setCreateUserMessage({ type: 'success', text: `User "${newUsername}" created successfully!` });
+        setNewUsername('');
+        setNewPassword('');
+        setNewEmail('');
+        setNewRole('listener');
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error('Failed to create user:', error);
+      setCreateUserMessage({ type: 'error', text: 'Failed to create user' });
+    } finally {
+      setCreatingUser(false);
+    }
   };
 
   const handleSelectRoom = (roomId: string) => {
@@ -256,6 +307,168 @@ export default function AdminPage() {
               <p style={{ fontSize: '2rem', fontWeight: 'bold' }}>{totalComments}</p>
             </div>
           </div>
+        </div>
+
+        <div style={{ background: '#1a1a2e', padding: '1.5rem', borderRadius: '0.75rem', marginBottom: '2rem' }}>
+          <div 
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              cursor: 'pointer' 
+            }}
+            onClick={() => setShowCreateUser(!showCreateUser)}
+          >
+            <h2 style={{ margin: 0 }}>Create New User</h2>
+            <span style={{ fontSize: '1.5rem', opacity: 0.7 }}>{showCreateUser ? '−' : '+'}</span>
+          </div>
+          
+          {showCreateUser && (
+            <div style={{ marginTop: '1.5rem' }}>
+              {createUserMessage && (
+                <div
+                  style={{
+                    padding: '0.75rem 1rem',
+                    borderRadius: '0.5rem',
+                    marginBottom: '1rem',
+                    background: createUserMessage.type === 'success' ? '#10b98120' : '#ef444420',
+                    border: `1px solid ${createUserMessage.type === 'success' ? '#10b981' : '#ef4444'}`,
+                    color: createUserMessage.type === 'success' ? '#10b981' : '#ef4444',
+                  }}
+                >
+                  {createUserMessage.text}
+                </div>
+              )}
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>
+                    Username *
+                  </label>
+                  <input
+                    type="text"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                    placeholder="Enter username"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      background: '#0f0f1e',
+                      border: '1px solid #333',
+                      borderRadius: '0.5rem',
+                      color: '#f9fafb',
+                      fontSize: '1rem',
+                    }}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>
+                    Password *
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter password"
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        paddingRight: '3rem',
+                        background: '#0f0f1e',
+                        border: '1px solid #333',
+                        borderRadius: '0.5rem',
+                        color: '#f9fafb',
+                        fontSize: '1rem',
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '0.5rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: '#888',
+                        cursor: 'pointer',
+                        padding: '0.25rem',
+                        fontSize: '0.8rem',
+                      }}
+                    >
+                      {showPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>
+                    Email (optional)
+                  </label>
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="Enter email"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      background: '#0f0f1e',
+                      border: '1px solid #333',
+                      borderRadius: '0.5rem',
+                      color: '#f9fafb',
+                      fontSize: '1rem',
+                    }}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>
+                    Role
+                  </label>
+                  <select
+                    value={newRole}
+                    onChange={(e) => setNewRole(e.target.value as 'artist' | 'listener')}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      background: '#0f0f1e',
+                      border: '1px solid #333',
+                      borderRadius: '0.5rem',
+                      color: '#f9fafb',
+                      fontSize: '1rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="listener">Listener</option>
+                    <option value="artist">Artist</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div style={{ marginTop: '1.5rem' }}>
+                <button
+                  onClick={handleCreateUser}
+                  disabled={creatingUser || !newUsername.trim() || !newPassword}
+                  style={{
+                    background: creatingUser || !newUsername.trim() || !newPassword ? '#555' : '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    cursor: creatingUser || !newUsername.trim() || !newPassword ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {creatingUser ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ marginBottom: '2rem' }}>

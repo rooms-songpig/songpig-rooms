@@ -10,3 +10,4 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Client-side Supabase client (uses anon key)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+
