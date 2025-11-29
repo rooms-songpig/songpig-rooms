@@ -41,3 +41,4 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 - Room name format refinement: Change from "Room Name - Artist Name" to "Room Name by Artist Name" format for better readability.
 - Admin user creation panel for managing users directly from the dashboard.
 - Improved deployment configuration.
+
