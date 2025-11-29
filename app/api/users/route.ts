@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const user = userStore.getUser(userId);
+    const user = await userStore.getUser(userId);
     if (!user || user.role !== 'admin' || user.status !== 'active') {
       return NextResponse.json(
         { error: 'Admin access required' },
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const users = userStore.getAllUsers();
+    const users = await userStore.getAllUsers();
     // Remove password hashes
     const usersWithoutPasswords = users.map(({ passwordHash, ...user }) => user);
 

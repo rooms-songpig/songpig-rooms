@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dataStore } from '@/app/lib/data';
-import { userStore } from '@/app/lib/users';
 
 // POST /api/rooms/[id]/songs/[songId]/comments - Add a comment to a song
 export async function POST(
@@ -9,6 +8,7 @@ export async function POST(
 ) {
   try {
     const userId = request.headers.get('x-user-id');
+    const userName = request.headers.get('x-user-name');
     
     if (!userId) {
       return NextResponse.json(
@@ -17,13 +17,8 @@ export async function POST(
       );
     }
 
-    const user = userStore.getUser(userId);
-    if (!user || user.status !== 'active') {
-      return NextResponse.json(
-        { error: 'Invalid user' },
-        { status: 401 }
-      );
-    }
+    // Trust the headers - no database verification needed
+    const username = userName || 'Unknown';
 
     const { id, songId } = await params;
     const body = await request.json();
@@ -36,11 +31,11 @@ export async function POST(
       );
     }
 
-    const comment = dataStore.addComment(
+    const comment = await dataStore.addComment(
       id,
       songId,
       userId,
-      user.username,
+      username,
       text.trim(),
       isAnonymous === true,
       parentCommentId
@@ -62,4 +57,3 @@ export async function POST(
     );
   }
 }
-

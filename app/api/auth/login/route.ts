@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = userStore.authenticate(username, password);
+    const user = await userStore.authenticate(username, password);
 
     if (!user) {
       return NextResponse.json(

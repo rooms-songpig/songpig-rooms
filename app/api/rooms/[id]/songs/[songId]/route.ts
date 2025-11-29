@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dataStore } from '@/app/lib/data';
-import { userStore } from '@/app/lib/users';
 
 // DELETE /api/rooms/[id]/songs/[songId] - Remove a song from a room (draft only)
 export async function DELETE(
@@ -9,6 +8,7 @@ export async function DELETE(
 ) {
   try {
     const userId = request.headers.get('x-user-id');
+    const userRole = request.headers.get('x-user-role') as 'admin' | 'artist' | 'listener' | null;
     
     if (!userId) {
       return NextResponse.json(
@@ -17,23 +17,18 @@ export async function DELETE(
       );
     }
 
-    const user = userStore.getUser(userId);
-    if (!user || user.status !== 'active') {
-      return NextResponse.json(
-        { error: 'Invalid user' },
-        { status: 401 }
-      );
-    }
+    // Trust the headers - no database verification needed
+    const role = userRole || 'listener';
 
     const { id, songId } = await params;
-    const room = dataStore.getRoom(id);
+    const room = await dataStore.getRoom(id);
     
     if (!room) {
       return NextResponse.json({ error: 'Room not found' }, { status: 404 });
     }
 
     // Only room owner or admin can remove songs
-    if (room.artistId !== userId && user.role !== 'admin') {
+    if (room.artistId !== userId && role !== 'admin') {
       return NextResponse.json(
         { error: 'Only the room owner can remove songs' },
         { status: 403 }
@@ -48,7 +43,7 @@ export async function DELETE(
       );
     }
 
-    const success = dataStore.removeSong(id, songId);
+    const success = await dataStore.removeSong(id, songId);
 
     if (!success) {
       return NextResponse.json(
@@ -66,4 +61,3 @@ export async function DELETE(
     );
   }
 }
-

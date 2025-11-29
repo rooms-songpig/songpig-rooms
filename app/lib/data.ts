@@ -1,7 +1,9 @@
 import { normalizeText } from './utils';
 import { userStore } from './users';
+import { supabaseServer } from './supabase-server';
+import { logger } from './logger';
 
-// In-memory data store (can be replaced with a database later)
+// Data store interfaces
 export interface Comment {
   id: string;
   songId: string;
@@ -10,7 +12,7 @@ export interface Comment {
   authorUsername: string;
   text: string;
   isAnonymous: boolean;
-  parentCommentId?: string; // For replies
+  parentCommentId?: string;
   isHidden: boolean;
   createdAt: number;
   updatedAt?: number;
@@ -20,8 +22,8 @@ export interface Song {
   id: string;
   title: string;
   url: string;
-  uploader: string; // Username
-  uploaderId: string; // User ID
+  uploader: string;
+  uploaderId: string;
   comments: Comment[];
 }
 
@@ -29,7 +31,7 @@ export interface Comparison {
   id: string;
   songAId: string;
   songBId: string;
-  winnerId: string; // The song that won
+  winnerId: string;
   userId: string;
   timestamp: number;
 }
@@ -38,50 +40,245 @@ export interface Room {
   id: string;
   name: string;
   description: string;
-  artistId: string; // Owner
+  artistId: string;
   artistName?: string;
   artistBio?: string;
-  invitedArtistIds: string[]; // Artists invited to view
+  invitedArtistIds: string[];
   inviteCode: string;
   accessType: 'private' | 'invited-artists' | 'invite-code';
-  status: 'draft' | 'active' | 'archived' | 'deleted'; // NEW - draft is default
+  status: 'draft' | 'active' | 'archived' | 'deleted';
   createdAt: number;
-  updatedAt?: number; // NEW
-  lastAccessed?: number; // NEW
+  updatedAt?: number;
+  lastAccessed?: number;
   songs: Song[];
   comparisons: Comparison[];
 }
 
-// In-memory storage
-// Using a global to persist across hot reloads in development
-declare global {
-  var __rooms__: Map<string, Room> | undefined;
+// Database types (snake_case)
+interface DbRoom {
+  id: string;
+  name: string;
+  description: string;
+  artist_id: string;
+  artist_name: string | null;
+  artist_bio: string | null;
+  invite_code: string;
+  access_type: 'private' | 'invited-artists' | 'invite-code';
+  status: 'draft' | 'active' | 'archived' | 'deleted';
+  created_at: string;
+  updated_at: string | null;
+  last_accessed: string | null;
 }
 
-let rooms: Map<string, Room>;
-if (typeof globalThis !== 'undefined') {
-  if (!globalThis.__rooms__) {
-    globalThis.__rooms__ = new Map();
-  }
-  rooms = globalThis.__rooms__;
-} else {
-  rooms = new Map();
+interface DbSong {
+  id: string;
+  room_id: string;
+  title: string;
+  url: string;
+  uploader: string;
+  uploader_id: string;
+  created_at: string;
 }
 
-// Generate a random invite code
+interface DbComment {
+  id: string;
+  song_id: string;
+  room_id: string;
+  author_id: string;
+  author_username: string;
+  text: string;
+  is_anonymous: boolean;
+  parent_comment_id: string | null;
+  is_hidden: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+interface DbComparison {
+  id: string;
+  room_id: string;
+  song_a_id: string;
+  song_b_id: string;
+  winner_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+// Helper: Generate invite code
 function generateInviteCode(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// Generate a random ID
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 15);
+// Helper: Convert DB comment to app comment
+function dbCommentToComment(db: DbComment): Comment {
+  return {
+    id: db.id,
+    songId: db.song_id,
+    roomId: db.room_id,
+    authorId: db.author_id,
+    authorUsername: db.author_username,
+    text: db.text,
+    isAnonymous: db.is_anonymous,
+    parentCommentId: db.parent_comment_id || undefined,
+    isHidden: db.is_hidden,
+    createdAt: new Date(db.created_at).getTime(),
+    updatedAt: db.updated_at ? new Date(db.updated_at).getTime() : undefined,
+  };
+}
+
+// Helper: Convert DB song to app song (with comments)
+function dbSongToSong(db: DbSong, comments: Comment[]): Song {
+  return {
+    id: db.id,
+    title: db.title,
+    url: db.url,
+    uploader: db.uploader,
+    uploaderId: db.uploader_id,
+    comments,
+  };
+}
+
+// Helper: Convert DB comparison to app comparison
+function dbComparisonToComparison(db: DbComparison): Comparison {
+  return {
+    id: db.id,
+    songAId: db.song_a_id,
+    songBId: db.song_b_id,
+    winnerId: db.winner_id,
+    userId: db.user_id,
+    timestamp: new Date(db.created_at).getTime(),
+  };
+}
+
+// Helper: Load full room with all nested data
+async function loadFullRoom(dbRoom: DbRoom): Promise<Room> {
+  const roomId = dbRoom.id;
+
+  // Load songs
+  const { data: songsData, error: songsError } = await supabaseServer
+    .from('songs')
+    .select('*')
+    .eq('room_id', roomId)
+    .order('created_at', { ascending: true });
+
+  const songs: Song[] = [];
+  if (songsData && !songsError) {
+    // Load comments for all songs
+    const { data: commentsData, error: commentsError } = await supabaseServer
+      .from('comments')
+      .select('*')
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: true });
+
+    const commentsMap = new Map<string, Comment[]>();
+    if (commentsData && !commentsError) {
+      for (const dbComment of commentsData as DbComment[]) {
+        const comment = dbCommentToComment(dbComment);
+        if (!commentsMap.has(comment.songId)) {
+          commentsMap.set(comment.songId, []);
+        }
+        commentsMap.get(comment.songId)!.push(comment);
+      }
+    }
+
+    // Build songs with their comments
+    for (const dbSong of songsData as DbSong[]) {
+      const songComments = commentsMap.get(dbSong.id) || [];
+      songs.push(dbSongToSong(dbSong, songComments));
+    }
+  }
+
+  // Load comparisons
+  const { data: comparisonsData, error: comparisonsError } = await supabaseServer
+    .from('comparisons')
+    .select('*')
+    .eq('room_id', roomId)
+    .order('created_at', { ascending: true });
+
+  const comparisons: Comparison[] = [];
+  if (comparisonsData && !comparisonsError) {
+    comparisons.push(...(comparisonsData as DbComparison[]).map(dbComparisonToComparison));
+  }
+
+  // Load invited artists
+  const { data: invitedData, error: invitedError } = await supabaseServer
+    .from('room_invited_artists')
+    .select('artist_id')
+    .eq('room_id', roomId);
+
+  const invitedArtistIds: string[] = [];
+  if (invitedData && !invitedError) {
+    invitedArtistIds.push(...invitedData.map((r: { artist_id: string }) => r.artist_id));
+  }
+
+  // Build room object
+  const room: Room = {
+    id: dbRoom.id,
+    name: dbRoom.name,
+    description: dbRoom.description,
+    artistId: dbRoom.artist_id,
+    artistName: dbRoom.artist_name || undefined,
+    artistBio: dbRoom.artist_bio || undefined,
+    invitedArtistIds,
+    inviteCode: dbRoom.invite_code,
+    accessType: dbRoom.access_type,
+    status: dbRoom.status,
+    createdAt: new Date(dbRoom.created_at).getTime(),
+    updatedAt: dbRoom.updated_at ? new Date(dbRoom.updated_at).getTime() : undefined,
+    lastAccessed: dbRoom.last_accessed ? new Date(dbRoom.last_accessed).getTime() : undefined,
+    songs,
+    comparisons,
+  };
+
+  // Fill in artist name/bio if missing
+  if ((!room.artistName || room.artistBio === undefined) && room.artistId) {
+    const owner = await userStore.getUser(room.artistId);
+    if (owner) {
+      if (!room.artistName && owner.username) {
+        room.artistName = normalizeText(owner.username);
+        // Update in DB
+        await supabaseServer
+          .from('rooms')
+          .update({ artist_name: room.artistName })
+          .eq('id', room.id);
+      }
+      if (room.artistBio === undefined && owner.bio) {
+        room.artistBio = owner.bio;
+        // Update in DB
+        await supabaseServer
+          .from('rooms')
+          .update({ artist_bio: room.artistBio })
+          .eq('id', room.id);
+      }
+    }
+  }
+
+  return room;
 }
 
 export const dataStore = {
   // Create a new room
-  createRoom(name: string, description: string, artistId: string): Room {
-    const artistUser = userStore.getUser(artistId);
+  async createRoom(name: string, description: string, artistId: string): Promise<Room> {
+    // Retry user lookup with exponential backoff (for newly registered users)
+    // Use longer delays for newly created users due to read-after-write consistency
+    let artistUser = await userStore.getUser(artistId);
+    let retries = 0;
+    const maxRetries = 10; // Increased retries
+    const initialDelay = 500; // Start with 500ms delay
+    
+    while (!artistUser && retries < maxRetries) {
+      const delay = Math.min(initialDelay * (retries + 1), 3000); // 500ms, 1000ms, 1500ms, etc. up to 3000ms
+      logger.warn(`User not found in createRoom, retrying... (${retries + 1}/${maxRetries}), delay: ${delay}ms`, { artistId });
+      await new Promise(resolve => setTimeout(resolve, delay));
+      artistUser = await userStore.getUser(artistId);
+      retries++;
+    }
+    
+    if (!artistUser) {
+      logger.error(`User ${artistId} not found after ${maxRetries} retries in createRoom. This may indicate a database consistency issue.`);
+      // Still proceed - we'll use a fallback username
+    }
+    
     const resolvedArtistName = artistUser?.username ? normalizeText(artistUser.username) : 'Unknown Artist';
     const normalizedName = normalizeText(name);
     const suffix = resolvedArtistName ? ` - ${resolvedArtistName}` : '';
@@ -90,287 +287,378 @@ export const dataStore = {
         ? `${normalizedName}${suffix}`
         : normalizedName || suffix || name;
 
-    const room: Room = {
-      id: generateId(),
-      name: formattedName || name,
-      description,
-      artistId,
-      artistName: resolvedArtistName,
-      artistBio: artistUser?.bio || '',
-      invitedArtistIds: [],
-      inviteCode: generateInviteCode(),
-      accessType: 'invite-code',
-      status: 'draft', // CRITICAL: New rooms start as draft
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      songs: [],
-      comparisons: [],
-    };
-    rooms.set(room.id, room);
-    console.log('Room created with ID:', room.id, 'Artist:', artistId, 'Status: draft', 'Total rooms:', rooms.size);
+    // Generate unique invite code
+    let inviteCode = generateInviteCode();
+    let attempts = 0;
+    while (attempts < 10) {
+      const { data: existingData } = await supabaseServer
+        .from('rooms')
+        .select('id')
+        .eq('invite_code', inviteCode)
+        .limit(1);
+      const existing = existingData && existingData.length > 0 ? existingData[0] : null;
+      if (!existing) break;
+      inviteCode = generateInviteCode();
+      attempts++;
+    }
+
+    const now = new Date().toISOString();
+    const insertStartTime = Date.now();
+    const { data: insertData, error: insertError } = await supabaseServer
+      .from('rooms')
+      .insert({
+        name: formattedName || name,
+        description: description || '',
+        artist_id: artistId,
+        artist_name: resolvedArtistName,
+        artist_bio: artistUser?.bio || null,
+        invite_code: inviteCode,
+        access_type: 'invite-code',
+        status: 'draft',
+        created_at: now,
+        updated_at: now,
+      })
+      .select()
+      .limit(1);
+
+    const insertTime = Date.now() - insertStartTime;
+
+    if (insertError || !insertData || insertData.length === 0) {
+      console.error('Error creating room:', insertError);
+      throw new Error('Failed to create room');
+    }
+
+    const data = insertData[0];
+    logger.info('Room inserted into database', { roomId: data.id, artistId, insertTime });
+
+    // Verify room can be fetched back (ensures it's fully committed)
+    let room = null;
+    let verifyRetries = 0;
+    const maxVerifyRetries = 5;
+    
+    while (!room && verifyRetries < maxVerifyRetries) {
+      const verifyDelay = 300 * (verifyRetries + 1); // 300ms, 600ms, 900ms, 1200ms, 1500ms
+      if (verifyRetries > 0) {
+        logger.warn('Room not immediately fetchable after insert, retrying', {
+          roomId: data.id,
+          retry: verifyRetries,
+          delay: verifyDelay,
+        });
+        await new Promise(resolve => setTimeout(resolve, verifyDelay));
+      }
+      
+      room = await loadFullRoom(data as DbRoom);
+      
+      if (room && room.id === data.id) {
+        logger.info('Room verified after creation', {
+          roomId: room.id,
+          artistId,
+          verifyRetries,
+          totalTime: insertTime + verifyDelay,
+        });
+        break;
+      }
+      
+      verifyRetries++;
+    }
+
+    if (!room) {
+      logger.error('Room could not be verified after creation', {
+        roomId: data.id,
+        artistId,
+        maxVerifyRetries,
+      });
+      // Still return the room even if verification failed - the retry logic in API routes will handle it
+      room = await loadFullRoom(data as DbRoom);
+    }
+
+    console.log('Room created with ID:', room.id, 'Artist:', artistId, 'Status: draft');
     return room;
   },
 
   // Get a room by ID
-  getRoom(id: string): Room | undefined {
+  async getRoom(id: string): Promise<Room | undefined> {
     if (!id) {
-      console.log('getRoom called with empty ID');
+      logger.warn('getRoom called with empty ID');
       return undefined;
-    }
-    
-    // Try exact match first
-    let room = rooms.get(id);
-    
-    // If not found, try to find by case-insensitive match (in case of encoding issues)
-    if (!room) {
-      for (const [roomId, r] of rooms.entries()) {
-        if (roomId.toLowerCase() === id.toLowerCase()) {
-          console.log('Found room by case-insensitive match:', roomId, 'for requested:', id);
-          room = r;
-          break;
-        }
-      }
-    }
-    
-    // If still not found, try partial match (in case of URL encoding issues)
-    if (!room) {
-      const normalizedId = id.replace(/%/g, '').toLowerCase();
-      for (const [roomId, r] of rooms.entries()) {
-        const normalizedRoomId = roomId.replace(/%/g, '').toLowerCase();
-        if (normalizedRoomId === normalizedId) {
-          console.log('Found room by normalized match:', roomId, 'for requested:', id);
-          room = r;
-          break;
-        }
-      }
-    }
-    
-    if (!room) {
-      console.log('Room not found. Requested ID:', id, 'Type:', typeof id, 'Length:', id.length);
-      console.log('Available room IDs:', Array.from(rooms.keys()));
-      console.log('Total rooms in store:', rooms.size);
-      return undefined;
-    }
-    
-    // Ensure room has comparisons array (for backward compatibility)
-    if (!room.comparisons) {
-      room.comparisons = [];
     }
 
-    if ((!room.artistName || room.artistBio === undefined) && room.artistId) {
-      const owner = userStore.getUser(room.artistId);
-      if (owner?.username && !room.artistName) {
-        room.artistName = normalizeText(owner.username);
-      }
-      if (owner?.bio !== undefined && owner.bio) {
-        room.artistBio = owner.bio;
-      }
+    // Clean the ID - remove any URL encoding or whitespace
+    const cleanId = id.trim();
+    logger.info('getRoom: Looking for room', { roomId: cleanId });
+
+    const startTime = Date.now();
+    const { data, error } = await supabaseServer
+      .from('rooms')
+      .select('*')
+      .eq('id', cleanId)
+      .single();
+
+    const queryTime = Date.now() - startTime;
+
+    if (error) {
+      logger.error('getRoom error', {
+        roomId: cleanId,
+        error: error.message,
+        code: error.code,
+        details: error.details,
+        queryTime,
+      });
+      return undefined;
     }
+
+    if (!data) {
+      logger.warn('getRoom: No data returned', { roomId: cleanId, queryTime });
+      return undefined;
+    }
+
+    logger.info('getRoom: Found room', { 
+      roomId: data.id, 
+      roomName: data.name,
+      queryTime,
+    });
     
-    // Ensure songs don't have old votes field (migration)
-    for (const song of room.songs) {
-      if ('votes' in song) {
-        delete (song as any).votes;
-      }
-    }
+    const loadStartTime = Date.now();
+    const room = await loadFullRoom(data as DbRoom);
+    const loadTime = Date.now() - loadStartTime;
+    
+    logger.info('getRoom: Room loaded with full data', {
+      roomId: room.id,
+      songCount: room.songs.length,
+      loadTime,
+      totalTime: queryTime + loadTime,
+    });
     
     return room;
   },
 
   // Get a room by invite code
-  getRoomByInviteCode(inviteCode: string): Room | undefined {
-    for (const room of rooms.values()) {
-      if (room.inviteCode === inviteCode.toUpperCase()) {
-        // Ensure room has comparisons array (for backward compatibility)
-        if (!room.comparisons) {
-          room.comparisons = [];
-        }
-        
-        // Ensure songs don't have old votes field (migration)
-        for (const song of room.songs) {
-          if ('votes' in song) {
-            delete (song as any).votes;
-          }
-        }
+  async getRoomByInviteCode(inviteCode: string): Promise<Room | undefined> {
+    const { data, error } = await supabaseServer
+      .from('rooms')
+      .select('*')
+      .eq('invite_code', inviteCode.toUpperCase())
+      .single();
 
-        if ((!room.artistName || room.artistBio === undefined) && room.artistId) {
-          const owner = userStore.getUser(room.artistId);
-          if (owner?.username && !room.artistName) {
-            room.artistName = normalizeText(owner.username);
-          }
-          if (owner?.bio !== undefined) {
-            room.artistBio = owner.bio;
-          }
-        }
-        
-        return room;
-      }
+    if (error || !data) {
+      return undefined;
     }
-    return undefined;
+
+    return loadFullRoom(data as DbRoom);
   },
 
   // Get all rooms
-  getAllRooms(): Room[] {
-    const allRooms = Array.from(rooms.values());
-    
-    // Ensure all rooms have required fields (for backward compatibility)
-    for (const room of allRooms) {
-      if (!room.comparisons) {
-        room.comparisons = [];
-      }
-      
-      // Migrate old rooms without status - default to 'active' for existing rooms
-      if (!room.status) {
-        room.status = 'active';
-        console.log('Migrated room to active status:', room.id, room.name);
-      }
-      
-      // Migrate old rooms without artistId (assign to a default or skip)
-      if (!room.artistId) {
-        // For existing rooms without artistId, we'll skip them in user queries
-        // They can still be accessed via invite code
-        console.warn('Room without artistId found:', room.id, room.name);
-      }
+  async getAllRooms(): Promise<Room[]> {
+    const { data, error } = await supabaseServer
+      .from('rooms')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-      if (!room.artistName && room.artistId) {
-        const owner = userStore.getUser(room.artistId);
-        if (owner?.username && !room.artistName) {
-          room.artistName = normalizeText(owner.username);
-        }
-        if (owner?.bio !== undefined && owner.bio) {
-          room.artistBio = owner.bio;
-        }
-      }
-      
-      if (!room.invitedArtistIds) {
-        room.invitedArtistIds = [];
-      }
-      
-      if (!room.accessType) {
-        room.accessType = 'invite-code';
-      }
-      
-      // Ensure songs don't have old votes field (migration)
-      for (const song of room.songs) {
-        if ('votes' in song) {
-          delete (song as any).votes;
-        }
-        // Migrate old songs without uploaderId
-        if (!song.uploaderId && song.uploader) {
-          // Can't determine uploaderId from old data, leave it
-          console.warn('Song without uploaderId found:', song.id);
-        }
-      }
+    if (error || !data) {
+      console.error('Error fetching rooms:', error);
+      return [];
     }
-    
-    return allRooms;
+
+    const rooms: Room[] = [];
+    for (const dbRoom of data as DbRoom[]) {
+      rooms.push(await loadFullRoom(dbRoom));
+    }
+
+    return rooms;
   },
 
   // Add a song to a room
-  addSong(roomId: string, title: string, url: string, uploader: string, uploaderId: string): Song | null {
-    const room = rooms.get(roomId);
-    if (!room) return null;
+  async addSong(roomId: string, title: string, url: string, uploader: string, uploaderId: string): Promise<Song | null> {
+    logger.info('addSong: Starting', { roomId, title, uploader, uploaderId });
+    
+    // Verify room exists
+    const { data: roomData } = await supabaseServer
+      .from('rooms')
+      .select('id')
+      .eq('id', roomId)
+      .single();
+
+    if (!roomData) {
+      logger.error('addSong: Room not found', { roomId });
+      return null;
+    }
+
+    const now = new Date().toISOString();
+    const insertStartTime = Date.now();
+    const { data, error } = await supabaseServer
+      .from('songs')
+      .insert({
+        room_id: roomId,
+        title,
+        url,
+        uploader,
+        uploader_id: uploaderId,
+        created_at: now,
+      })
+      .select()
+      .single();
+
+    const insertTime = Date.now() - insertStartTime;
+
+    if (error || !data) {
+      logger.error('addSong: Insert failed', { roomId, title, error: error?.message, insertTime });
+      return null;
+    }
+
+    logger.info('addSong: Song inserted', { roomId, songId: data.id, title, insertTime });
+
+    // Update room updated_at
+    const updateStartTime = Date.now();
+    await supabaseServer
+      .from('rooms')
+      .update({ updated_at: now })
+      .eq('id', roomId);
+    const updateTime = Date.now() - updateStartTime;
+
+    logger.info('addSong: Room updated', { roomId, updateTime });
 
     const song: Song = {
-      id: generateId(),
-      title,
-      url,
-      uploader,
-      uploaderId,
+      id: data.id,
+      title: data.title,
+      url: data.url,
+      uploader: data.uploader,
+      uploaderId: data.uploader_id,
       comments: [],
     };
 
-    room.songs.push(song);
-    room.updatedAt = Date.now();
+    logger.info('addSong: Success', { roomId, songId: song.id, title, totalTime: insertTime + updateTime });
     return song;
   },
 
-  // Remove a song from a room (only if room is draft, to preserve history)
-  removeSong(roomId: string, songId: string): boolean {
-    const room = rooms.get(roomId);
-    if (!room) return false;
+  // Remove a song from a room (only if room is draft)
+  async removeSong(roomId: string, songId: string): Promise<boolean> {
+    // Check room status
+    const { data: roomData } = await supabaseServer
+      .from('rooms')
+      .select('status')
+      .eq('id', roomId)
+      .single();
 
-    // Only allow removal in draft rooms to preserve comparison history
-    if (room.status !== 'draft') {
+    if (!roomData || roomData.status !== 'draft') {
       return false;
     }
 
-    const songIndex = room.songs.findIndex(s => s.id === songId);
-    if (songIndex === -1) return false;
+    const { error } = await supabaseServer
+      .from('songs')
+      .delete()
+      .eq('id', songId)
+      .eq('room_id', roomId);
 
-    // Remove the song
-    room.songs.splice(songIndex, 1);
-    room.updatedAt = Date.now();
+    if (error) {
+      console.error('Error removing song:', error);
+      return false;
+    }
+
+    // Update room updated_at
+    await supabaseServer
+      .from('rooms')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', roomId);
+
     return true;
   },
 
   // Add a comparison (vote on which song is better)
-  // Replaces existing vote for same user/pair combination
-  addComparison(
+  async addComparison(
     roomId: string,
     songAId: string,
     songBId: string,
     winnerId: string,
     userId: string
-  ): boolean {
-    const room = rooms.get(roomId);
-    if (!room) return false;
-    
-    // Ensure room has comparisons array (for backward compatibility)
-    if (!room.comparisons) {
-      room.comparisons = [];
-    }
+  ): Promise<boolean> {
+    // Verify room exists
+    const { data: roomData } = await supabaseServer
+      .from('rooms')
+      .select('id')
+      .eq('id', roomId)
+      .single();
+
+    if (!roomData) return false;
 
     // Verify both songs exist
-    const songA = room.songs.find((s) => s.id === songAId);
-    const songB = room.songs.find((s) => s.id === songBId);
-    if (!songA || !songB) return false;
+    const { data: songsData } = await supabaseServer
+      .from('songs')
+      .select('id')
+      .in('id', [songAId, songBId])
+      .eq('room_id', roomId);
+
+    if (!songsData || songsData.length !== 2) return false;
 
     // Verify winner is one of the two songs
     if (winnerId !== songAId && winnerId !== songBId) return false;
 
     // Remove any existing vote for this user/pair combination
-    room.comparisons = room.comparisons.filter((c) => {
-      const isSamePair = 
-        (c.songAId === songAId && c.songBId === songBId) ||
-        (c.songAId === songBId && c.songBId === songAId);
-      return !(isSamePair && c.userId === userId);
-    });
+    // Get all comparisons for this user in this room
+    const { data: existing } = await supabaseServer
+      .from('comparisons')
+      .select('id, song_a_id, song_b_id')
+      .eq('room_id', roomId)
+      .eq('user_id', userId);
 
-    const comparison: Comparison = {
-      id: generateId(),
-      songAId,
-      songBId,
-      winnerId,
-      userId,
-      timestamp: Date.now(),
-    };
+    if (existing && existing.length > 0) {
+      // Delete existing comparisons for this user/pair
+      for (const comp of existing) {
+        const isSamePair =
+          (comp.song_a_id === songAId && comp.song_b_id === songBId) ||
+          (comp.song_a_id === songBId && comp.song_b_id === songAId);
+        if (isSamePair) {
+          await supabaseServer.from('comparisons').delete().eq('id', comp.id);
+        }
+      }
+    }
 
-    room.comparisons.push(comparison);
-    room.updatedAt = Date.now();
+    // Insert new comparison
+    const now = new Date().toISOString();
+    const { error } = await supabaseServer
+      .from('comparisons')
+      .insert({
+        room_id: roomId,
+        song_a_id: songAId,
+        song_b_id: songBId,
+        winner_id: winnerId,
+        user_id: userId,
+        created_at: now,
+      });
+
+    if (error) {
+      console.error('Error adding comparison:', error);
+      return false;
+    }
+
+    // Update room updated_at
+    await supabaseServer
+      .from('rooms')
+      .update({ updated_at: now })
+      .eq('id', roomId);
+
     return true;
   },
 
   // Get win rate for a song
-  getWinRate(roomId: string, songId: string): { winRate: number; wins: number; losses: number } {
-    const room = rooms.get(roomId);
-    if (!room) return { winRate: 0, wins: 0, losses: 0 };
-    
-    // Ensure room has comparisons array (for backward compatibility)
-    if (!room.comparisons) {
-      room.comparisons = [];
+  async getWinRate(roomId: string, songId: string): Promise<{ winRate: number; wins: number; losses: number }> {
+    const { data, error } = await supabaseServer
+      .from('comparisons')
+      .select('winner_id')
+      .eq('room_id', roomId)
+      .or(`song_a_id.eq.${songId},song_b_id.eq.${songId}`);
+
+    if (error || !data) {
+      return { winRate: 0, wins: 0, losses: 0 };
     }
 
     let wins = 0;
     let losses = 0;
 
-    for (const comparison of room.comparisons) {
-      if (comparison.songAId === songId || comparison.songBId === songId) {
-        if (comparison.winnerId === songId) {
-          wins++;
-        } else {
-          losses++;
-        }
+    for (const comp of data as { winner_id: string }[]) {
+      if (comp.winner_id === songId) {
+        wins++;
+      } else {
+        losses++;
       }
     }
 
@@ -381,61 +669,74 @@ export const dataStore = {
   },
 
   // Get all comparisons involving a song
-  getComparisonsForSong(roomId: string, songId: string): Comparison[] {
-    const room = rooms.get(roomId);
-    if (!room) return [];
-    
-    // Ensure room has comparisons array (for backward compatibility)
-    if (!room.comparisons) {
-      room.comparisons = [];
+  async getComparisonsForSong(roomId: string, songId: string): Promise<Comparison[]> {
+    const { data, error } = await supabaseServer
+      .from('comparisons')
+      .select('*')
+      .eq('room_id', roomId)
+      .or(`song_a_id.eq.${songId},song_b_id.eq.${songId}`)
+      .order('created_at', { ascending: true });
+
+    if (error || !data) {
+      return [];
     }
 
-    return room.comparisons.filter(
-      (c) => c.songAId === songId || c.songBId === songId
-    );
+    return (data as DbComparison[]).map(dbComparisonToComparison);
   },
 
   // Get next comparison pair for a user (avoid duplicates)
-  getNextComparisonPair(roomId: string, userId: string): { songA: Song | null; songB: Song | null } {
-    const room = rooms.get(roomId);
-    if (!room || room.songs.length < 2) return { songA: null, songB: null };
-    
-    // Ensure room has comparisons array (for backward compatibility)
-    if (!room.comparisons) {
-      room.comparisons = [];
+  async getNextComparisonPair(roomId: string, userId: string): Promise<{ songA: Song | null; songB: Song | null }> {
+    // Get all songs in room
+    const { data: songsData, error: songsError } = await supabaseServer
+      .from('songs')
+      .select('*')
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: true });
+
+    if (songsError || !songsData || songsData.length < 2) {
+      return { songA: null, songB: null };
     }
 
-    // Get all songs
-    const songs = room.songs;
+    // Get all comparisons this user has made
+    const { data: comparisonsData } = await supabaseServer
+      .from('comparisons')
+      .select('song_a_id, song_b_id')
+      .eq('room_id', roomId)
+      .eq('user_id', userId);
 
-    // Get all comparisons this user has already made
-    const userComparisons = room.comparisons.filter((c) => c.userId === userId);
+    const userComparisons = comparisonsData || [];
 
     // Try to find a pair the user hasn't compared yet
-    for (let i = 0; i < songs.length; i++) {
-      for (let j = i + 1; j < songs.length; j++) {
-        const songA = songs[i];
-        const songB = songs[j];
+    for (let i = 0; i < songsData.length; i++) {
+      for (let j = i + 1; j < songsData.length; j++) {
+        const songA = songsData[i] as DbSong;
+        const songB = songsData[j] as DbSong;
 
         // Check if user has already compared these two songs
         const alreadyCompared = userComparisons.some(
-          (c) =>
-            (c.songAId === songA.id && c.songBId === songB.id) ||
-            (c.songAId === songB.id && c.songBId === songA.id)
+          (c: { song_a_id: string; song_b_id: string }) =>
+            (c.song_a_id === songA.id && c.song_b_id === songB.id) ||
+            (c.song_a_id === songB.id && c.song_b_id === songA.id)
         );
 
         if (!alreadyCompared) {
-          return { songA, songB };
+          return {
+            songA: dbSongToSong(songA, []),
+            songB: dbSongToSong(songB, []),
+          };
         }
       }
     }
 
     // If all pairs have been compared, return the first pair
-    return { songA: songs[0], songB: songs[1] };
+    return {
+      songA: dbSongToSong(songsData[0] as DbSong, []),
+      songB: dbSongToSong(songsData[1] as DbSong, []),
+    };
   },
 
   // Add a comment to a song
-  addComment(
+  async addComment(
     roomId: string,
     songId: string,
     authorId: string,
@@ -443,106 +744,189 @@ export const dataStore = {
     text: string,
     isAnonymous: boolean = false,
     parentCommentId?: string
-  ): Comment | null {
-    const room = rooms.get(roomId);
-    if (!room) return null;
+  ): Promise<Comment | null> {
+    // Verify room and song exist
+    const { data: songData } = await supabaseServer
+      .from('songs')
+      .select('id')
+      .eq('id', songId)
+      .eq('room_id', roomId)
+      .single();
 
-    const song = room.songs.find((s) => s.id === songId);
-    if (!song) return null;
+    if (!songData) return null;
 
-    const comment: Comment = {
-      id: generateId(),
-      songId,
-      roomId,
-      authorId,
-      authorUsername: isAnonymous ? 'Anonymous' : authorUsername,
-      text,
-      isAnonymous,
-      parentCommentId,
-      isHidden: false,
-      createdAt: Date.now(),
-    };
+    const now = new Date().toISOString();
+    const { data, error } = await supabaseServer
+      .from('comments')
+      .insert({
+        song_id: songId,
+        room_id: roomId,
+        author_id: authorId,
+        author_username: isAnonymous ? 'Anonymous' : authorUsername,
+        text,
+        is_anonymous: isAnonymous,
+        parent_comment_id: parentCommentId || null,
+        is_hidden: false,
+        created_at: now,
+      })
+      .select()
+      .single();
 
-    song.comments.push(comment);
-    return comment;
+    if (error || !data) {
+      console.error('Error adding comment:', error);
+      return null;
+    }
+
+    return dbCommentToComment(data as DbComment);
   },
 
   // Hide/unhide a comment (artist only)
-  toggleCommentVisibility(roomId: string, songId: string, commentId: string, hide: boolean): boolean {
-    const room = rooms.get(roomId);
-    if (!room) return false;
+  async toggleCommentVisibility(roomId: string, songId: string, commentId: string, hide: boolean): Promise<boolean> {
+    const { error } = await supabaseServer
+      .from('comments')
+      .update({ is_hidden: hide })
+      .eq('id', commentId)
+      .eq('song_id', songId)
+      .eq('room_id', roomId);
 
-    const song = room.songs.find((s) => s.id === songId);
-    if (!song) return false;
-
-    const comment = song.comments.find((c) => c.id === commentId);
-    if (!comment) return false;
-
-    comment.isHidden = hide;
-    return true;
+    return !error;
   },
 
   // Get rooms for a user (owned + invited)
-  getRoomsForUser(userId: string, userRole: 'admin' | 'artist' | 'listener', statusFilter?: 'all' | 'active' | 'draft' | 'archived'): Room[] {
-    const allRooms = this.getAllRooms();
-    
+  async getRoomsForUser(
+    userId: string,
+    userRole: 'admin' | 'artist' | 'listener',
+    statusFilter?: 'all' | 'active' | 'draft' | 'archived'
+  ): Promise<Room[]> {
     if (userRole === 'admin') {
       // Admins see all rooms except deleted
-      const filtered = allRooms.filter(room => room.status !== 'deleted');
+      let query = supabaseServer.from('rooms').select('*').neq('status', 'deleted');
       if (statusFilter && statusFilter !== 'all') {
-        return filtered.filter(room => room.status === statusFilter);
+        query = query.eq('status', statusFilter);
       }
-      return filtered;
-    }
+      const { data, error } = await query.order('created_at', { ascending: false });
 
-    const userRooms = allRooms.filter(room => {
-      // Skip rooms without artistId (old rooms)
-      if (!room.artistId) return false;
-      
-      // Skip deleted rooms
-      if (room.status === 'deleted') return false;
-      
-      // User owns the room
-      if (room.artistId === userId) return true;
-      // User is invited artist
-      if (userRole === 'artist' && room.invitedArtistIds?.includes(userId)) return true;
-      return false;
-    });
+      if (error || !data) {
+        console.error('Error fetching rooms for admin:', error);
+        return [];
+      }
 
-    // Apply status filter (default: show draft + active)
-    if (statusFilter && statusFilter !== 'all') {
-      return userRooms.filter(room => room.status === statusFilter);
+      const rooms: Room[] = [];
+      for (const dbRoom of data as DbRoom[]) {
+        rooms.push(await loadFullRoom(dbRoom));
+      }
+
+      return rooms;
+    } else {
+      // Get rooms owned by user
+      const ownedQuery = supabaseServer
+        .from('rooms')
+        .select('*')
+        .eq('artist_id', userId)
+        .neq('status', 'deleted');
+
+      // Get rooms where user is invited (if artist)
+      let invitedQuery = null;
+      if (userRole === 'artist') {
+        const { data: invitedRooms } = await supabaseServer
+          .from('room_invited_artists')
+          .select('room_id')
+          .eq('artist_id', userId);
+
+        if (invitedRooms && invitedRooms.length > 0) {
+          const roomIds = invitedRooms.map((r: { room_id: string }) => r.room_id);
+          invitedQuery = supabaseServer
+            .from('rooms')
+            .select('*')
+            .in('id', roomIds)
+            .neq('status', 'deleted');
+        }
+      }
+
+      // Combine queries
+      const [ownedResult, invitedResult] = await Promise.all([
+        ownedQuery,
+        invitedQuery ? invitedQuery : Promise.resolve({ data: null, error: null }),
+      ]);
+
+      const allRooms: DbRoom[] = [];
+      if (ownedResult.data) allRooms.push(...(ownedResult.data as DbRoom[]));
+      if (invitedResult?.data) allRooms.push(...(invitedResult.data as DbRoom[]));
+
+      // Remove duplicates
+      const uniqueRooms = Array.from(
+        new Map(allRooms.map((r) => [r.id, r])).values()
+      );
+
+      // Apply status filter
+      let filtered = uniqueRooms;
+      if (statusFilter && statusFilter !== 'all') {
+        filtered = uniqueRooms.filter((r) => r.status === statusFilter);
+      } else {
+        // Default: show draft + active
+        filtered = uniqueRooms.filter((r) => r.status === 'draft' || r.status === 'active');
+      }
+
+      // Load full rooms
+      const rooms: Room[] = [];
+      for (const dbRoom of filtered) {
+        rooms.push(await loadFullRoom(dbRoom));
+      }
+      return rooms;
     }
-    
-    // Default: show draft + active (not archived or deleted)
-    return userRooms.filter(room => room.status === 'draft' || room.status === 'active');
   },
 
   // Update room status
-  updateRoomStatus(roomId: string, status: 'draft' | 'active' | 'archived' | 'deleted'): boolean {
-    const room = rooms.get(roomId);
-    if (!room) return false;
-    
-    room.status = status;
-    room.updatedAt = Date.now();
-    return true;
+  async updateRoomStatus(roomId: string, status: 'draft' | 'active' | 'archived' | 'deleted'): Promise<boolean> {
+    const { error } = await supabaseServer
+      .from('rooms')
+      .update({
+        status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', roomId);
+
+    return !error;
   },
 
   // Invite artist to room
-  inviteArtistToRoom(roomId: string, artistId: string, inviterId: string): boolean {
-    const room = rooms.get(roomId);
-    if (!room) return false;
-    
-    // Only room owner can invite
-    if (room.artistId !== inviterId) return false;
-    
-    // Don't add if already invited or is the owner
-    if (room.invitedArtistIds.includes(artistId) || room.artistId === artistId) {
+  async inviteArtistToRoom(roomId: string, artistId: string, inviterId: string): Promise<boolean> {
+    // Verify room exists and inviter is owner
+    const { data: roomData } = await supabaseServer
+      .from('rooms')
+      .select('artist_id')
+      .eq('id', roomId)
+      .single();
+
+    if (!roomData || roomData.artist_id !== inviterId) {
       return false;
     }
-    
-    room.invitedArtistIds.push(artistId);
-    return true;
+
+    // Don't add if already invited or is the owner
+    if (roomData.artist_id === artistId) {
+      return false;
+    }
+
+    // Check if already invited
+    const { data: existing } = await supabaseServer
+      .from('room_invited_artists')
+      .select('id')
+      .eq('room_id', roomId)
+      .eq('artist_id', artistId)
+      .single();
+
+    if (existing) {
+      return false;
+    }
+
+    // Add invitation
+    const { error } = await supabaseServer
+      .from('room_invited_artists')
+      .insert({
+        room_id: roomId,
+        artist_id: artistId,
+      });
+
+    return !error;
   },
 };
-

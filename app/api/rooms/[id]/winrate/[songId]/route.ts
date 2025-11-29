@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { id, songId } = await params;
-    const winRate = dataStore.getWinRate(id, songId);
+    const winRate = await dataStore.getWinRate(id, songId);
     return NextResponse.json(winRate);
   } catch (error) {
     return NextResponse.json(

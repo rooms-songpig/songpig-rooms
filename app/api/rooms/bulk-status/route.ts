@@ -33,10 +33,8 @@ export async function PATCH(request: NextRequest) {
 
     let updated = 0;
     for (const roomId of roomIds) {
-      const room = dataStore.getRoom(roomId);
-      if (room) {
-        room.status = status;
-        room.updatedAt = Date.now();
+      const success = await dataStore.updateRoomStatus(roomId, status);
+      if (success) {
         updated++;
       }
     }

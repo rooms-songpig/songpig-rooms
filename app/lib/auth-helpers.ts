@@ -32,6 +32,7 @@ export function getAuthHeaders(): HeadersInit {
   if (user) {
     headers['x-user-id'] = user.id;
     headers['x-user-role'] = user.role;
+    headers['x-user-name'] = user.username;
   }
   
   return headers;

@@ -35,10 +35,30 @@ function RegisterContent() {
       if (data.error) {
         setError(data.error);
       } else if (data.user) {
-        // Store user in localStorage
-        localStorage.setItem('user', JSON.stringify(data.user));
+        // Verify user data has all required fields
+        if (!data.user.id || !data.user.username || !data.user.role) {
+          setError('Invalid user data received. Please try again.');
+          return;
+        }
+        
+        // Store user in localStorage with all fields
+        const userData = {
+          id: data.user.id,
+          username: data.user.username,
+          role: data.user.role,
+          status: data.user.status || 'active',
+          email: data.user.email,
+          bio: data.user.bio,
+          createdAt: data.user.createdAt,
+        };
+        
+        localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('userId', data.user.id);
         localStorage.setItem('userRole', data.user.role);
+        
+        // Note: createUser() now verifies the user can be read back before returning
+        // So we can proceed immediately. The API routes also have retry logic.
+        console.log('✅ User registered and verified by createUser():', data.user.id);
         
         // Redirect to original destination or home
         router.push(redirectUrl);

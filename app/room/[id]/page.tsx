@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser, getAuthHeaders } from '@/app/lib/auth-helpers';
 import { normalizeText, formatTimestamp } from '@/app/lib/utils';
+import { logger } from '@/app/lib/logger';
 import AudioPlayer from '@/app/components/AudioPlayer';
 import Breadcrumb from '@/app/components/Breadcrumb';
 import Toast from '@/app/components/Toast';
@@ -66,7 +67,12 @@ export default function RoomPage() {
   const [comparing, setComparing] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [changingStatus, setChangingStatus] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info'; details?: string } | null>(null);
+  
+  // Memoize the toast close handler to prevent unnecessary re-renders
+  const handleToastClose = useCallback(() => {
+    setToast(null);
+  }, []);
   const [isGuest, setIsGuest] = useState(false);
   const [showGuestPrompt, setShowGuestPrompt] = useState(false);
   const [currentVote, setCurrentVote] = useState<string | null>(null);
@@ -139,6 +145,15 @@ export default function RoomPage() {
       setUserId(currentUser.id);
       setUploader(currentUser.username);
       setIsGuest(false);
+      
+      // Verify userId is valid
+      if (!currentUser.id || typeof currentUser.id !== 'string') {
+        console.error('Invalid userId in localStorage:', currentUser.id);
+        setToast({ message: 'Invalid user session. Please log in again.', type: 'error' });
+        logout();
+        router.push('/login');
+        return;
+      }
 
       if (typeof window !== 'undefined') {
         const referrer = document.referrer;
@@ -178,15 +193,29 @@ export default function RoomPage() {
 
   // Fix compare mode infinite loop - only fetch when viewMode changes to compare
   useEffect(() => {
-    if (room && viewMode === 'compare' && room.songs.length >= 2 && !hasFetchedPair) {
-      fetchNextComparisonPair();
-      setHasFetchedPair(true);
+    if (room && viewMode === 'compare' && room.songs.length >= 2) {
+      // If we don't have a comparison pair yet, fetch it
+      if (!comparisonPair.songA || !comparisonPair.songB) {
+        if (!hasFetchedPair) {
+          console.log('Fetching comparison pair - songs available:', room.songs.length);
+          fetchNextComparisonPair();
+          setHasFetchedPair(true);
+        } else {
+          // If we've already tried but don't have a pair, reset and try again
+          console.log('Comparison pair missing, resetting and retrying...');
+          setHasFetchedPair(false);
+          setTimeout(() => {
+            fetchNextComparisonPair();
+            setHasFetchedPair(true);
+          }, 500);
+        }
+      }
     }
     if (viewMode === 'browse') {
       setHasFetchedPair(false); // Reset when switching away
       calculateWinRates();
     }
-  }, [viewMode, room?.songs.length, hasFetchedPair]);
+  }, [viewMode, room?.songs.length, comparisonPair.songA, comparisonPair.songB, hasFetchedPair, fetchNextComparisonPair]);
 
   // Check for existing vote when comparison pair changes
   useEffect(() => {
@@ -205,11 +234,27 @@ export default function RoomPage() {
     }
   }, [room, comparisonPair, userId]);
 
-  const fetchRoom = async (retryCount = 0) => {
+  const fetchRoom = async (retryCount = 0): Promise<Room | null> => {
     if (!roomId) {
       setLoading(false);
-      return;
+      logger.warn('fetchRoom called without roomId');
+      return null;
     }
+    
+    logger.info('Fetching room', { roomId, retryCount, userId: userId || 'not set' });
+    
+    // Add timeout mechanism
+    const timeoutId = setTimeout(() => {
+      if (retryCount === 0) {
+        console.log('Room fetch timeout, retrying...');
+        fetchRoom(1);
+      } else {
+        console.error('Room fetch timeout after retry');
+        setRoom(null);
+        setLoading(false);
+        setToast({ message: 'Failed to load room. Please try again.', type: 'error' });
+      }
+    }, 10000); // 10 second timeout
     
     try {
       // Allow guest access - send headers if authenticated, otherwise empty
@@ -228,29 +273,70 @@ export default function RoomPage() {
         headers,
       });
       
+      clearTimeout(timeoutId);
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
       const data = await res.json();
       
       if (data.error) {
-        console.error('Room fetch error:', data.error, 'Room ID:', roomId, 'Retry:', retryCount);
+        logger.error('Room fetch error', {
+          error: data.error,
+          roomId,
+          userId: userId || 'not set',
+          retryCount,
+          status: res.status,
+        });
         
-        // If room not found and we haven't retried, wait and try once more
-        if (retryCount === 0 && data.error === 'Room not found') {
-          console.log('Retrying room fetch after 200ms...');
+        // If room not found, retry with exponential backoff (up to 5 retries)
+        if (data.error === 'Room not found' && retryCount < 5) {
+          const delays = [1000, 2000, 3000, 4000, 5000];
+          const delay = delays[retryCount] || 5000;
+          logger.warn('Room not found, retrying', { roomId, retryCount: retryCount + 1, delay });
           setTimeout(() => {
-            fetchRoom(1);
-          }, 200);
-          return;
+            fetchRoom(retryCount + 1);
+          }, delay);
+          return null;
         }
         
-        // Get available rooms for debugging
-        const roomsRes = await fetch('/api/rooms', { cache: 'no-store' });
-        const roomsData = await roomsRes.json();
-        console.log('Available rooms:', roomsData.rooms?.map((r: Room) => r.id) || []);
+        // After retry or other errors, show error and stop loading
         setRoom(null);
-      } else if (data.room) {
-        console.log('Room found:', data.room.id, data.room.name);
+        setLoading(false);
+        const errorDetails = [
+          `Error: ${data.error}`,
+          `Room ID: ${roomId}`,
+          `User ID: ${userId || 'not set'}`,
+          `Request URL: /api/rooms/${roomId}`,
+          `Response Status: ${res.status}`,
+          `Retry Count: ${retryCount}`,
+          `Timestamp: ${new Date().toISOString()}`,
+        ].join('\n');
+        
+        // Only show error toast if there isn't already an error toast showing
+        const currentToast = toast;
+        if (!currentToast || currentToast.type !== 'error') {
+          setToast({ 
+            message: data.error === 'Room not found' 
+              ? 'Room not found. It may have been deleted or you may not have access.' 
+              : data.error, 
+            type: 'error',
+            details: errorDetails
+          });
+        }
+        return null;
+      }
+      
+      if (data.room) {
+        logger.info('Room fetched successfully', {
+          roomId: data.room.id,
+          roomName: data.room.name,
+          songCount: data.room.songs.length,
+          retryCount,
+        });
         setRoom(data.room);
-        setLoading(false); // Ensure loading is set to false when room is found
+        setLoading(false);
         setComparisonPair((prevPair) => {
           if (!prevPair.songA || !prevPair.songB) {
             return prevPair;
@@ -259,43 +345,152 @@ export default function RoomPage() {
           const updatedSongB = data.room.songs.find((s: Song) => s.id === prevPair.songB?.id) || prevPair.songB;
           return { songA: updatedSongA, songB: updatedSongB };
         });
+        return data.room; // Return the room data
       } else {
-        console.error('No room in response:', data);
+        logger.error('No room in response', {
+          roomId,
+          userId: userId || 'not set',
+          responseData: data,
+          retryCount,
+        });
         setRoom(null);
         setLoading(false);
+        const missingDataDetails = [
+          `Error: Room data is missing in response`,
+          `Room ID: ${roomId}`,
+          `User ID: ${userId || 'not set'}`,
+          `Response Data: ${JSON.stringify(data, null, 2)}`,
+          `Timestamp: ${new Date().toISOString()}`,
+        ].join('\n');
+        
+        // Only show error toast if there isn't already an error toast showing
+        const currentToast = toast;
+        if (!currentToast || currentToast.type !== 'error') {
+          setToast({ 
+            message: 'Room data is missing. Please try again.', 
+            type: 'error',
+            details: missingDataDetails
+          });
+        }
+        return null;
       }
     } catch (error) {
-      console.error('Failed to fetch room:', error, 'Room ID:', roomId);
+      clearTimeout(timeoutId);
+      logger.error('Failed to fetch room', {
+        roomId,
+        userId: userId || 'not set',
+        retryCount,
+        error: error instanceof Error ? error.message : String(error),
+      }, error instanceof Error ? error : undefined);
       
       // Retry once on network error
       if (retryCount === 0) {
-        console.log('Retrying room fetch after error...');
+        logger.warn('Retrying room fetch after network error', { roomId, delay: 500 });
         setTimeout(() => {
           fetchRoom(1);
-        }, 200);
-        return;
+        }, 500);
+        return null;
       }
       
+      // After retry fails, show error and stop loading
       setRoom(null);
       setLoading(false);
+      const errorDetails = [
+        `Error: Network or fetch error`,
+        `Room ID: ${roomId}`,
+        `User ID: ${userId || 'not set'}`,
+        `Error Message: ${error instanceof Error ? error.message : String(error)}`,
+        `Retry Count: ${retryCount}`,
+        `Timestamp: ${new Date().toISOString()}`,
+      ].join('\n');
+      
+      // Only show error toast if there isn't already an error toast showing
+      const currentToast = toast;
+      if (!currentToast || currentToast.type !== 'error') {
+        setToast({ 
+          message: 'Failed to load room. Please check your connection and try again.', 
+          type: 'error',
+          details: errorDetails
+        });
+      }
+      return null;
     }
   };
 
   const fetchNextComparisonPair = useCallback(async () => {
-    if (isGuest || !userId || !roomId) return;
+    if (isGuest || !userId || !roomId) {
+      console.log('Skipping comparison pair fetch:', { isGuest, userId, roomId });
+      setHasFetchedPair(true); // Mark as fetched to prevent infinite retries
+      return;
+    }
+    
+    // Check if room has at least 2 songs before attempting fetch
+    if (room && room.songs.length < 2) {
+      console.log('Not enough songs for comparison:', room.songs.length);
+      setHasFetchedPair(true); // Mark as fetched to prevent infinite retries
+      return;
+    }
+    
     try {
+      console.log('Fetching comparison pair for user:', userId, 'room:', roomId, 'songs:', room?.songs.length);
       const res = await fetch(`/api/rooms/${roomId}/compare?userId=${userId}`, {
         headers: getAuthHeaders(),
+        cache: 'no-store',
       });
+      
       const data = await res.json();
+      
+      if (!res.ok || data.error) {
+        const errorMsg = data.error || `HTTP error! status: ${res.status}`;
+        console.error('Comparison pair error:', errorMsg, 'Status:', res.status);
+        
+        // If "not enough songs" error, don't show error toast, just mark as fetched
+        if (errorMsg.includes('Not enough songs') || errorMsg.includes('not enough songs')) {
+          console.log('Not enough songs in room for comparison');
+          setHasFetchedPair(true); // Mark as fetched to prevent infinite retries
+          return;
+        }
+        
+        // If room not found, mark as fetched and return (room fetch will handle the error)
+        if (errorMsg.includes('Room not found') || res.status === 404) {
+          console.log('Room not found in comparison fetch, will be handled by room fetch');
+          setHasFetchedPair(true);
+          return;
+        }
+        
+        // For other errors, show toast but mark as fetched to prevent infinite retries
+        setToast({ 
+          message: `Comparison error: ${errorMsg}`, 
+          type: 'error',
+          details: `Room ID: ${roomId}, User ID: ${userId}, Songs: ${room?.songs.length || 0}, Status: ${res.status}`
+        });
+        setHasFetchedPair(true); // Mark as fetched even on error to prevent infinite retries
+        return;
+      }
+      
       if (data.songA && data.songB) {
+        console.log('✅ Comparison pair fetched:', data.songA.id, 'vs', data.songB.id);
         setComparisonPair({ songA: data.songA, songB: data.songB });
         setHasFetchedPair(true);
+      } else {
+        console.warn('Comparison pair missing songs:', data);
+        setHasFetchedPair(true); // Mark as fetched to prevent infinite retries
+        setToast({ 
+          message: 'Unable to load comparison pair. Please try again.', 
+          type: 'error',
+          details: `Room ID: ${roomId}, Response: ${JSON.stringify(data)}`
+        });
       }
     } catch (error) {
-      console.error('Failed to fetch comparison pair:', error);
+      console.error('Error fetching comparison pair:', error);
+      setHasFetchedPair(true); // Mark as fetched to prevent infinite retries
+      setToast({ 
+        message: 'Failed to load comparison pair. Please try again.', 
+        type: 'error',
+        details: `Room ID: ${roomId}, Error: ${error instanceof Error ? error.message : String(error)}`
+      });
     }
-  }, [isGuest, userId, roomId]);
+  }, [isGuest, userId, roomId, room]);
 
   const calculateWinRates = async () => {
     if (!room) return;
@@ -316,7 +511,34 @@ export default function RoomPage() {
 
   const handleAddSong = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!songTitle.trim() || !songUrl.trim() || !userId || !room) return;
+    if (!songTitle.trim() || !songUrl.trim() || !room) return;
+
+    logger.info('Starting song addition', { roomId, songTitle, songUrl: songUrl.substring(0, 50) + '...' });
+
+    // Verify user is still authenticated and sync state
+    const currentUser = getCurrentUser();
+    if (!currentUser || !currentUser.id) {
+      logger.error('User not authenticated for song addition', { roomId });
+      setToast({ message: 'You are not logged in. Please log in again.', type: 'error' });
+      router.push('/login');
+      return;
+    }
+
+    // Ensure userId state matches localStorage
+    if (userId !== currentUser.id) {
+      logger.warn('userId state out of sync, updating', { old: userId, new: currentUser.id, roomId });
+      setUserId(currentUser.id);
+      setUser(currentUser);
+      setUploader(currentUser.username);
+    }
+
+    const currentUserId = currentUser.id;
+    logger.info('Adding song - user verification', { 
+      userIdFromStorage: currentUserId, 
+      userIdState: userId, 
+      match: currentUserId === userId,
+      roomId,
+    });
 
     // CRITICAL: Enforce MAX 2 songs for draft rooms
     if (room.status === 'draft' && room.songs.length >= 2) {
@@ -325,9 +547,15 @@ export default function RoomPage() {
     }
 
     try {
+      const authHeaders = getAuthHeaders();
+      console.log('Song addition request headers:', { 
+        'x-user-id': authHeaders['x-user-id'], 
+        'x-user-role': authHeaders['x-user-role'] 
+      });
+      
       const res = await fetch(`/api/rooms/${roomId}/songs`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: authHeaders,
         body: JSON.stringify({
           title: normalizeText(songTitle),
           url: transformAudioUrl(songUrl.trim()),
@@ -337,27 +565,234 @@ export default function RoomPage() {
       const data = await res.json();
       
       if (data.error) {
-        console.error('Failed to add song:', data.error);
-        setToast({ message: data.error, type: 'error' });
+        logger.error('Failed to add song', {
+          error: data.error,
+          roomId,
+          userId: currentUserId,
+          status: res.status,
+          songTitle,
+        });
+        
+        // Build detailed error information
+        const errorDetails = [
+          `Error: ${data.error}`,
+          `Room ID: ${roomId}`,
+          `User ID: ${currentUserId}`,
+          `User from localStorage: ${JSON.stringify(currentUser)}`,
+          `Request URL: /api/rooms/${roomId}/songs`,
+          `Request Method: POST`,
+          `Response Status: ${res.status}`,
+          `Timestamp: ${new Date().toISOString()}`,
+        ].join('\n');
+        
+        // If invalid user error, try to refresh user data
+        if (data.error.includes('Invalid user') || data.error.includes('invalid user')) {
+          logger.warn('Invalid user error, attempting to refresh user data', { roomId, userId: currentUserId });
+          try {
+            // Try to get fresh user data from server
+            const userRes = await fetch('/api/auth/me', {
+              headers: authHeaders,
+            });
+            const userData = await userRes.json();
+            
+            if (userData.user) {
+              // Update localStorage with fresh user data
+              localStorage.setItem('user', JSON.stringify(userData.user));
+              localStorage.setItem('userId', userData.user.id);
+              localStorage.setItem('userRole', userData.user.role);
+              setUser(userData.user);
+              setUserId(userData.user.id);
+              setUploader(userData.user.username);
+              
+              // Show BOTH the error AND the info message - don't replace the error
+              const refreshErrorDetails = errorDetails + `\n\nUser refresh succeeded. User ID: ${userData.user.id}, Username: ${userData.user.username}`;
+              setToast({ 
+                message: 'Invalid user error occurred. User data refreshed - please try adding the song again. If the error persists, please log out and log back in.', 
+                type: 'error',
+                details: refreshErrorDetails
+              });
+              return; // Show error with refresh info, don't let user try again without seeing the error
+            }
+          } catch (refreshError) {
+            console.error('Failed to refresh user data:', refreshError);
+            const refreshErrorDetails = errorDetails + `\n\nRefresh Error: ${refreshError instanceof Error ? refreshError.message : String(refreshError)}`;
+            setToast({ 
+              message: 'Invalid user error. Failed to refresh user data. Please log out and log back in.', 
+              type: 'error',
+              details: refreshErrorDetails
+            });
+            return;
+          }
+          
+          setToast({ 
+            message: 'Invalid user error. User not found on server. Please log out and log back in.', 
+            type: 'error',
+            details: errorDetails
+          });
+        } else {
+          setToast({ 
+            message: `Failed to add song: ${data.error}`, 
+            type: 'error',
+            details: errorDetails
+          });
+        }
       } else if (data.song) {
-        // Success! Show feedback
+        // Success! Log the song addition
+        const newSongId = data.song.id;
+        logger.info('Song added successfully', {
+          songId: newSongId,
+          songTitle: data.song.title,
+          roomId,
+          userId: currentUserId,
+        });
+
+        // Show feedback
         setSongTitle('');
         setSongUrl('');
         setAutoVersion2(false);
-        // Keep form open (don't close automatically)
-        fetchRoom();
-        if (viewMode === 'compare') {
-          fetchNextComparisonPair();
+        // Reset comparison pair state so it can be fetched again with new songs
+        setHasFetchedPair(false);
+        setComparisonPair({ songA: null, songB: null });
+        
+        // Show success message - but don't replace any existing error toasts
+        const currentToast = toast;
+        if (!currentToast || currentToast.type !== 'error') {
+          setToast({ message: `Song "${data.song.title}" added successfully!`, type: 'success' });
         }
-        // Show styled success message
-        setToast({ message: `Song "${data.song.title}" added successfully!`, type: 'success' });
+        
+        // Wait longer for the song to be fully persisted in Supabase
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Refetch room - ensure we have a valid roomId
+        if (!roomId) {
+          logger.error('Room ID missing after song addition', { songId: newSongId, userId: currentUserId });
+          setToast({ 
+            message: 'Error: Room ID missing. Please refresh the page.', 
+            type: 'error',
+            details: `Song ID: ${newSongId}`
+          });
+          return;
+        }
+        
+        logger.info('Refetching room after song addition', { roomId, songId: newSongId });
+        
+        // Retry logic with song verification
+        let updatedRoom = null;
+        let retries = 0;
+        const maxRetries = 3;
+        
+        while (retries < maxRetries && !updatedRoom) {
+          const delay = 1000 * (retries + 1); // 1s, 2s, 3s
+          if (retries > 0) {
+            logger.warn('Retrying room fetch after song addition', { 
+              roomId, 
+              songId: newSongId, 
+              retry: retries,
+              delay 
+            });
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+          
+          updatedRoom = await fetchRoom();
+          
+          if (updatedRoom) {
+            // Verify the new song exists in the room
+            const songExists = updatedRoom.songs.some(s => s.id === newSongId);
+            if (songExists) {
+              logger.info('Room fetched successfully with new song', {
+                roomId,
+                songId: newSongId,
+                totalSongs: updatedRoom.songs.length,
+                retry: retries,
+              });
+              break; // Success - room found and contains new song
+            } else {
+              logger.warn('Room found but new song missing', {
+                roomId,
+                songId: newSongId,
+                roomSongs: updatedRoom.songs.map(s => s.id),
+                retry: retries,
+              });
+              updatedRoom = null; // Song missing - retry
+            }
+          } else {
+            logger.warn('Room fetch returned null', { roomId, songId: newSongId, retry: retries });
+          }
+          
+          retries++;
+        }
+        
+        if (!updatedRoom) {
+          logger.error('Failed to fetch room with new song after all retries', {
+            roomId,
+            songId: newSongId,
+            maxRetries,
+          });
+          setToast({
+            message: 'Song added but room could not be refreshed. Please refresh the page manually.',
+            type: 'error',
+            details: `Room ID: ${roomId}, Song ID: ${newSongId}, Retries: ${maxRetries}`,
+          });
+          return;
+        }
+        
+        // Wait a moment for room state to update, then fetch comparison pair if in compare mode
+        if (viewMode === 'compare' && updatedRoom) {
+          // Use the updated room data directly (don't wait for state update)
+          if (updatedRoom.songs.length >= 2) {
+            logger.info('Room has enough songs for comparison', {
+              roomId,
+              songCount: updatedRoom.songs.length,
+            });
+            // Reset hasFetchedPair so the useEffect can fetch a new pair
+            setHasFetchedPair(false);
+            // Small delay to ensure state is updated
+            setTimeout(() => {
+              fetchNextComparisonPair();
+            }, 300);
+          } else {
+            logger.info('Room has insufficient songs for comparison', {
+              roomId,
+              songCount: updatedRoom.songs.length,
+            });
+            // Not enough songs yet, mark as fetched to prevent loading state
+            setHasFetchedPair(true);
+          }
+        } else if (viewMode === 'compare' && !updatedRoom) {
+          // Room fetch failed, mark as fetched to prevent infinite loading
+          setHasFetchedPair(true);
+        }
+        
         setTimeout(() => {
           songTitleRef.current?.focus();
         }, 0);
       }
     } catch (error) {
-      console.error('Failed to add song:', error);
-      setToast({ message: 'Failed to add song. Please try again.', type: 'error' });
+      logger.error('Network error when adding song', {
+        roomId,
+        userId: userId || 'not set',
+        songTitle,
+        error: error instanceof Error ? error.message : String(error),
+      }, error instanceof Error ? error : undefined);
+      
+      const addSongErrorDetails = [
+        `Error: Network or fetch error when adding song`,
+        `Room ID: ${roomId}`,
+        `User ID: ${userId || 'not set'}`,
+        `Song Title: ${songTitle}`,
+        `Error Message: ${error instanceof Error ? error.message : String(error)}`,
+        `Timestamp: ${new Date().toISOString()}`,
+      ].join('\n');
+      
+      // Only show error toast if there isn't already an error toast showing
+      const currentToast = toast;
+      if (!currentToast || currentToast.type !== 'error') {
+        setToast({ 
+          message: 'Failed to add song. Please try again.', 
+          type: 'error',
+          details: addSongErrorDetails
+        });
+      }
     }
   };
 
@@ -645,7 +1080,7 @@ export default function RoomPage() {
               )}
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.5rem' }}>
                 <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>
-                  Invite code:{' '}
+                  Invite code:
                   <strong
                     onClick={() => {
                       if (room.status === 'active') {
@@ -683,7 +1118,9 @@ export default function RoomPage() {
                 <button
                   onClick={() => {
                     if (room.status === 'active') {
-                      const roomLink = `${window.location.origin}/room/${room.id}`;
+                      // Use external URL if available, otherwise fall back to current origin
+                      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+                      const roomLink = `${baseUrl}/room/${room.id}`;
                       navigator.clipboard.writeText(roomLink);
                       setToast({ message: 'Room link copied to clipboard!', type: 'success' });
                     }
@@ -1273,8 +1710,7 @@ export default function RoomPage() {
                                 marginTop: '0.5rem',
                               }}
                             >
-                              Win Rate: {winRate.winRate.toFixed(0)}% ({winRate.wins} wins,{' '}
-                              {winRate.losses} loss{winRate.losses !== 1 ? 'es' : ''})
+                              Win Rate: {winRate.winRate.toFixed(0)}% ({winRate.wins} wins, {winRate.losses} {winRate.losses !== 1 ? 'losses' : 'loss'})
                             </div>
                           )}
                         </div>
@@ -1807,13 +2243,15 @@ export default function RoomPage() {
           </div>
         )}
       </div>
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            details={toast.details}
+            onClose={handleToastClose}
+            duration={toast.type === 'error' ? 0 : 3000} // Errors don't auto-dismiss
+          />
+        )}
       {showGuestPrompt && (
         <GuestPrompt
           roomId={roomId || ''}

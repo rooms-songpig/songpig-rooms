@@ -150,10 +150,62 @@ export default function Home() {
         alert(data.error);
       } else if (data.room && data.room.id) {
         console.log('Room created successfully, ID:', data.room.id);
-        // Refresh the room list to show the new room
-        await fetchRooms();
-        // Navigate directly to the room
-        router.push(`/room/${data.room.id}`);
+        
+        // Verify room is accessible before navigating
+        let roomVerified = false;
+        let verifyAttempts = 0;
+        const maxVerifyAttempts = 10;
+        const delays = [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000];
+        
+        console.log('Verifying room after creation:', data.room.id);
+        
+        while (!roomVerified && verifyAttempts < maxVerifyAttempts) {
+          if (verifyAttempts > 0) {
+            const delay = delays[Math.min(verifyAttempts - 1, delays.length - 1)];
+            console.log(`Room verification attempt ${verifyAttempts + 1}/${maxVerifyAttempts}, waiting ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+          
+          try {
+            const verifyRes = await fetch(`/api/rooms/${data.room.id}`, {
+              headers: getAuthHeaders(),
+              cache: 'no-store',
+            });
+            
+            if (verifyRes.ok) {
+              const verifyData = await verifyRes.json();
+              if (verifyData.room && verifyData.room.id === data.room.id) {
+                roomVerified = true;
+                console.log(`✅ Room verified after ${verifyAttempts + 1} attempt(s), navigating...`);
+                break;
+              } else {
+                console.log(`Room verification: data mismatch, expected ${data.room.id}, got ${verifyData.room?.id}`);
+              }
+            } else {
+              const errorData = await verifyRes.json().catch(() => ({}));
+              console.log(`Room verification: API returned ${verifyRes.status}, error:`, errorData.error);
+            }
+          } catch (e) {
+            console.log(`Room verification attempt ${verifyAttempts + 1} failed:`, e);
+          }
+          
+          verifyAttempts++;
+        }
+        
+        if (roomVerified) {
+          // Refresh the room list to show the new room
+          await fetchRooms();
+          // Small delay before navigation to ensure state is updated
+          await new Promise(resolve => setTimeout(resolve, 200));
+          // Navigate directly to the room
+          router.push(`/room/${data.room.id}`);
+        } else {
+          console.warn(`⚠️ Room not immediately accessible after ${maxVerifyAttempts} attempts, but created. User can navigate manually.`);
+          // Refresh the room list anyway
+          await fetchRooms();
+          // Show success message and let user navigate manually
+          alert(`Room "${data.room.name}" created successfully! It will appear in your room list. You can click on it to open it.`);
+        }
       } else {
         console.error('Room creation failed or missing room data:', data);
         alert('Failed to create room. Please try again.');

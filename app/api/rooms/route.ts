@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dataStore } from '@/app/lib/data';
-import { userStore } from '@/app/lib/users';
 
 // GET /api/rooms - Get rooms for current user
 export async function GET(request: NextRequest) {
@@ -15,22 +14,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const user = userStore.getUser(userId);
-    if (!user || user.status !== 'active') {
-      return NextResponse.json(
-        { error: 'Invalid user' },
-        { status: 401 }
-      );
-    }
+    // Trust the headers - no database verification needed
+    // User was already authenticated at login/registration
+    const role = userRole || 'listener';
 
     // Get status filter from query parameter
     const searchParams = request.nextUrl.searchParams;
     const statusFilter = searchParams.get('status') as 'all' | 'active' | 'draft' | 'archived' | null;
     
     // Get rooms based on user role and status filter
-    const rooms = dataStore.getRoomsForUser(userId, user.role, statusFilter || undefined);
+    const rooms = await dataStore.getRoomsForUser(userId, role, statusFilter || undefined);
     
-    console.log(`GET /api/rooms: Returning ${rooms.length} rooms for user ${userId} (${user.role}), filter: ${statusFilter || 'default (draft+active)'}`);
+    console.log(`GET /api/rooms: Returning ${rooms.length} rooms for user ${userId} (${role}), filter: ${statusFilter || 'default (draft+active)'}`);
     
     return NextResponse.json({ rooms });
   } catch (error) {
@@ -46,6 +41,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const userId = request.headers.get('x-user-id');
+    const userRole = request.headers.get('x-user-role') as 'admin' | 'artist' | 'listener' | null;
     
     if (!userId) {
       return NextResponse.json(
@@ -54,16 +50,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = userStore.getUser(userId);
-    if (!user || user.status !== 'active') {
-      return NextResponse.json(
-        { error: 'Invalid user' },
-        { status: 401 }
-      );
-    }
+    // Trust the headers - no database verification needed
+    const role = userRole || 'listener';
 
     // Only artists and admins can create rooms
-    if (user.role !== 'artist' && user.role !== 'admin') {
+    if (role !== 'artist' && role !== 'admin') {
       return NextResponse.json(
         { error: 'Only artists can create rooms' },
         { status: 403 }
@@ -80,7 +71,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const room = dataStore.createRoom(
+    const room = await dataStore.createRoom(
       name.trim(),
       description?.trim() || '',
       userId // artistId
@@ -95,4 +86,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

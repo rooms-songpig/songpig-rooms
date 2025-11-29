@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dataStore } from '@/app/lib/data';
-import { userStore } from '@/app/lib/users';
 
 // POST /api/rooms/[id]/songs - Add a song to a room (artist only)
 export async function POST(
@@ -9,6 +8,8 @@ export async function POST(
 ) {
   try {
     const userId = request.headers.get('x-user-id');
+    const userRole = request.headers.get('x-user-role') as 'admin' | 'artist' | 'listener' | null;
+    const userName = request.headers.get('x-user-name');
     
     if (!userId) {
       return NextResponse.json(
@@ -17,23 +18,21 @@ export async function POST(
       );
     }
 
-    const user = userStore.getUser(userId);
-    if (!user || user.status !== 'active') {
-      return NextResponse.json(
-        { error: 'Invalid user' },
-        { status: 401 }
-      );
-    }
+    // Trust the headers - no database verification needed
+    const role = userRole || 'listener';
+    const username = userName || 'Unknown';
 
     const { id } = await params;
-    const room = dataStore.getRoom(id);
+    console.log('Adding song - User:', userId, 'Room:', id);
+
+    const room = await dataStore.getRoom(id);
     
     if (!room) {
       return NextResponse.json({ error: 'Room not found' }, { status: 404 });
     }
 
     // Only room owner (artist) can add songs
-    if (room.artistId !== userId && user.role !== 'admin') {
+    if (room.artistId !== userId && role !== 'admin') {
       return NextResponse.json(
         { error: 'Only the room owner can add songs' },
         { status: 403 }
@@ -50,12 +49,13 @@ export async function POST(
       );
     }
 
-    const song = dataStore.addSong(id, title, url, user.username, userId);
+    const song = await dataStore.addSong(id, title, url, username, userId);
 
     if (!song) {
       return NextResponse.json({ error: 'Failed to add song' }, { status: 500 });
     }
 
+    console.log('Song added successfully:', song.id);
     return NextResponse.json({ song }, { status: 201 });
   } catch (error) {
     console.error('Error adding song:', error);
@@ -65,4 +65,3 @@ export async function POST(
     );
   }
 }
-

@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { code } = await params;
-    const room = dataStore.getRoomByInviteCode(code);
+    const room = await dataStore.getRoomByInviteCode(code);
 
     if (!room) {
       return NextResponse.json({ error: 'Room not found' }, { status: 404 });

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const userRole = role === 'artist' ? 'artist' : 'listener';
 
     try {
-      const user = userStore.createUser(username, password, email, userRole);
+      const user = await userStore.createUser(username, password, email, userRole);
       
       // Return user without password hash
       const { passwordHash, ...userResponse } = user;

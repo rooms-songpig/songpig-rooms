@@ -28,7 +28,7 @@ export async function POST(
       );
     }
 
-    const success = dataStore.addComparison(id, songAId, songBId, winnerId, userId);
+    const success = await dataStore.addComparison(id, songAId, songBId, winnerId, userId);
 
     if (!success) {
       return NextResponse.json(
@@ -67,12 +67,34 @@ export async function GET(
       );
     }
 
-    const pair = dataStore.getNextComparisonPair(id, finalUserId);
+    // First verify the room exists and has at least 2 songs
+    const room = await dataStore.getRoom(id);
+    if (!room) {
+      return NextResponse.json(
+        { error: 'Room not found' },
+        { status: 404 }
+      );
+    }
+
+    if (room.songs.length < 2) {
+      return NextResponse.json(
+        { error: 'Not enough songs in room for comparison. Room needs at least 2 songs.' },
+        { status: 400 }
+      );
+    }
+
+    const pair = await dataStore.getNextComparisonPair(id, finalUserId);
 
     if (!pair.songA || !pair.songB) {
+      console.error('getNextComparisonPair returned incomplete pair:', { 
+        roomId: id, 
+        userId: finalUserId, 
+        songsInRoom: room.songs.length,
+        pair 
+      });
       return NextResponse.json(
-        { error: 'Not enough songs in room for comparison' },
-        { status: 400 }
+        { error: 'Failed to get comparison pair. Please try again.' },
+        { status: 500 }
       );
     }
 
