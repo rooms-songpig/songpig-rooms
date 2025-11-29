@@ -39,4 +39,5 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 - Reviewer points + leaderboard system to reward listeners and guest artists for thoughtful feedback.
 - Room name format refinement: Change from "Room Name - Artist Name" to "Room Name by Artist Name" format for better readability.
-- Admin user  creation panel for managing users directly from the dashboard.
+- Admin user creation panel for managing users directly from the dashboard.
+- Improved deployment configuration.
