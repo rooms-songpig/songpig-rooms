@@ -191,32 +191,19 @@ export default function RoomPage() {
     }
   }, [isGuest, viewMode]);
 
-  // Fix compare mode infinite loop - only fetch when viewMode changes to compare
+  // Fix compare mode - only fetch once when switching to compare mode
   useEffect(() => {
-    if (room && viewMode === 'compare' && room.songs.length >= 2) {
-      // If we don't have a comparison pair yet, fetch it
-      if (!comparisonPair.songA || !comparisonPair.songB) {
-        if (!hasFetchedPair) {
-          console.log('Fetching comparison pair - songs available:', room.songs.length);
-          fetchNextComparisonPair();
-          setHasFetchedPair(true);
-        } else {
-          // If we've already tried but don't have a pair, reset and try again
-          console.log('Comparison pair missing, resetting and retrying...');
-          setHasFetchedPair(false);
-          setTimeout(() => {
-            fetchNextComparisonPair();
-            setHasFetchedPair(true);
-          }, 500);
-        }
-      }
+    if (room && viewMode === 'compare' && room.songs.length >= 2 && !hasFetchedPair) {
+      console.log('Fetching comparison pair - songs available:', room.songs.length);
+      fetchNextComparisonPair();
+      setHasFetchedPair(true);
     }
     if (viewMode === 'browse') {
       setHasFetchedPair(false); // Reset when switching away
       calculateWinRates();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewMode, room?.songs.length, comparisonPair.songA, comparisonPair.songB, hasFetchedPair]);
+  }, [viewMode, room?.songs.length]);
 
   // Check for existing vote when comparison pair changes
   useEffect(() => {

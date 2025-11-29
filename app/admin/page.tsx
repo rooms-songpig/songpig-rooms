@@ -670,6 +670,7 @@ export default function AdminPage() {
                       />
                     </th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Room Name</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Invite Code</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Status</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Artist ID</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Created</th>
@@ -706,6 +707,56 @@ export default function AdminPage() {
                           />
                         </td>
                         <td style={{ padding: '0.75rem' }}>{room.name}</td>
+                        <td style={{ padding: '0.75rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <code style={{ 
+                              background: '#0f0f1e', 
+                              padding: '0.25rem 0.5rem', 
+                              borderRadius: '0.25rem',
+                              fontSize: '0.8rem',
+                              fontFamily: 'monospace'
+                            }}>
+                              {room.inviteCode}
+                            </code>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(room.inviteCode);
+                                alert('Invite code copied!');
+                              }}
+                              style={{
+                                background: 'transparent',
+                                border: '1px solid #444',
+                                color: '#888',
+                                padding: '0.2rem 0.4rem',
+                                borderRadius: '0.25rem',
+                                fontSize: '0.7rem',
+                                cursor: 'pointer',
+                              }}
+                              title="Copy invite code"
+                            >
+                              Copy
+                            </button>
+                            <button
+                              onClick={() => {
+                                const link = `${window.location.origin}/join?code=${room.inviteCode}`;
+                                navigator.clipboard.writeText(link);
+                                alert('Room link copied!');
+                              }}
+                              style={{
+                                background: 'transparent',
+                                border: '1px solid #444',
+                                color: '#888',
+                                padding: '0.2rem 0.4rem',
+                                borderRadius: '0.25rem',
+                                fontSize: '0.7rem',
+                                cursor: 'pointer',
+                              }}
+                              title="Copy room link"
+                            >
+                              Link
+                            </button>
+                          </div>
+                        </td>
                         <td style={{ padding: '0.75rem' }}>
                           <span
                             style={{
