@@ -23,6 +23,35 @@ interface Room {
   artistBio?: string;
 }
 
+interface ArtistStats {
+  totalRooms: number;
+  totalSongs: number;
+  totalComparisons: number;
+  totalComments: number;
+}
+
+interface RecentComment {
+  id: string;
+  text: string;
+  authorUsername: string;
+  songId: string;
+  songTitle: string;
+  roomId: string;
+  roomName: string;
+  createdAt: string;
+}
+
+interface SongStat {
+  songId: string;
+  songTitle: string;
+  roomId: string;
+  roomName: string;
+  wins: number;
+  losses: number;
+  totalComparisons: number;
+  winRate: number;
+}
+
 export default function Home() {
   const router = useRouter();
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -35,6 +64,12 @@ export default function Home() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'draft' | 'archived'>('all');
   const roomNameRef = useRef<HTMLInputElement | null>(null);
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+  
+  // Artist stats
+  const [artistStats, setArtistStats] = useState<ArtistStats | null>(null);
+  const [recentComments, setRecentComments] = useState<RecentComment[]>([]);
+  const [songStats, setSongStats] = useState<SongStat[]>([]);
+  const [showAllComments, setShowAllComments] = useState(false);
 
   const formatRoomNameWithArtist = useCallback(
     (value: string) => {
@@ -59,6 +94,22 @@ export default function Home() {
     });
   }, [formatRoomNameWithArtist]);
 
+  const fetchArtistStats = useCallback(async () => {
+    try {
+      const res = await fetch('/api/artist/stats', {
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (!data.error) {
+        setArtistStats(data.stats);
+        setRecentComments(data.recentComments || []);
+        setSongStats(data.songStats || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch artist stats:', error);
+    }
+  }, []);
+
   useEffect(() => {
     // Check authentication
     const currentUser = getCurrentUser();
@@ -70,7 +121,12 @@ export default function Home() {
     setUser(currentUser);
     setCheckingAuth(false);
     fetchRooms();
-  }, [router]);
+    
+    // Fetch artist stats if user is an artist or admin
+    if (currentUser.role === 'artist' || currentUser.role === 'admin') {
+      fetchArtistStats();
+    }
+  }, [router, fetchArtistStats]);
 
   useEffect(() => {
     if (user) {
@@ -421,6 +477,106 @@ export default function Home() {
               {loading ? 'Creating...' : 'Create Room'}
             </button>
           </form>
+        )}
+
+        {/* Artist Stats Summary */}
+        {(user.role === 'artist' || user.role === 'admin') && artistStats && (
+          <div style={{ 
+            background: '#1a1a2e', 
+            padding: '1.5rem', 
+            borderRadius: '0.75rem', 
+            marginBottom: '2rem',
+            border: '1px solid #333',
+          }}>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Your Stats</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', textAlign: 'center' }}>
+              <div>
+                <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6', margin: 0 }}>
+                  {artistStats.totalRooms}
+                </p>
+                <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0 }}>Rooms</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#8b5cf6', margin: 0 }}>
+                  {artistStats.totalSongs}
+                </p>
+                <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0 }}>Songs</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#10b981', margin: 0 }}>
+                  {artistStats.totalComparisons}
+                </p>
+                <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0 }}>Votes</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#f59e0b', margin: 0 }}>
+                  {artistStats.totalComments}
+                </p>
+                <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0 }}>Comments</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Recent Feedback */}
+        {(user.role === 'artist' || user.role === 'admin') && recentComments.length > 0 && (
+          <div style={{ 
+            background: '#1a1a2e', 
+            padding: '1.5rem', 
+            borderRadius: '0.75rem', 
+            marginBottom: '2rem',
+            border: '1px solid #333',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Recent Feedback</h2>
+              {recentComments.length > 5 && (
+                <button
+                  onClick={() => setShowAllComments(!showAllComments)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#3b82f6',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  {showAllComments ? 'Show less' : `Show all (${recentComments.length})`}
+                </button>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {(showAllComments ? recentComments : recentComments.slice(0, 5)).map((comment) => (
+                <Link
+                  key={comment.id}
+                  href={`/room/${comment.roomId}`}
+                  style={{
+                    background: '#0f0f1e',
+                    padding: '1rem',
+                    borderRadius: '0.5rem',
+                    textDecoration: 'none',
+                    color: '#f9fafb',
+                    display: 'block',
+                    borderLeft: '3px solid #3b82f6',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>
+                      <strong>{comment.authorUsername}</strong> on <em>{comment.songTitle}</em>
+                    </span>
+                    <span style={{ fontSize: '0.75rem', opacity: 0.5 }}>
+                      {new Date(comment.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.95rem' }}>
+                    &ldquo;{comment.text.length > 150 ? comment.text.slice(0, 150) + '...' : comment.text}&rdquo;
+                  </p>
+                  <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', opacity: 0.5 }}>
+                    {comment.roomName}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Only show "Your Rooms" section for artists/admins, not listeners */}
