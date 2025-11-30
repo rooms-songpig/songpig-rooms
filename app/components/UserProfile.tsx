@@ -48,7 +48,7 @@ export default function UserProfile() {
         left: 0,
         right: 0,
         background: '#1a1a2e',
-        borderBottom: '1px solid #555',
+        borderBottom: '2px solid #fbbf24',
         borderRadius: '0.75rem',
         zIndex: 1000,
         padding: '0.75rem 1rem',

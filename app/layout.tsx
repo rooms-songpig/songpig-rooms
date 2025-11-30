@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Footer from "@/app/components/Footer";
+import DeploymentBanner from "@/app/components/DeploymentBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,6 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}
       >
+        <DeploymentBanner />
         <div style={{ flex: 1 }}>
           {children}
         </div>
