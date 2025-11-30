@@ -138,11 +138,11 @@ export default function RoomPage() {
   const renderSongPlayer = useCallback(
     (song: Song, variant: 'card' | 'compact' = 'card') => {
       if (song.sourceType === 'soundcloud') {
-        const visual = variant === 'card' ? 'true' : 'false';
-        const height = variant === 'card' ? 200 : 140;
+        const height = variant === 'card' ? 160 : 140;
+        const iframeHeight = 180;
         const embedUrl = `https://w.soundcloud.com/player/?url=${encodeURIComponent(
           song.url
-        )}&color=%233b82f6&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=${visual}`;
+        )}&color=%233b82f6&auto_play=false&hide_related=false&show_comments=true&show_user=false&show_reposts=false&show_teaser=false&sharing=false&liking=false&show_playcount=false&show_artwork=false`;
 
         return (
           <div
@@ -152,15 +152,17 @@ export default function RoomPage() {
               overflow: 'hidden',
               border: '1px solid #1f2937',
               background: '#0b1120',
+              height,
             }}
           >
             <iframe
               title={`${song.title} — SoundCloud player`}
-              allow="autoplay"
+              allow="autoplay; encrypted-media"
               width="100%"
-              height={height}
+              height={iframeHeight}
               style={{ border: 'none' }}
               scrolling="no"
+              sandbox="allow-scripts allow-same-origin"
               src={embedUrl}
             />
           </div>
