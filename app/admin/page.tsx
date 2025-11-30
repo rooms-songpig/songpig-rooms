@@ -78,6 +78,9 @@ export default function AdminPage() {
   const [selectedFeedback, setSelectedFeedback] = useState<Set<string>>(new Set());
   const [feedbackBulkStatus, setFeedbackBulkStatus] = useState<Feedback['status']>('open');
   const [changingFeedbackBulkStatus, setChangingFeedbackBulkStatus] = useState(false);
+  const [feedbackTypeFilter, setFeedbackTypeFilter] = useState<'all' | 'bug' | 'feature' | 'question' | 'other'>('all');
+  const [feedbackStatusFilter, setFeedbackStatusFilter] = useState<'all' | Feedback['status']>('all');
+  const [feedbackPriorityFilter, setFeedbackPriorityFilter] = useState<'all' | 'criticalHigh' | 'normal' | 'low'>('all');
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -396,6 +399,39 @@ export default function AdminPage() {
     }
   };
 
+  // Derived feedback list: sort + filter (best-practice ordering)
+  const statusOrder: Feedback['status'][] = ['open', 'in_progress', 'resolved', 'closed', 'wont_fix'];
+  const priorityOrder: Feedback['priority'][] = ['critical', 'high', 'normal', 'low'];
+
+  const sortedFeedback = [...feedback].sort((a, b) => {
+    const statusDiff =
+      statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status);
+    if (statusDiff !== 0) return statusDiff;
+
+    const priorityDiff =
+      priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority);
+    if (priorityDiff !== 0) return priorityDiff;
+
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  const filteredFeedback = sortedFeedback.filter((item) => {
+    if (feedbackTypeFilter !== 'all' && item.type !== feedbackTypeFilter) return false;
+    if (feedbackStatusFilter !== 'all' && item.status !== feedbackStatusFilter) return false;
+
+    if (feedbackPriorityFilter === 'criticalHigh') {
+      if (!['critical', 'high'].includes(item.priority)) return false;
+    } else if (feedbackPriorityFilter === 'normal') {
+      if (item.priority !== 'normal') return false;
+    } else if (feedbackPriorityFilter === 'low') {
+      if (item.priority !== 'low') return false;
+    }
+
+    return true;
+  });
+
+  const hasAnyFeedback = feedback.length > 0;
+
   const totalSongs = rooms.reduce((sum, room) => sum + room.songs.length, 0);
   const totalComparisons = rooms.reduce((sum, room) => sum + (room.comparisons?.length || 0), 0);
   const totalComments = rooms.reduce(
@@ -660,11 +696,98 @@ export default function AdminPage() {
                   )}
                 </div>
               )}
-              {feedback.length === 0 ? (
+              
+              {/* Simple filter row */}
+              {hasAnyFeedback && (
+                <div
+                  style={{
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem',
+                    alignItems: 'center',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  <span style={{ opacity: 0.8 }}>Filters:</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span>Type</span>
+                    <select
+                      value={feedbackTypeFilter}
+                      onChange={(e) => setFeedbackTypeFilter(e.target.value as any)}
+                      style={{
+                        background: '#0f0f1e',
+                        color: '#f9fafb',
+                        border: '1px solid #333',
+                        padding: '0.35rem 0.6rem',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <option value="all">All</option>
+                      <option value="bug">Bugs</option>
+                      <option value="feature">Features</option>
+                      <option value="question">Questions</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span>Status</span>
+                    <select
+                      value={feedbackStatusFilter}
+                      onChange={(e) => setFeedbackStatusFilter(e.target.value as any)}
+                      style={{
+                        background: '#0f0f1e',
+                        color: '#f9fafb',
+                        border: '1px solid #333',
+                        padding: '0.35rem 0.6rem',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <option value="all">All</option>
+                      <option value="open">Open</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="resolved">Resolved</option>
+                      <option value="closed">Closed</option>
+                      <option value="wont_fix">Won&apos;t Fix</option>
+                    </select>
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span>Priority</span>
+                    <select
+                      value={feedbackPriorityFilter}
+                      onChange={(e) => setFeedbackPriorityFilter(e.target.value as any)}
+                      style={{
+                        background: '#0f0f1e',
+                        color: '#f9fafb',
+                        border: '1px solid #333',
+                        padding: '0.35rem 0.6rem',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <option value="all">All</option>
+                      <option value="criticalHigh">Critical + High</option>
+                      <option value="normal">Normal</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </label>
+                </div>
+              )}
+
+              {!hasAnyFeedback ? (
                 <p style={{ opacity: 0.7, textAlign: 'center', padding: '2rem' }}>No feedback submitted yet</p>
+              ) : filteredFeedback.length === 0 ? (
+                <p style={{ opacity: 0.7, textAlign: 'center', padding: '2rem' }}>No feedback matches the current filters</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {feedback.map((item) => (
+                  {filteredFeedback.map((item) => (
                     <div 
                       key={item.id} 
                       style={{ 
