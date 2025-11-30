@@ -14,6 +14,8 @@ export default async function Footer() {
       hour12: true,
     });
 
+  const enableVersionLink = process.env.NEXT_PUBLIC_SHOW_CHANGELOG_LINK !== 'false';
+
   return (
     <footer
       style={{
@@ -63,7 +65,17 @@ export default async function Footer() {
           </Link>
         </p>
         <p style={{ margin: '0.5rem 0', fontSize: '0.75rem' }}>
-          Version {version}
+          Version{' '}
+          {enableVersionLink ? (
+            <Link
+              href="/changelog"
+              style={{ color: '#60a5fa', textDecoration: 'none' }}
+            >
+              {version}
+            </Link>
+          ) : (
+            version
+          )}
           {date && <> &middot; Released {date}</>}
         </p>
         <p style={{ margin: '0.5rem 0', fontSize: '0.75rem' }}>
