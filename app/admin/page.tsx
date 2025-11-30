@@ -81,6 +81,21 @@ export default function AdminPage() {
   const [feedbackTypeFilter, setFeedbackTypeFilter] = useState<'all' | 'bug' | 'feature' | 'question' | 'other'>('all');
   const [feedbackStatusFilter, setFeedbackStatusFilter] = useState<'all' | Feedback['status']>('all');
   const [feedbackPriorityFilter, setFeedbackPriorityFilter] = useState<'all' | 'criticalHigh' | 'normal' | 'low'>('all');
+  const [analyzingFeedbackId, setAnalyzingFeedbackId] = useState<string | null>(null);
+  const [feedbackAISuggestions, setFeedbackAISuggestions] = useState<
+    Record<
+      string,
+      | {
+          status: Feedback['status'];
+          priority: Feedback['priority'];
+          summary: string;
+          provider: string;
+          reasoning?: string;
+          costHint?: string;
+        }
+      | undefined
+    >
+  >({});
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -337,6 +352,75 @@ export default function AdminPage() {
     } finally {
       setChangingFeedbackBulkStatus(false);
     }
+  };
+
+  const handleAnalyzeFeedback = async (item: Feedback) => {
+    setAnalyzingFeedbackId(item.id);
+    try {
+      const res = await fetch('/api/feedback/analyze', {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: item.id,
+          type: item.type,
+          title: item.title,
+          description: item.description,
+          currentStatus: item.status,
+          currentPriority: item.priority,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error || 'AI suggestion failed');
+      } else if (data.suggestion) {
+        setFeedbackAISuggestions((prev) => ({
+          ...prev,
+          [item.id]: {
+            status: data.suggestion.suggestedStatus,
+            priority: data.suggestion.suggestedPriority,
+            summary: data.suggestion.summary,
+            provider: data.suggestion.provider,
+            reasoning: data.suggestion.reasoning,
+            costHint: data.suggestion.costHint,
+          },
+        }));
+      } else {
+        alert('No suggestion returned from AI');
+      }
+    } catch (error) {
+      console.error('Failed to analyze feedback with AI:', error);
+      alert('AI suggestion failed. Please try again later.');
+    } finally {
+      setAnalyzingFeedbackId(null);
+    }
+  };
+
+  const handleApplyFeedbackSuggestion = async (itemId: string) => {
+    const suggestion = feedbackAISuggestions[itemId];
+    if (!suggestion) return;
+
+    await handleUpdateFeedback(itemId, {
+      status: suggestion.status,
+      priority: suggestion.priority,
+    });
+
+    setFeedbackAISuggestions((prev) => {
+      const copy = { ...prev };
+      delete copy[itemId];
+      return copy;
+    });
+  };
+
+  const handleDismissFeedbackSuggestion = (itemId: string) => {
+    setFeedbackAISuggestions((prev) => {
+      const copy = { ...prev };
+      delete copy[itemId];
+      return copy;
+    });
   };
 
   // Bulk selection helpers - Users
@@ -870,7 +954,88 @@ export default function AdminPage() {
                           <option value="high">High</option>
                           <option value="critical">Critical</option>
                         </select>
+                        <button
+                          type="button"
+                          onClick={() => handleAnalyzeFeedback(item)}
+                          disabled={analyzingFeedbackId === item.id}
+                          style={{
+                            padding: '0.25rem 0.6rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #3b82f6',
+                            background: analyzingFeedbackId === item.id ? '#1f2937' : '#111827',
+                            color: '#bfdbfe',
+                            cursor: analyzingFeedbackId === item.id ? 'not-allowed' : 'pointer',
+                            fontSize: '0.75rem',
+                          }}
+                          title="Ask AI to suggest status & priority"
+                        >
+                          {analyzingFeedbackId === item.id ? 'AI…' : 'AI Suggest'}
+                        </button>
                       </div>
+                      
+                      {feedbackAISuggestions[item.id] && (
+                        <div
+                          style={{
+                            marginTop: '0.5rem',
+                            padding: '0.75rem',
+                            borderRadius: '0.5rem',
+                            background: '#020617',
+                            border: '1px dashed #1f2937',
+                            fontSize: '0.8rem',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.35rem' }}>
+                            <strong>AI suggestion ({feedbackAISuggestions[item.id]?.provider})</strong>
+                            {feedbackAISuggestions[item.id]?.costHint && (
+                              <span style={{ opacity: 0.6, fontSize: '0.7rem' }}>
+                                Cost hint: {feedbackAISuggestions[item.id]?.costHint}
+                              </span>
+                            )}
+                          </div>
+                          <p style={{ margin: 0, opacity: 0.85 }}>{feedbackAISuggestions[item.id]?.summary}</p>
+                          {feedbackAISuggestions[item.id]?.reasoning && (
+                            <p style={{ margin: '0.35rem 0 0', opacity: 0.7 }}>
+                              {feedbackAISuggestions[item.id]?.reasoning}
+                            </p>
+                          )}
+                          <p style={{ marginTop: '0.35rem' }}>
+                            Status: <strong>{feedbackAISuggestions[item.id]?.status}</strong> • Priority:{' '}
+                            <strong>{feedbackAISuggestions[item.id]?.priority}</strong>
+                          </p>
+                          <div style={{ marginTop: '0.35rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleApplyFeedbackSuggestion(item.id)}
+                              style={{
+                                padding: '0.25rem 0.6rem',
+                                borderRadius: '0.375rem',
+                                border: 'none',
+                                background: '#10b981',
+                                color: 'white',
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Apply status & priority
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDismissFeedbackSuggestion(item.id)}
+                              style={{
+                                padding: '0.25rem 0.6rem',
+                                borderRadius: '0.375rem',
+                                border: '1px solid #374151',
+                                background: 'transparent',
+                                color: '#d1d5db',
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Dismiss
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -49,5 +49,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Double "by Artist" text removed from room display
 - Bio display now shows directly below artist name
 
+## [0.1.1-alpha] - 2025-11-30
+
+### Added
+- In-app feedback system with `feedback` table, API route, floating feedback button, and admin Feedback & Bug Reports panel
+- Comment reactions (Like, Love, Insightful, Fire) with `comment_reactions` table and API, plus threaded replies via `CommentThread` component
+- Artist dashboard on the home page showing per-artist stats (rooms, songs, votes, comments) and recent feedback on their songs
+- Bulk select and bulk status change tools for rooms, users, and feedback in the admin dashboard
+- Dev-only helpers: quick-fill login buttons for admin/artist/listener and configurable deployment banner (dev by default)
+- Filters for feedback in admin (by type, status, and priority) with legend tooltip explaining statuses and priorities
+- AI-assisted feedback triage endpoint with OpenAI primary + Anthropic fallback providers, plus admin UI controls to request/apply AI suggestions for status and priority
+
+### Changed
+- Improved mobile responsiveness across the app (header, compare mode layout, browse songs view, buttons, and spacing) to avoid overlaps and horizontal scrolling
+- Admin rooms table now shows artist name instead of ID, with clearer invite code / room link copy controls
+- Compare mode now loads and displays comments and replies for both songs, sharing the same comment/reaction system as the browse view
+- Toast notifications improved for persistent error display and better copy-to-clipboard details
+- Admin feedback cards now show AI provider, cost hint, reasoning, and allow applying or dismissing suggestions inline
+
+### Fixed
+- Admin “Copy room link” bug where the invite link did not work correctly
+- Artist name not appearing correctly in the admin rooms list
+- Various layout issues on iPhone (overlapping elements and sideways scrolling) in rooms and admin screens
+- Join page invite-code flow so that `/join?code=...` auto-fills and attempts to join the correct room
+
 [0.1.0-alpha]: https://github.com/yourusername/songpig-rooms/releases/tag/v0.1.0-alpha
+[0.1.1-alpha]: https://github.com/yourusername/songpig-rooms/releases/tag/v0.1.1-alpha
 
