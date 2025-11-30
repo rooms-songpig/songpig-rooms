@@ -22,7 +22,7 @@ export default async function Footer() {
         marginTop: 'auto',
         padding: '2rem 1rem',
         background: '#0a0a15',
-        borderTop: '1px solid '#1a1a2e',
+        borderTop: '1px solid #1a1a2e',
         textAlign: 'center',
         fontSize: '0.85rem',
         opacity: 0.7,
