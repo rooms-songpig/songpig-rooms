@@ -29,6 +29,21 @@ interface Room {
   lastAccessed?: number;
 }
 
+interface Feedback {
+  id: string;
+  user_id: string;
+  username: string;
+  type: 'bug' | 'feature' | 'question' | 'other';
+  title: string;
+  description: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed' | 'wont_fix';
+  priority: 'low' | 'normal' | 'high' | 'critical';
+  admin_notes: string | null;
+  created_at: string;
+  updated_at: string | null;
+  resolved_at: string | null;
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -51,6 +66,11 @@ export default function AdminPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
   const [createUserMessage, setCreateUserMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  
+  // Feedback state
+  const [feedback, setFeedback] = useState<Feedback[]>([]);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [updatingFeedback, setUpdatingFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -67,6 +87,7 @@ export default function AdminPage() {
     setUser(currentUser);
     fetchUsers();
     fetchRooms();
+    fetchFeedback();
   }, [router]);
 
   const fetchUsers = async () => {
@@ -96,6 +117,39 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error('Failed to fetch rooms:', error);
+    }
+  };
+
+  const fetchFeedback = async () => {
+    try {
+      const res = await fetch('/api/feedback', {
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (data.feedback) {
+        setFeedback(data.feedback);
+      }
+    } catch (error) {
+      console.error('Failed to fetch feedback:', error);
+    }
+  };
+
+  const handleUpdateFeedback = async (id: string, updates: { status?: string; priority?: string; admin_notes?: string }) => {
+    setUpdatingFeedback(id);
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id, ...updates }),
+      });
+      const data = await res.json();
+      if (data.feedback) {
+        setFeedback(prev => prev.map(f => f.id === id ? data.feedback : f));
+      }
+    } catch (error) {
+      console.error('Failed to update feedback:', error);
+    } finally {
+      setUpdatingFeedback(null);
     }
   };
 
@@ -307,6 +361,123 @@ export default function AdminPage() {
               <p style={{ fontSize: '2rem', fontWeight: 'bold' }}>{totalComments}</p>
             </div>
           </div>
+        </div>
+
+        {/* Feedback Section */}
+        <div style={{ background: '#1a1a2e', padding: '1.5rem', borderRadius: '0.75rem', marginBottom: '2rem' }}>
+          <div 
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              cursor: 'pointer' 
+            }}
+            onClick={() => setShowFeedback(!showFeedback)}
+          >
+            <h2 style={{ margin: 0 }}>
+              Feedback & Bug Reports 
+              {feedback.filter(f => f.status === 'open').length > 0 && (
+                <span style={{ 
+                  marginLeft: '0.5rem', 
+                  background: '#ef4444', 
+                  color: '#fff', 
+                  padding: '0.1rem 0.5rem', 
+                  borderRadius: '1rem', 
+                  fontSize: '0.8rem' 
+                }}>
+                  {feedback.filter(f => f.status === 'open').length} open
+                </span>
+              )}
+            </h2>
+            <span style={{ fontSize: '1.5rem', opacity: 0.7 }}>{showFeedback ? '−' : '+'}</span>
+          </div>
+          
+          {showFeedback && (
+            <div style={{ marginTop: '1rem' }}>
+              {feedback.length === 0 ? (
+                <p style={{ opacity: 0.7, textAlign: 'center', padding: '2rem' }}>No feedback submitted yet</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {feedback.map((item) => (
+                    <div 
+                      key={item.id} 
+                      style={{ 
+                        background: '#0f0f1e', 
+                        padding: '1rem', 
+                        borderRadius: '0.5rem',
+                        borderLeft: `3px solid ${
+                          item.type === 'bug' ? '#ef4444' : 
+                          item.type === 'feature' ? '#3b82f6' : 
+                          item.type === 'question' ? '#f59e0b' : '#888'
+                        }`
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                        <div>
+                          <span style={{ 
+                            fontSize: '0.75rem', 
+                            padding: '0.1rem 0.4rem', 
+                            borderRadius: '0.25rem',
+                            background: item.type === 'bug' ? '#ef4444' : 
+                                       item.type === 'feature' ? '#3b82f6' : 
+                                       item.type === 'question' ? '#f59e0b' : '#888',
+                            marginRight: '0.5rem'
+                          }}>
+                            {item.type}
+                          </span>
+                          <strong>{item.title}</strong>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>
+                          {new Date(item.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '0.75rem' }}>{item.description}</p>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>by {item.username}</span>
+                        <select
+                          value={item.status}
+                          onChange={(e) => handleUpdateFeedback(item.id, { status: e.target.value })}
+                          disabled={updatingFeedback === item.id}
+                          style={{
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.25rem',
+                            border: '1px solid #444',
+                            background: '#1a1a2e',
+                            color: '#f9fafb',
+                            fontSize: '0.75rem',
+                          }}
+                        >
+                          <option value="open">Open</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="resolved">Resolved</option>
+                          <option value="closed">Closed</option>
+                          <option value="wont_fix">Won&apos;t Fix</option>
+                        </select>
+                        <select
+                          value={item.priority}
+                          onChange={(e) => handleUpdateFeedback(item.id, { priority: e.target.value })}
+                          disabled={updatingFeedback === item.id}
+                          style={{
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.25rem',
+                            border: '1px solid #444',
+                            background: '#1a1a2e',
+                            color: '#f9fafb',
+                            fontSize: '0.75rem',
+                          }}
+                        >
+                          <option value="low">Low</option>
+                          <option value="normal">Normal</option>
+                          <option value="high">High</option>
+                          <option value="critical">Critical</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div style={{ background: '#1a1a2e', padding: '1.5rem', borderRadius: '0.75rem', marginBottom: '2rem' }}>
