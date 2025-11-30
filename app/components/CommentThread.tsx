@@ -4,6 +4,19 @@ import { useState, useEffect } from 'react';
 import { getAuthHeaders } from '@/app/lib/auth-helpers';
 import CommentAuthorTooltip from './CommentAuthorTooltip';
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  return isMobile;
+}
+
 interface Comment {
   id: string;
   text: string;
@@ -62,6 +75,7 @@ function SingleComment({
   const [showReplies, setShowReplies] = useState(true);
   const [reactionCounts, setReactionCounts] = useState<ReactionCounts>({});
   const [userReaction, setUserReaction] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   const authorName = comment.isAnonymous ? 'Anonymous' : comment.authorUsername;
 
@@ -155,11 +169,11 @@ function SingleComment({
   };
 
   return (
-    <div style={{ marginLeft: depth > 0 ? '1.5rem' : 0 }}>
+    <div style={{ marginLeft: depth > 0 && !isMobile ? '1.5rem' : depth > 0 && isMobile ? '0.75rem' : 0 }}>
       <div
         style={{
           background: depth > 0 ? '#0a0a15' : '#0f0f1e',
-          padding: '1rem',
+          padding: isMobile ? '0.75rem' : '1rem',
           borderRadius: '0.75rem',
           borderLeft: depth > 0 ? '3px solid #3b82f6' : 'none',
         }}
@@ -190,7 +204,13 @@ function SingleComment({
         <p style={{ margin: '0 0 0.75rem 0', lineHeight: 1.5 }}>{comment.text}</p>
 
         {/* Actions row - Facebook/Twitter style */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.8rem' }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '0.5rem', 
+          fontSize: '0.8rem',
+          flexWrap: 'wrap',
+        }}>
           {/* Like button - simple text, turns blue when liked */}
           <button
             onClick={() => !isGuest && handleReaction('like')}
@@ -198,13 +218,16 @@ function SingleComment({
             style={{
               background: 'none',
               border: 'none',
-              padding: 0,
+              padding: '0.5rem 0.75rem',
+              minHeight: '44px',
+              minWidth: '44px',
               color: userReaction === 'like' ? '#3b82f6' : '#6b7280',
               cursor: isGuest ? 'not-allowed' : 'pointer',
               fontWeight: userReaction === 'like' ? '600' : '400',
               display: 'flex',
               alignItems: 'center',
               gap: '0.25rem',
+              borderRadius: '0.25rem',
             }}
           >
             <span>{userReaction === 'like' ? '👍' : '👍'}</span>
@@ -219,13 +242,16 @@ function SingleComment({
             style={{
               background: 'none',
               border: 'none',
-              padding: 0,
+              padding: '0.5rem 0.75rem',
+              minHeight: '44px',
+              minWidth: '44px',
               color: userReaction === 'love' ? '#ef4444' : '#6b7280',
               cursor: isGuest ? 'not-allowed' : 'pointer',
               fontWeight: userReaction === 'love' ? '600' : '400',
               display: 'flex',
               alignItems: 'center',
               gap: '0.25rem',
+              borderRadius: '0.25rem',
             }}
           >
             <span>{userReaction === 'love' ? '❤️' : '🤍'}</span>
@@ -240,13 +266,16 @@ function SingleComment({
             style={{
               background: 'none',
               border: 'none',
-              padding: 0,
+              padding: '0.5rem 0.75rem',
+              minHeight: '44px',
+              minWidth: '44px',
               color: userReaction === 'insightful' ? '#f59e0b' : '#6b7280',
               cursor: isGuest ? 'not-allowed' : 'pointer',
               fontWeight: userReaction === 'insightful' ? '600' : '400',
               display: 'flex',
               alignItems: 'center',
               gap: '0.25rem',
+              borderRadius: '0.25rem',
             }}
           >
             <span>{userReaction === 'insightful' ? '💡' : '💡'}</span>
@@ -261,9 +290,12 @@ function SingleComment({
               style={{
                 background: 'none',
                 border: 'none',
-                padding: 0,
+                padding: '0.5rem 0.75rem',
+                minHeight: '44px',
+                minWidth: '44px',
                 color: '#6b7280',
                 cursor: 'pointer',
+                borderRadius: '0.25rem',
               }}
             >
               Reply
@@ -292,7 +324,7 @@ function SingleComment({
                 marginBottom: '0.5rem',
               }}
             />
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <button
                 onClick={handleSubmitReply}
                 disabled={!replyText.trim() || submitting}
@@ -300,10 +332,11 @@ function SingleComment({
                   background: replyText.trim() && !submitting ? '#3b82f6' : '#555',
                   color: 'white',
                   border: 'none',
-                  padding: '0.5rem 1rem',
+                  padding: '0.625rem 1.25rem',
                   borderRadius: '0.5rem',
                   fontSize: '0.85rem',
                   cursor: replyText.trim() && !submitting ? 'pointer' : 'not-allowed',
+                  minHeight: '44px',
                 }}
               >
                 {submitting ? 'Posting...' : 'Reply'}
@@ -317,10 +350,11 @@ function SingleComment({
                   background: 'transparent',
                   color: '#888',
                   border: '1px solid #444',
-                  padding: '0.5rem 1rem',
+                  padding: '0.625rem 1.25rem',
                   borderRadius: '0.5rem',
                   fontSize: '0.85rem',
                   cursor: 'pointer',
+                  minHeight: '44px',
                 }}
               >
                 Cancel
@@ -451,11 +485,12 @@ export default function CommentThread({
               background: newCommentText.trim() && !submitting ? '#3b82f6' : '#555',
               color: 'white',
               border: 'none',
-              padding: '0.6rem 1.25rem',
+              padding: '0.75rem 1.5rem',
               borderRadius: '0.5rem',
               fontSize: '0.9rem',
               cursor: newCommentText.trim() && !submitting ? 'pointer' : 'not-allowed',
               fontWeight: '500',
+              minHeight: '44px',
             }}
           >
             {submitting ? 'Posting...' : 'Comment'}

@@ -1019,16 +1019,17 @@ export default function RoomPage() {
               background: '#1a1a2e',
               color: '#f9fafb',
               border: '1px solid #333',
-              padding: '0.5rem 1rem',
+              padding: isMobile ? '0.625rem 1rem' : '0.5rem 1rem',
               borderRadius: '0.5rem',
               fontSize: '0.9rem',
               cursor: 'pointer',
               marginBottom: '1rem',
+              minHeight: isMobile ? '44px' : 'auto',
             }}
           >
             ← Back
           </button>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', gap: '2rem' }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', gap: isMobile ? '1rem' : '2rem' }}>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
                 {/* Status badge on the left */}
@@ -1201,11 +1202,12 @@ export default function RoomPage() {
                       background: changingStatus || room.songs.length < 2 ? '#555' : '#10b981',
                       color: 'white',
                       border: 'none',
-                      padding: '0.5rem 1rem',
+                      padding: isMobile ? '0.625rem 1rem' : '0.5rem 1rem',
                       borderRadius: '0.5rem',
                       fontSize: '0.85rem',
                       cursor: changingStatus || room.songs.length < 2 ? 'not-allowed' : 'pointer',
                       fontWeight: '500',
+                      minHeight: isMobile ? '44px' : 'auto',
                     }}
                   >
                     Make Active
@@ -1240,10 +1242,11 @@ export default function RoomPage() {
                       background: changingStatus ? '#555' : '#6b7280',
                       color: 'white',
                       border: 'none',
-                      padding: '0.5rem 1rem',
+                      padding: isMobile ? '0.625rem 1rem' : '0.5rem 1rem',
                       borderRadius: '0.5rem',
                       fontSize: '0.85rem',
                       cursor: changingStatus ? 'not-allowed' : 'pointer',
+                      minHeight: isMobile ? '44px' : 'auto',
                     }}
                   >
                     Archive
@@ -1276,10 +1279,11 @@ export default function RoomPage() {
                       background: changingStatus ? '#555' : '#10b981',
                       color: 'white',
                       border: 'none',
-                      padding: '0.5rem 1rem',
+                      padding: isMobile ? '0.625rem 1rem' : '0.5rem 1rem',
                       borderRadius: '0.5rem',
                       fontSize: '0.85rem',
                       cursor: changingStatus ? 'not-allowed' : 'pointer',
+                      minHeight: isMobile ? '44px' : 'auto',
                     }}
                   >
                     Restore
@@ -1353,11 +1357,12 @@ export default function RoomPage() {
                 background: viewMode === 'compare' ? '#3b82f6' : 'transparent',
                 color: 'white',
                 border: 'none',
-                padding: '0.5rem 1rem',
+                padding: isMobile ? '0.75rem 1rem' : '0.5rem 1rem',
                 borderRadius: '0.375rem',
                 cursor: 'pointer',
                 fontWeight: '500',
-                fontSize: '0.9rem',
+                fontSize: isMobile ? '0.85rem' : '0.9rem',
+                minHeight: isMobile ? '44px' : 'auto',
               }}
             >
               Compare Mode
@@ -1368,11 +1373,12 @@ export default function RoomPage() {
                 background: viewMode === 'browse' ? '#3b82f6' : 'transparent',
                 color: 'white',
                 border: 'none',
-                padding: '0.5rem 1rem',
+                padding: isMobile ? '0.75rem 1rem' : '0.5rem 1rem',
                 borderRadius: '0.375rem',
                 cursor: 'pointer',
                 fontWeight: '500',
-                fontSize: '0.9rem',
+                fontSize: isMobile ? '0.85rem' : '0.9rem',
+                minHeight: isMobile ? '44px' : 'auto',
               }}
             >
               Browse All Songs
@@ -1401,7 +1407,7 @@ export default function RoomPage() {
           <div
             style={{
               background: '#1a1a2e',
-              padding: '1.5rem',
+              padding: isMobile ? '1rem' : '1.5rem',
               borderRadius: '0.75rem',
               marginBottom: '2rem',
             }}
@@ -1453,10 +1459,11 @@ export default function RoomPage() {
                             background: '#ef4444',
                             color: 'white',
                             border: 'none',
-                            padding: '0.5rem 1rem',
+                            padding: isMobile ? '0.625rem 1rem' : '0.5rem 1rem',
                             borderRadius: '0.375rem',
                             fontSize: '0.85rem',
                             cursor: 'pointer',
+                            minHeight: isMobile ? '44px' : 'auto',
                           }}
                         >
                           Remove
@@ -1595,11 +1602,12 @@ export default function RoomPage() {
                     background: (!songTitle.trim() || !songUrl.trim()) ? '#555' : '#3b82f6',
                     color: 'white',
                     border: 'none',
-                    padding: '0.75rem 1.5rem',
+                    padding: isMobile ? '0.875rem 1.25rem' : '0.75rem 1.5rem',
                     borderRadius: '0.5rem',
-                    fontSize: '1rem',
+                    fontSize: isMobile ? '0.95rem' : '1rem',
                     cursor: (!songTitle.trim() || !songUrl.trim()) ? 'not-allowed' : 'pointer',
                     fontWeight: '500',
+                    minHeight: isMobile ? '44px' : 'auto',
                   }}
                 >
                   Add Song
@@ -1688,7 +1696,7 @@ export default function RoomPage() {
                       key={song.id}
                       style={{
                         background: '#1a1a2e',
-                        padding: '1.5rem',
+                        padding: isMobile ? '1rem' : '1.5rem',
                         borderRadius: '0.75rem',
                         border: '1px solid #333',
                       }}
@@ -1696,13 +1704,15 @@ export default function RoomPage() {
                       <div
                         style={{
                           display: 'flex',
+                          flexDirection: isMobile ? 'column' : 'row',
                           justifyContent: 'space-between',
-                          alignItems: 'flex-start',
+                          alignItems: isMobile ? 'flex-start' : 'flex-start',
                           marginBottom: '1rem',
+                          gap: isMobile ? '0.75rem' : 0,
                         }}
                       >
                         <div style={{ flex: 1 }}>
-                          <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
+                          <h3 style={{ fontSize: isMobile ? '1.1rem' : '1.25rem', marginBottom: '0.5rem' }}>
                             {song.title}
                           </h3>
                           <p style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '0.5rem' }}>
@@ -1820,7 +1830,7 @@ export default function RoomPage() {
                 <div
                   style={{
                     background: '#1a1a2e',
-                    padding: '2rem',
+                    padding: isMobile ? '1rem' : '2rem',
                     borderRadius: '0.75rem',
                     border: '2px solid #333',
                     display: 'flex',
@@ -1829,7 +1839,7 @@ export default function RoomPage() {
                 >
                   <h3
                     style={{
-                      fontSize: '1.5rem',
+                      fontSize: isMobile ? '1.25rem' : '1.5rem',
                       marginBottom: '0.5rem',
                       textAlign: 'center',
                     }}
@@ -1857,14 +1867,15 @@ export default function RoomPage() {
                       background: comparing ? '#555' : currentVote === comparisonPair.songA.id ? '#10b981' : isGuest ? '#6b7280' : '#10b981',
                       color: 'white',
                       border: currentVote === comparisonPair.songA.id ? '2px solid #10b981' : 'none',
-                      padding: '1rem 2rem',
+                      padding: isMobile ? '0.875rem 1.5rem' : '1rem 2rem',
                       borderRadius: '0.5rem',
-                      fontSize: '1.1rem',
+                      fontSize: isMobile ? '1rem' : '1.1rem',
                       cursor: comparing || isGuest ? 'not-allowed' : 'pointer',
                       fontWeight: '600',
                       width: '100%',
                       marginBottom: '1rem',
                       position: 'relative',
+                      minHeight: isMobile ? '44px' : 'auto',
                     }}
                   >
                     {comparing
@@ -1906,7 +1917,7 @@ export default function RoomPage() {
                 <div
                   style={{
                     background: '#1a1a2e',
-                    padding: '2rem',
+                    padding: isMobile ? '1rem' : '2rem',
                     borderRadius: '0.75rem',
                     border: '2px solid #333',
                     display: 'flex',
@@ -1915,7 +1926,7 @@ export default function RoomPage() {
                 >
                   <h3
                     style={{
-                      fontSize: '1.5rem',
+                      fontSize: isMobile ? '1.25rem' : '1.5rem',
                       marginBottom: '0.5rem',
                       textAlign: 'center',
                     }}
@@ -1943,14 +1954,15 @@ export default function RoomPage() {
                       background: comparing ? '#555' : currentVote === comparisonPair.songB.id ? '#10b981' : isGuest ? '#6b7280' : '#10b981',
                       color: 'white',
                       border: currentVote === comparisonPair.songB.id ? '2px solid #10b981' : 'none',
-                      padding: '1rem 2rem',
+                      padding: isMobile ? '0.875rem 1.5rem' : '1rem 2rem',
                       borderRadius: '0.5rem',
-                      fontSize: '1.1rem',
+                      fontSize: isMobile ? '1rem' : '1.1rem',
                       cursor: comparing || isGuest ? 'not-allowed' : 'pointer',
                       fontWeight: '600',
                       width: '100%',
                       marginBottom: '1rem',
                       position: 'relative',
+                      minHeight: isMobile ? '44px' : 'auto',
                     }}
                   >
                     {comparing
