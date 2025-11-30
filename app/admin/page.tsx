@@ -317,10 +317,13 @@ export default function AdminPage() {
         fontFamily:
           "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         padding: '2rem',
+        overflowX: 'hidden',
+        maxWidth: '100vw',
+        boxSizing: 'border-box',
       }}
     >
       <UserProfile />
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '100%', margin: '0 auto', padding: '0 0.5rem', boxSizing: 'border-box' }}>
         <div style={{ marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Admin Dashboard</h1>
           <p style={{ opacity: 0.8 }}>Welcome, {user.username}</p>

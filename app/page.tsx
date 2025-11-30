@@ -304,10 +304,13 @@ export default function Home() {
         fontFamily:
           "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         padding: '2rem',
+        overflowX: 'hidden',
+        maxWidth: '100vw',
+        boxSizing: 'border-box',
       }}
     >
       <UserProfile />
-      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '100%', margin: '0 auto', padding: '0 0.5rem', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <div>
             <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>

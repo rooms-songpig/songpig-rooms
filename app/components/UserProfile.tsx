@@ -53,10 +53,13 @@ export default function UserProfile() {
         zIndex: 1000,
         padding: '0.75rem 1rem',
         backdropFilter: 'blur(10px)',
+        overflowX: 'hidden',
+        maxWidth: '100vw',
+        boxSizing: 'border-box',
       }}
     >
       <div style={{ 
-        maxWidth: '1400px', 
+        maxWidth: '100%', 
         margin: '0 auto',
         display: 'flex',
         alignItems: 'center',
@@ -64,6 +67,7 @@ export default function UserProfile() {
         gap: '1rem',
         flexWrap: 'wrap',
         position: 'relative',
+        overflowX: 'hidden',
       }}>
         {/* Main Title - Centered */}
         <Link
@@ -80,7 +84,7 @@ export default function UserProfile() {
           }}
         >
           <h1 style={{
-            fontSize: 'clamp(1rem, 3vw, 1.5rem)',
+            fontSize: 'clamp(0.9rem, 3vw, 1.5rem)',
             fontWeight: '700',
             background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%)',
             WebkitBackgroundClip: 'text',
@@ -89,9 +93,10 @@ export default function UserProfile() {
             margin: 0,
             textAlign: 'center',
             letterSpacing: '0.05em',
-            whiteSpace: 'nowrap',
+            wordBreak: 'break-word',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
+            maxWidth: '100%',
           }}>
             Song Pig Listening Rooms
           </h1>

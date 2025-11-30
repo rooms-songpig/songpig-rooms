@@ -29,10 +29,16 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}
+        style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          minHeight: '100vh',
+          overflowX: 'hidden',
+          maxWidth: '100vw',
+        }}
       >
         <DeploymentBanner />
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, overflowX: 'hidden', maxWidth: '100vw' }}>
           {children}
         </div>
         <Footer />

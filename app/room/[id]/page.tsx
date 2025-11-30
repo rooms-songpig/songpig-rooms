@@ -994,10 +994,13 @@ export default function RoomPage() {
         fontFamily:
           "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         padding: isMobile ? '0.75rem' : '1.5rem',
+        overflowX: 'hidden',
+        maxWidth: '100vw',
+        boxSizing: 'border-box',
       }}
     >
       <UserProfile />
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '100%', margin: '0 auto', padding: '0 0.5rem', boxSizing: 'border-box' }}>
         <div style={{ marginBottom: '2rem' }}>
           <Breadcrumb
             items={[
