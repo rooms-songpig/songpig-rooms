@@ -236,7 +236,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => {
                   setUsername('jean');
-                  setPassword('password123');
+                  setPassword('jean123');
                 }}
                 style={{
                   background: '#1e293b',
@@ -248,14 +248,14 @@ export default function LoginPage() {
                   cursor: 'pointer',
                 }}
               >
-                Fill Artist (jean / password123)
+                Fill Artist (jean / jean123)
               </button>
 
               <button
                 type="button"
                 onClick={() => {
-                  setUsername('listener');
-                  setPassword('password123');
+                  setUsername('bob');
+                  setPassword('bob123');
                 }}
                 style={{
                   background: '#1e293b',
@@ -267,7 +267,7 @@ export default function LoginPage() {
                   cursor: 'pointer',
                 }}
               >
-                Fill Listener (listener / password123)
+                Fill Listener (bob / bob123)
               </button>
             </div>
           </div>
