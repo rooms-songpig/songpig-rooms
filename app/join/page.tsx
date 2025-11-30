@@ -1,44 +1,61 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 export default function JoinPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [inviteCode, setInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const inviteCodeRef = useRef<HTMLInputElement>(null);
+  const [autoJoining, setAutoJoining] = useState(false);
 
   useEffect(() => {
-    // Auto-focus invite code input on mount
-    if (inviteCodeRef.current) {
+    // Check for code in URL parameter
+    const codeFromUrl = searchParams.get('code');
+    if (codeFromUrl && !autoJoining) {
+      setInviteCode(codeFromUrl.toUpperCase());
+      setAutoJoining(true);
+      // Auto-join after a brief moment
+      setTimeout(() => {
+        handleJoinWithCode(codeFromUrl.toUpperCase());
+      }, 500);
+    } else if (inviteCodeRef.current) {
+      // Auto-focus invite code input on mount
       inviteCodeRef.current.focus();
     }
-  }, []);
+  }, [searchParams, autoJoining]);
 
-  const handleJoin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inviteCode.trim()) return;
+  const handleJoinWithCode = async (code: string) => {
+    if (!code.trim()) return;
 
     setLoading(true);
     setError('');
 
     try {
-      const res = await fetch(`/api/rooms/invite/${inviteCode.toUpperCase()}`);
+      const res = await fetch(`/api/rooms/invite/${code.toUpperCase()}`);
       const data = await res.json();
 
       if (data.room) {
         router.push(`/room/${data.room.id}`);
       } else {
         setError('Room not found. Please check your invite code.');
+        setAutoJoining(false);
       }
-    } catch (error) {
+    } catch (err) {
       setError('Failed to join room. Please try again.');
+      setAutoJoining(false);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleJoin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    handleJoinWithCode(inviteCode);
   };
 
   return (

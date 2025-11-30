@@ -20,6 +20,7 @@ interface Room {
   name: string;
   description: string;
   artistId: string;
+  artistName?: string;
   inviteCode: string;
   status: 'draft' | 'active' | 'archived' | 'deleted';
   songs: any[];
@@ -889,7 +890,7 @@ export default function AdminPage() {
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Room Name</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Invite Code</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Status</th>
-                    <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Artist ID</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Artist</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Created</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Last Accessed</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Songs</th>
@@ -989,7 +990,7 @@ export default function AdminPage() {
                             {room.status}
                           </span>
                         </td>
-                        <td style={{ padding: '0.75rem', fontSize: '0.85rem', opacity: 0.7 }}>{room.artistId}</td>
+                        <td style={{ padding: '0.75rem', fontSize: '0.85rem' }}>{room.artistName || 'Unknown'}</td>
                         <td style={{ padding: '0.75rem', fontSize: '0.85rem' }}>{formatDate(room.createdAt)}</td>
                         <td style={{ padding: '0.75rem', fontSize: '0.85rem' }}>{formatDate(room.lastAccessed)}</td>
                         <td style={{ padding: '0.75rem' }}>{room.songs.length}</td>
