@@ -1,18 +1,18 @@
-'use client';
-
 import Link from 'next/link';
+import { getCurrentVersionInfo } from '@/app/lib/changelog';
 
-export default function Footer() {
-  const buildDate = new Date().toLocaleString('en-US', { 
-    year: 'numeric', 
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
-  
-  const version = '0.1.0-alpha';
+export default async function Footer() {
+  const { version, date } = await getCurrentVersionInfo();
+  const buildDate =
+    process.env.NEXT_PUBLIC_BUILD_TIMESTAMP ||
+    new Date().toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
 
   return (
     <footer
@@ -20,7 +20,7 @@ export default function Footer() {
         marginTop: 'auto',
         padding: '2rem 1rem',
         background: '#0a0a15',
-        borderTop: '1px solid #1a1a2e',
+        borderTop: '1px solid '#1a1a2e',
         textAlign: 'center',
         fontSize: '0.85rem',
         opacity: 0.7,
@@ -63,7 +63,11 @@ export default function Footer() {
           </Link>
         </p>
         <p style={{ margin: '0.5rem 0', fontSize: '0.75rem' }}>
-          Version {version} | Built: {buildDate}
+          Version {version}
+          {date && <> &middot; Released {date}</>}
+        </p>
+        <p style={{ margin: '0.5rem 0', fontSize: '0.75rem' }}>
+          Build: {buildDate}
         </p>
         <p style={{ margin: '0.5rem 0', fontSize: '0.75rem' }}>
           © 2025 Song Pig. All rights reserved.

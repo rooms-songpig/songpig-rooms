@@ -1,3 +1,63 @@
+import ReactMarkdown from 'react-markdown';
+import { getChangelogContent } from '@/app/lib/changelog';
+
+export const metadata = {
+  title: 'Changelog - Song Pig Listening Rooms',
+  description: 'Latest updates and fixes for Song Pig Listening Rooms.',
+};
+
+export default async function ChangelogPage() {
+  const content = await getChangelogContent();
+
+  return (
+    <main
+      style={{
+        minHeight: '100vh',
+        background: '#050816',
+        color: '#f9fafb',
+        padding: '2rem 1rem',
+        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      }}
+    >
+      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Changelog</h1>
+        <p style={{ opacity: 0.8, marginBottom: '2rem' }}>
+          All notable changes to Song Pig Listening Rooms.
+        </p>
+        <div
+          style={{
+            background: '#0f0f1e',
+            borderRadius: '1rem',
+            padding: '2rem',
+            border: '1px solid #1f2937',
+          }}
+        >
+          <ReactMarkdown
+            components={{
+              h2: ({ node, ...props }) => (
+                <h2 style={{ fontSize: '1.5rem', marginTop: '2rem' }} {...props} />
+              ),
+              h3: ({ node, ...props }) => (
+                <h3 style={{ fontSize: '1.1rem', marginTop: '1.5rem' }} {...props} />
+              ),
+              ul: ({ node, ...props }) => (
+                <ul style={{ paddingLeft: '1.5rem', marginBottom: '1rem' }} {...props} />
+              ),
+              li: ({ node, ...props }) => (
+                <li style={{ marginBottom: '0.4rem' }} {...props} />
+              ),
+              a: ({ node, ...props }) => (
+                <a style={{ color: '#60a5fa' }} {...props} />
+              ),
+            }}
+          >
+            {content}
+          </ReactMarkdown>
+        </div>
+      </div>
+    </main>
+  );
+}
 import React from 'react';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
