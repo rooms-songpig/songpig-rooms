@@ -200,20 +200,29 @@ function SingleComment({
             <button
               onClick={() => !isGuest && setShowReactionPicker(!showReactionPicker)}
               style={{
-                background: 'transparent',
-                border: 'none',
-                color: userReaction ? '#3b82f6' : '#888',
+                background: userReaction ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: userReaction ? '#3b82f6' : '#9ca3af',
                 cursor: isGuest ? 'not-allowed' : 'pointer',
-                padding: '0.25rem 0.5rem',
-                borderRadius: '0.25rem',
+                padding: '0.25rem 0.6rem',
+                borderRadius: '999px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.25rem',
+                gap: '0.35rem',
+                minWidth: '48px',
+                justifyContent: 'center',
+                transition: 'background 0.15s, color 0.15s',
               }}
               title={isGuest ? 'Register to react' : 'Add reaction'}
             >
-              {userReaction ? REACTIONS.find(r => r.type === userReaction)?.emoji : '👍'}
-              {totalReactions > 0 && <span>{totalReactions}</span>}
+              <span style={{ fontSize: '1rem' }}>
+                {userReaction ? REACTIONS.find(r => r.type === userReaction)?.emoji : '👍'}
+              </span>
+              {totalReactions > 0 && (
+                <span style={{ fontSize: '0.8rem', color: userReaction ? '#3b82f6' : '#9ca3af' }}>
+                  {totalReactions}
+                </span>
+              )}
             </button>
 
             {/* Reaction picker */}
