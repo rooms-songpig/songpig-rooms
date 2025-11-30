@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function JoinPage() {
+function JoinPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [inviteCode, setInviteCode] = useState('');
@@ -12,22 +12,6 @@ export default function JoinPage() {
   const [error, setError] = useState('');
   const inviteCodeRef = useRef<HTMLInputElement>(null);
   const [autoJoining, setAutoJoining] = useState(false);
-
-  useEffect(() => {
-    // Check for code in URL parameter
-    const codeFromUrl = searchParams.get('code');
-    if (codeFromUrl && !autoJoining) {
-      setInviteCode(codeFromUrl.toUpperCase());
-      setAutoJoining(true);
-      // Auto-join after a brief moment
-      setTimeout(() => {
-        handleJoinWithCode(codeFromUrl.toUpperCase());
-      }, 500);
-    } else if (inviteCodeRef.current) {
-      // Auto-focus invite code input on mount
-      inviteCodeRef.current.focus();
-    }
-  }, [searchParams, autoJoining]);
 
   const handleJoinWithCode = async (code: string) => {
     if (!code.trim()) return;
@@ -53,11 +37,143 @@ export default function JoinPage() {
     }
   };
 
+  useEffect(() => {
+    // Check for code in URL parameter
+    const codeFromUrl = searchParams.get('code');
+    if (codeFromUrl && !autoJoining) {
+      setInviteCode(codeFromUrl.toUpperCase());
+      setAutoJoining(true);
+      // Auto-join after a brief moment
+      setTimeout(() => {
+        handleJoinWithCode(codeFromUrl.toUpperCase());
+      }, 500);
+    } else if (inviteCodeRef.current) {
+      // Auto-focus invite code input on mount
+      inviteCodeRef.current.focus();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, autoJoining]);
+
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     handleJoinWithCode(inviteCode);
   };
 
+  return (
+    <div style={{ maxWidth: '480px', width: '100%' }}>
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+          Join a Room
+        </h1>
+        <p style={{ opacity: 0.8 }}>
+          Enter the invite code to join a private listening room
+        </p>
+      </div>
+
+      <form
+        onSubmit={handleJoin}
+        style={{
+          background: '#1a1a2e',
+          padding: '2rem',
+          borderRadius: '0.75rem',
+          border: '1px solid #333',
+        }}
+      >
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label
+            style={{
+              display: 'block',
+              marginBottom: '0.5rem',
+              fontSize: '0.9rem',
+              opacity: 0.9,
+            }}
+          >
+            Invite Code
+          </label>
+          <input
+            ref={inviteCodeRef}
+            type="text"
+            value={inviteCode}
+            onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+            required
+            maxLength={6}
+            autoFocus
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              background: '#0f0f1e',
+              border: '1px solid #333',
+              borderRadius: '0.5rem',
+              color: '#f9fafb',
+              fontSize: '1.5rem',
+              textAlign: 'center',
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+            }}
+            placeholder="ABC123"
+          />
+        </div>
+
+        {error && (
+          <div
+            style={{
+              background: '#7f1d1d',
+              color: '#fca5a5',
+              padding: '0.75rem',
+              borderRadius: '0.5rem',
+              marginBottom: '1rem',
+              fontSize: '0.9rem',
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading || !inviteCode.trim()}
+          style={{
+            width: '100%',
+            background: loading ? '#555' : '#3b82f6',
+            color: 'white',
+            border: 'none',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '0.5rem',
+            fontSize: '1rem',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontWeight: '500',
+            marginBottom: '1rem',
+          }}
+        >
+          {loading ? 'Joining...' : 'Join Room'}
+        </button>
+
+        <Link
+          href="/"
+          style={{
+            display: 'block',
+            textAlign: 'center',
+            color: '#3b82f6',
+            textDecoration: 'none',
+            fontSize: '0.9rem',
+          }}
+        >
+          ← Back to home
+        </Link>
+      </form>
+    </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div style={{ maxWidth: '480px', width: '100%', textAlign: 'center' }}>
+      <p>Loading...</p>
+    </div>
+  );
+}
+
+export default function JoinPage() {
   return (
     <main
       style={{
@@ -72,109 +188,9 @@ export default function JoinPage() {
         padding: '2rem',
       }}
     >
-      <div style={{ maxWidth: '480px', width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
-            Join a Room
-          </h1>
-          <p style={{ opacity: 0.8 }}>
-            Enter the invite code to join a private listening room
-          </p>
-        </div>
-
-        <form
-          onSubmit={handleJoin}
-          style={{
-            background: '#1a1a2e',
-            padding: '2rem',
-            borderRadius: '0.75rem',
-            border: '1px solid #333',
-          }}
-        >
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label
-              style={{
-                display: 'block',
-                marginBottom: '0.5rem',
-                fontSize: '0.9rem',
-                opacity: 0.9,
-              }}
-            >
-              Invite Code
-            </label>
-            <input
-              ref={inviteCodeRef}
-              type="text"
-              value={inviteCode}
-              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-              required
-              maxLength={6}
-              autoFocus
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                background: '#0f0f1e',
-                border: '1px solid #333',
-                borderRadius: '0.5rem',
-                color: '#f9fafb',
-                fontSize: '1.5rem',
-                textAlign: 'center',
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-              }}
-              placeholder="ABC123"
-            />
-          </div>
-
-          {error && (
-            <div
-              style={{
-                background: '#7f1d1d',
-                color: '#fca5a5',
-                padding: '0.75rem',
-                borderRadius: '0.5rem',
-                marginBottom: '1rem',
-                fontSize: '0.9rem',
-              }}
-            >
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || !inviteCode.trim()}
-            style={{
-              width: '100%',
-              background: loading ? '#555' : '#3b82f6',
-              color: 'white',
-              border: 'none',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '0.5rem',
-              fontSize: '1rem',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontWeight: '500',
-              marginBottom: '1rem',
-            }}
-          >
-            {loading ? 'Joining...' : 'Join Room'}
-          </button>
-
-          <Link
-            href="/"
-            style={{
-              display: 'block',
-              textAlign: 'center',
-              color: '#3b82f6',
-              textDecoration: 'none',
-              fontSize: '0.9rem',
-            }}
-          >
-            ← Back to home
-          </Link>
-        </form>
-      </div>
+      <Suspense fallback={<LoadingFallback />}>
+        <JoinPageContent />
+      </Suspense>
     </main>
   );
 }
-
