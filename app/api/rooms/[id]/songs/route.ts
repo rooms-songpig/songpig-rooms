@@ -43,7 +43,7 @@ export async function POST(
     const { title, url, sourceType = 'direct' } = body as {
       title?: string;
       url?: string;
-      sourceType?: 'direct' | 'soundcloud';
+      sourceType?: 'direct' | 'soundcloud' | 'soundcloud_embed';
     };
 
     if (!title || !url) {
@@ -53,7 +53,7 @@ export async function POST(
       );
     }
 
-    if (!['direct', 'soundcloud'].includes(sourceType)) {
+    if (!['direct', 'soundcloud', 'soundcloud_embed'].includes(sourceType)) {
       return NextResponse.json(
         { error: 'Invalid audio source type' },
         { status: 400 }
@@ -63,6 +63,14 @@ export async function POST(
     if (sourceType === 'soundcloud' && !url.includes('soundcloud.com')) {
       return NextResponse.json(
         { error: 'SoundCloud links must include soundcloud.com' },
+        { status: 400 }
+      );
+    }
+
+    // For soundcloud_embed, the URL should be the w.soundcloud.com/player src
+    if (sourceType === 'soundcloud_embed' && !url.includes('w.soundcloud.com/player')) {
+      return NextResponse.json(
+        { error: 'SoundCloud embed URL must be from w.soundcloud.com/player' },
         { status: 400 }
       );
     }
