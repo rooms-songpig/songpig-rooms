@@ -83,6 +83,10 @@ export default function RoomPage() {
   const songTitleRef = useRef<HTMLInputElement>(null);
   const songUrlRef = useRef<HTMLInputElement>(null);
   const [autoVersion2, setAutoVersion2] = useState(false);
+  
+  // Reply to comments
+  const [replyingTo, setReplyingTo] = useState<{ commentId: string; songId: string; authorName: string } | null>(null);
+  const [replyText, setReplyText] = useState('');
 
   const transformAudioUrl = useCallback((url: string) => {
     if (!url) return url;
@@ -883,21 +887,23 @@ export default function RoomPage() {
     }
   };
 
-  const handleAddComment = async (songId: string) => {
+  const handleAddComment = async (songId: string, parentCommentId?: string) => {
     if (isGuest) {
       setToast({ message: 'Please register to leave comments', type: 'info' });
       return;
     }
     
-    if (!userId || !commentTexts[songId]?.trim() || !roomId) return;
+    const textToSubmit = parentCommentId ? replyText : commentTexts[songId];
+    if (!userId || !textToSubmit?.trim() || !roomId) return;
 
     try {
       const res = await fetch(`/api/rooms/${roomId}/songs/${songId}/comments`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          text: commentTexts[songId],
-          isAnonymous: false, // TODO: Add UI for anonymous option
+          text: textToSubmit,
+          isAnonymous: false,
+          parentCommentId: parentCommentId || undefined,
         }),
       });
       
@@ -906,13 +912,29 @@ export default function RoomPage() {
         console.error('Comment error:', data.error);
         alert(data.error);
       } else {
-        setCommentTexts({ ...commentTexts, [songId]: '' });
+        if (parentCommentId) {
+          setReplyText('');
+          setReplyingTo(null);
+          setToast({ message: 'Reply added!', type: 'success' });
+        } else {
+          setCommentTexts({ ...commentTexts, [songId]: '' });
+        }
         fetchRoom();
       }
     } catch (error) {
       console.error('Failed to add comment:', error);
       alert('Failed to add comment. Please try again.');
     }
+  };
+
+  const handleReply = (commentId: string, songId: string, authorName: string) => {
+    setReplyingTo({ commentId, songId, authorName });
+    setReplyText('');
+  };
+
+  const cancelReply = () => {
+    setReplyingTo(null);
+    setReplyText('');
   };
 
   // formatDate is now replaced by formatTimestamp utility
@@ -1748,49 +1770,155 @@ export default function RoomPage() {
                               gap: '0.75rem',
                             }}
                           >
-                            {song.comments.map((comment) => (
-                              <div
-                                key={comment.id}
-                                style={{
-                                  background: '#0f0f1e',
-                                  padding: '0.75rem',
-                                  borderRadius: '0.5rem',
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    marginBottom: '0.25rem',
-                                  }}
-                                >
-                                  <CommentAuthorTooltip
-                                    authorId={(comment as any).authorId || comment.userId}
-                                    authorUsername={(comment as any).authorUsername || comment.userId}
-                                    isAnonymous={(comment as any).isAnonymous || false}
+                            {/* Show parent comments first */}
+                            {song.comments.filter((c: any) => !c.parentCommentId).map((comment) => {
+                              const replies = song.comments.filter((c: any) => c.parentCommentId === comment.id);
+                              const authorName = (comment as any).isAnonymous ? 'Anonymous' : ((comment as any).authorUsername || comment.userId);
+                              return (
+                                <div key={comment.id}>
+                                  <div
+                                    style={{
+                                      background: '#0f0f1e',
+                                      padding: '0.75rem',
+                                      borderRadius: '0.5rem',
+                                    }}
                                   >
-                                    <span
+                                    <div
                                       style={{
-                                        fontSize: '0.9rem',
-                                        fontWeight: '600',
-                                        color: '#4a9eff',
-                                        marginRight: '1rem',
-                                        cursor: (comment as any).isAnonymous ? 'default' : 'pointer',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        marginBottom: '0.25rem',
                                       }}
                                     >
-                                      {(comment as any).isAnonymous ? 'Anonymous' : (comment as any).authorUsername || comment.userId}
-                                    </span>
-                                  </CommentAuthorTooltip>
-                                  <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>
-                                    {formatTimestamp((comment as any).createdAt || comment.timestamp)}
-                                  </span>
+                                      <CommentAuthorTooltip
+                                        authorId={(comment as any).authorId || comment.userId}
+                                        authorUsername={(comment as any).authorUsername || comment.userId}
+                                        isAnonymous={(comment as any).isAnonymous || false}
+                                      >
+                                        <span
+                                          style={{
+                                            fontSize: '0.9rem',
+                                            fontWeight: '600',
+                                            color: '#4a9eff',
+                                            marginRight: '1rem',
+                                            cursor: (comment as any).isAnonymous ? 'default' : 'pointer',
+                                          }}
+                                        >
+                                          {authorName}
+                                        </span>
+                                      </CommentAuthorTooltip>
+                                      <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>
+                                        {formatTimestamp((comment as any).createdAt || comment.timestamp)}
+                                      </span>
+                                    </div>
+                                    <p style={{ fontSize: '0.9rem', opacity: 0.8, margin: '0 0 0.5rem 0' }}>
+                                      {comment.text}
+                                    </p>
+                                    {!isGuest && (
+                                      <button
+                                        onClick={() => handleReply(comment.id, song.id, authorName)}
+                                        style={{
+                                          background: 'transparent',
+                                          border: 'none',
+                                          color: '#3b82f6',
+                                          fontSize: '0.75rem',
+                                          cursor: 'pointer',
+                                          padding: 0,
+                                        }}
+                                      >
+                                        Reply
+                                      </button>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Show replies */}
+                                  {replies.length > 0 && (
+                                    <div style={{ marginLeft: '1.5rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                      {replies.map((reply: any) => (
+                                        <div
+                                          key={reply.id}
+                                          style={{
+                                            background: '#0a0a15',
+                                            padding: '0.75rem',
+                                            borderRadius: '0.5rem',
+                                            borderLeft: '2px solid #3b82f6',
+                                          }}
+                                        >
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                                            <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#4a9eff' }}>
+                                              {reply.isAnonymous ? 'Anonymous' : reply.authorUsername}
+                                            </span>
+                                            <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>
+                                              {formatTimestamp(reply.createdAt)}
+                                            </span>
+                                          </div>
+                                          <p style={{ fontSize: '0.85rem', opacity: 0.8, margin: 0 }}>{reply.text}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Reply form */}
+                                  {replyingTo?.commentId === comment.id && replyingTo?.songId === song.id && (
+                                    <div style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
+                                      <p style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.5rem' }}>
+                                        Replying to {replyingTo.authorName}
+                                      </p>
+                                      <textarea
+                                        value={replyText}
+                                        onChange={(e) => setReplyText(e.target.value)}
+                                        placeholder="Write your reply..."
+                                        autoFocus
+                                        style={{
+                                          width: '100%',
+                                          padding: '0.5rem',
+                                          background: '#0f0f1e',
+                                          border: '1px solid #333',
+                                          borderRadius: '0.5rem',
+                                          color: '#f9fafb',
+                                          fontSize: '0.85rem',
+                                          minHeight: '60px',
+                                          resize: 'vertical',
+                                          marginBottom: '0.5rem',
+                                        }}
+                                      />
+                                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button
+                                          onClick={() => handleAddComment(song.id, comment.id)}
+                                          disabled={!replyText.trim()}
+                                          style={{
+                                            background: replyText.trim() ? '#3b82f6' : '#555',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '0.4rem 0.8rem',
+                                            borderRadius: '0.25rem',
+                                            fontSize: '0.8rem',
+                                            cursor: replyText.trim() ? 'pointer' : 'not-allowed',
+                                          }}
+                                        >
+                                          Reply
+                                        </button>
+                                        <button
+                                          onClick={cancelReply}
+                                          style={{
+                                            background: 'transparent',
+                                            color: '#888',
+                                            border: '1px solid #444',
+                                            padding: '0.4rem 0.8rem',
+                                            borderRadius: '0.25rem',
+                                            fontSize: '0.8rem',
+                                            cursor: 'pointer',
+                                          }}
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                                <p style={{ fontSize: '0.9rem', opacity: 0.8, margin: 0 }}>
-                                  {comment.text}
-                                </p>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
 
