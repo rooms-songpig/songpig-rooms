@@ -62,7 +62,6 @@ function SingleComment({
   const [showReplies, setShowReplies] = useState(true);
   const [reactionCounts, setReactionCounts] = useState<ReactionCounts>({});
   const [userReaction, setUserReaction] = useState<string | null>(null);
-  const [showReactionPicker, setShowReactionPicker] = useState(false);
 
   const authorName = comment.isAnonymous ? 'Anonymous' : comment.authorUsername;
 
@@ -125,7 +124,6 @@ function SingleComment({
     } catch (e) {
       console.error('Failed to add reaction:', e);
     }
-    setShowReactionPicker(false);
   };
 
   const handleSubmitReply = async () => {
@@ -155,8 +153,6 @@ function SingleComment({
       setSubmitting(false);
     }
   };
-
-  const totalReactions = Object.values(reactionCounts).reduce((a, b) => a + b, 0);
 
   return (
     <div style={{ marginLeft: depth > 0 ? '1.5rem' : 0 }}>
@@ -193,108 +189,85 @@ function SingleComment({
         {/* Comment text */}
         <p style={{ margin: '0 0 0.75rem 0', lineHeight: 1.5 }}>{comment.text}</p>
 
-        {/* Actions row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem' }}>
-          {/* Reaction button */}
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => !isGuest && setShowReactionPicker(!showReactionPicker)}
-              style={{
-                background: userReaction ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: userReaction ? '#3b82f6' : '#9ca3af',
-                cursor: isGuest ? 'not-allowed' : 'pointer',
-                padding: '0.25rem 0.6rem',
-                borderRadius: '999px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                minWidth: '48px',
-                justifyContent: 'center',
-                transition: 'background 0.15s, color 0.15s',
-              }}
-              title={isGuest ? 'Register to react' : 'Add reaction'}
-            >
-              <span style={{ fontSize: '1rem' }}>
-                {userReaction ? REACTIONS.find(r => r.type === userReaction)?.emoji : '👍'}
-              </span>
-              {totalReactions > 0 && (
-                <span style={{ fontSize: '0.8rem', color: userReaction ? '#3b82f6' : '#9ca3af' }}>
-                  {totalReactions}
-                </span>
-              )}
-            </button>
+        {/* Actions row - Facebook/Twitter style */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.8rem' }}>
+          {/* Like button - simple text, turns blue when liked */}
+          <button
+            onClick={() => !isGuest && handleReaction('like')}
+            disabled={isGuest}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              color: userReaction === 'like' ? '#3b82f6' : '#6b7280',
+              cursor: isGuest ? 'not-allowed' : 'pointer',
+              fontWeight: userReaction === 'like' ? '600' : '400',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+            }}
+          >
+            <span>{userReaction === 'like' ? '👍' : '👍'}</span>
+            <span>Like</span>
+            {reactionCounts['like'] > 0 && <span>({reactionCounts['like']})</span>}
+          </button>
 
-            {/* Reaction picker */}
-            {showReactionPicker && (
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '100%',
-                  left: 0,
-                  background: '#1a1a2e',
-                  border: '1px solid #333',
-                  borderRadius: '2rem',
-                  padding: '0.5rem',
-                  display: 'flex',
-                  gap: '0.25rem',
-                  zIndex: 100,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                }}
-              >
-                {REACTIONS.map(reaction => (
-                  <button
-                    key={reaction.type}
-                    onClick={() => handleReaction(reaction.type)}
-                    style={{
-                      background: userReaction === reaction.type ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '36px',
-                      height: '36px',
-                      fontSize: '1.25rem',
-                      cursor: 'pointer',
-                      transition: 'transform 0.15s',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    title={reaction.label}
-                  >
-                    {reaction.emoji}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Love button */}
+          <button
+            onClick={() => !isGuest && handleReaction('love')}
+            disabled={isGuest}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              color: userReaction === 'love' ? '#ef4444' : '#6b7280',
+              cursor: isGuest ? 'not-allowed' : 'pointer',
+              fontWeight: userReaction === 'love' ? '600' : '400',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+            }}
+          >
+            <span>{userReaction === 'love' ? '❤️' : '🤍'}</span>
+            <span>Love</span>
+            {reactionCounts['love'] > 0 && <span>({reactionCounts['love']})</span>}
+          </button>
+
+          {/* Insightful button */}
+          <button
+            onClick={() => !isGuest && handleReaction('insightful')}
+            disabled={isGuest}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              color: userReaction === 'insightful' ? '#f59e0b' : '#6b7280',
+              cursor: isGuest ? 'not-allowed' : 'pointer',
+              fontWeight: userReaction === 'insightful' ? '600' : '400',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+            }}
+          >
+            <span>{userReaction === 'insightful' ? '💡' : '💡'}</span>
+            <span>Insightful</span>
+            {reactionCounts['insightful'] > 0 && <span>({reactionCounts['insightful']})</span>}
+          </button>
 
           {/* Reply button */}
           {!isGuest && depth < 2 && (
             <button
               onClick={() => setShowReplyForm(!showReplyForm)}
               style={{
-                background: 'transparent',
+                background: 'none',
                 border: 'none',
-                color: '#888',
+                padding: 0,
+                color: '#6b7280',
                 cursor: 'pointer',
-                padding: '0.25rem 0.5rem',
               }}
             >
               Reply
             </button>
-          )}
-
-          {/* Show reaction summary */}
-          {totalReactions > 0 && (
-            <div style={{ display: 'flex', gap: '0.25rem', opacity: 0.7 }}>
-              {Object.entries(reactionCounts)
-                .filter(([, count]) => count > 0)
-                .map(([type, count]) => (
-                  <span key={type} title={`${count} ${type}`}>
-                    {REACTIONS.find(r => r.type === type)?.emoji}
-                    {count > 1 && <span style={{ fontSize: '0.75rem' }}>{count}</span>}
-                  </span>
-                ))}
-            </div>
           )}
         </div>
 
