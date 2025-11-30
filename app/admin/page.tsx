@@ -57,6 +57,9 @@ export default function AdminPage() {
   const [selectedRooms, setSelectedRooms] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<'draft' | 'active' | 'archived' | 'deleted'>('active');
   const [changingBulkStatus, setChangingBulkStatus] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [userBulkStatus, setUserBulkStatus] = useState<'active' | 'disabled' | 'deleted'>('active');
+  const [changingUserBulkStatus, setChangingUserBulkStatus] = useState(false);
   
   // Create user form state
   const [showCreateUser, setShowCreateUser] = useState(false);
@@ -72,6 +75,9 @@ export default function AdminPage() {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [showFeedback, setShowFeedback] = useState(false);
   const [updatingFeedback, setUpdatingFeedback] = useState<string | null>(null);
+  const [selectedFeedback, setSelectedFeedback] = useState<Set<string>>(new Set());
+  const [feedbackBulkStatus, setFeedbackBulkStatus] = useState<Feedback['status']>('open');
+  const [changingFeedbackBulkStatus, setChangingFeedbackBulkStatus] = useState(false);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -284,6 +290,112 @@ export default function AdminPage() {
     }
   };
 
+  // Bulk selection helpers - Feedback
+  const handleSelectFeedback = (feedbackId: string) => {
+    const next = new Set(selectedFeedback);
+    if (next.has(feedbackId)) {
+      next.delete(feedbackId);
+    } else {
+      next.add(feedbackId);
+    }
+    setSelectedFeedback(next);
+  };
+
+  const handleSelectAllFeedback = () => {
+    if (selectedFeedback.size === feedback.length) {
+      setSelectedFeedback(new Set());
+    } else {
+      setSelectedFeedback(new Set(feedback.map(f => f.id)));
+    }
+  };
+
+  const handleBulkFeedbackStatusChange = async () => {
+    if (selectedFeedback.size === 0) {
+      alert('Please select at least one feedback item');
+      return;
+    }
+
+    if (!confirm(`Change status of ${selectedFeedback.size} feedback item(s) to ${feedbackBulkStatus}?`)) {
+      return;
+    }
+
+    setChangingFeedbackBulkStatus(true);
+    try {
+      const ids = Array.from(selectedFeedback);
+      for (const id of ids) {
+        // Re-use existing update helper so local state stays in sync
+        await handleUpdateFeedback(id, { status: feedbackBulkStatus });
+      }
+      setSelectedFeedback(new Set());
+      alert(`Successfully updated ${ids.length} feedback item(s)`);
+    } catch (error) {
+      console.error('Failed to bulk update feedback statuses:', error);
+      alert('Failed to update feedback statuses');
+    } finally {
+      setChangingFeedbackBulkStatus(false);
+    }
+  };
+
+  // Bulk selection helpers - Users
+  const handleSelectUser = (userId: string, role: User['role']) => {
+    // Admin users cannot be bulk-edited
+    if (role === 'admin') return;
+
+    const next = new Set(selectedUsers);
+    if (next.has(userId)) {
+      next.delete(userId);
+    } else {
+      next.add(userId);
+    }
+    setSelectedUsers(next);
+  };
+
+  const handleSelectAllUsers = () => {
+    const editableUsers = users.filter(u => u.role !== 'admin');
+    if (selectedUsers.size === editableUsers.length) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(editableUsers.map(u => u.id)));
+    }
+  };
+
+  const handleBulkUserStatusChange = async () => {
+    if (selectedUsers.size === 0) {
+      alert('Please select at least one user');
+      return;
+    }
+
+    if (!confirm(`Change status of ${selectedUsers.size} user(s) to ${userBulkStatus}?`)) {
+      return;
+    }
+
+    setChangingUserBulkStatus(true);
+    try {
+      const ids = Array.from(selectedUsers);
+      for (const id of ids) {
+        const res = await fetch(`/api/users/${id}`, {
+          method: 'PATCH',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ status: userBulkStatus }),
+        });
+
+        const data = await res.json();
+        if (data.error) {
+          console.error('Failed to update user status (bulk):', id, data.error);
+        }
+      }
+
+      await fetchUsers();
+      setSelectedUsers(new Set());
+      alert(`Successfully updated ${ids.length} user(s)`);
+    } catch (error) {
+      console.error('Failed to bulk update user statuses:', error);
+      alert('Failed to update user statuses');
+    } finally {
+      setChangingUserBulkStatus(false);
+    }
+  };
+
   const totalSongs = rooms.reduce((sum, room) => sum + room.songs.length, 0);
   const totalComparisons = rooms.reduce((sum, room) => sum + (room.comparisons?.length || 0), 0);
   const totalComments = rooms.reduce(
@@ -398,50 +510,123 @@ export default function AdminPage() {
           
           {showFeedback && (
             <div style={{ marginTop: '1rem' }}>
-              {/* Copy button for open items */}
+              {/* Top toolbar: copy + bulk status controls */}
               {feedback.filter(f => f.status === 'open' || f.status === 'in_progress').length > 0 && (
-                <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
-                  <button
-                    onClick={() => {
-                      const openItems = feedback
-                        .filter(f => f.status === 'open' || f.status === 'in_progress')
-                        .map(f => `[${f.type.toUpperCase()}] ${f.title}\n${f.description}\n(Status: ${f.status}, Priority: ${f.priority})`)
-                        .join('\n\n---\n\n');
-                      navigator.clipboard.writeText(openItems);
-                      alert('Copied ' + feedback.filter(f => f.status === 'open' || f.status === 'in_progress').length + ' open items to clipboard!');
-                    }}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #3b82f6',
-                      background: 'transparent',
-                      color: '#3b82f6',
-                      cursor: 'pointer',
-                      fontSize: '0.85rem',
-                    }}
-                  >
-                    📋 Copy Open Items
-                  </button>
-                  <button
-                    onClick={() => {
-                      const allItems = feedback
-                        .map(f => `[${f.type.toUpperCase()}] ${f.title}\n${f.description}\n(Status: ${f.status}, Priority: ${f.priority})`)
-                        .join('\n\n---\n\n');
-                      navigator.clipboard.writeText(allItems);
-                      alert('Copied all ' + feedback.length + ' items to clipboard!');
-                    }}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #666',
-                      background: 'transparent',
-                      color: '#888',
-                      cursor: 'pointer',
-                      fontSize: '0.85rem',
-                    }}
-                  >
-                    📋 Copy All Items
-                  </button>
+                <div style={{ marginBottom: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => {
+                        const openItems = feedback
+                          .filter(f => f.status === 'open' || f.status === 'in_progress')
+                          .map(f => `[${f.type.toUpperCase()}] ${f.title}\n${f.description}\n(Status: ${f.status}, Priority: ${f.priority})`)
+                          .join('\n\n---\n\n');
+                        navigator.clipboard.writeText(openItems);
+                        alert('Copied ' + feedback.filter(f => f.status === 'open' || f.status === 'in_progress').length + ' open items to clipboard!');
+                      }}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.5rem',
+                        border: '1px solid #3b82f6',
+                        background: 'transparent',
+                        color: '#3b82f6',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                      }}
+                    >
+                      📋 Copy Open Items
+                    </button>
+                    <button
+                      onClick={() => {
+                        const allItems = feedback
+                          .map(f => `[${f.type.toUpperCase()}] ${f.title}\n${f.description}\n(Status: ${f.status}, Priority: ${f.priority})`)
+                          .join('\n\n---\n\n');
+                        navigator.clipboard.writeText(allItems);
+                        alert('Copied all ' + feedback.length + ' items to clipboard!');
+                      }}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.5rem',
+                        border: '1px solid #666',
+                        background: 'transparent',
+                        color: '#888',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                      }}
+                    >
+                      📋 Copy All Items
+                    </button>
+                  </div>
+
+                  {feedback.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <label style={{ fontSize: '0.85rem', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedFeedback.size === feedback.length && feedback.length > 0}
+                          onChange={handleSelectAllFeedback}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        Select all
+                      </label>
+
+                      {selectedFeedback.size > 0 && (
+                        <>
+                          <span style={{ fontSize: '0.85rem', opacity: 0.8 }}>
+                            {selectedFeedback.size} item(s) selected
+                          </span>
+                          <select
+                            value={feedbackBulkStatus}
+                            onChange={(e) => setFeedbackBulkStatus(e.target.value as Feedback['status'])}
+                            style={{
+                              background: '#0f0f1e',
+                              color: '#f9fafb',
+                              border: '1px solid #333',
+                              padding: '0.4rem 0.75rem',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.85rem',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <option value="open">Open</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="closed">Closed</option>
+                            <option value="wont_fix">Won&apos;t Fix</option>
+                          </select>
+                          <button
+                            onClick={handleBulkFeedbackStatusChange}
+                            disabled={changingFeedbackBulkStatus}
+                            style={{
+                              background: changingFeedbackBulkStatus ? '#555' : '#3b82f6',
+                              color: 'white',
+                              border: 'none',
+                              padding: '0.4rem 0.9rem',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.85rem',
+                              cursor: changingFeedbackBulkStatus ? 'not-allowed' : 'pointer',
+                              fontWeight: 500,
+                            }}
+                          >
+                            {changingFeedbackBulkStatus ? 'Updating...' : 'Change Status'}
+                          </button>
+                          <button
+                            onClick={() => setSelectedFeedback(new Set())}
+                            style={{
+                              background: '#1a1a2e',
+                              color: '#f9fafb',
+                              border: '1px solid #333',
+                              padding: '0.4rem 0.9rem',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.85rem',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Clear Selection
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               {feedback.length === 0 ? (
@@ -462,9 +647,16 @@ export default function AdminPage() {
                         }`
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                        <div>
-                          <span style={{ 
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', flex: 1 }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedFeedback.has(item.id)}
+                            onChange={() => handleSelectFeedback(item.id)}
+                            style={{ cursor: 'pointer', marginTop: '0.2rem' }}
+                          />
+                          <div>
+                            <span style={{ 
                             fontSize: '0.75rem', 
                             padding: '0.1rem 0.4rem', 
                             borderRadius: '0.25rem',
@@ -472,10 +664,11 @@ export default function AdminPage() {
                                        item.type === 'feature' ? '#3b82f6' : 
                                        item.type === 'question' ? '#f59e0b' : '#888',
                             marginRight: '0.5rem'
-                          }}>
-                            {item.type}
-                          </span>
-                          <strong>{item.title}</strong>
+                            }}>
+                              {item.type}
+                            </span>
+                            <strong>{item.title}</strong>
+                          </div>
                         </div>
                         <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>
                           {new Date(item.created_at).toLocaleDateString()}
@@ -693,7 +886,63 @@ export default function AdminPage() {
         </div>
 
         <div style={{ marginBottom: '2rem' }}>
-          <h2 style={{ marginBottom: '1rem' }}>All Users</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ margin: 0 }}>All Users</h2>
+            {selectedUsers.size > 0 && (
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>
+                  {selectedUsers.size} user(s) selected
+                </span>
+                <select
+                  value={userBulkStatus}
+                  onChange={(e) => setUserBulkStatus(e.target.value as 'active' | 'disabled' | 'deleted')}
+                  style={{
+                    background: '#0f0f1e',
+                    color: '#f9fafb',
+                    border: '1px solid #333',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="active">active</option>
+                  <option value="disabled">disabled</option>
+                  <option value="deleted">deleted</option>
+                </select>
+                <button
+                  onClick={handleBulkUserStatusChange}
+                  disabled={changingUserBulkStatus}
+                  style={{
+                    background: changingUserBulkStatus ? '#555' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.9rem',
+                    cursor: changingUserBulkStatus ? 'not-allowed' : 'pointer',
+                    fontWeight: '500',
+                  }}
+                >
+                  {changingUserBulkStatus ? 'Updating...' : 'Change Status'}
+                </button>
+                <button
+                  onClick={() => setSelectedUsers(new Set())}
+                  style={{
+                    background: '#1a1a2e',
+                    color: '#f9fafb',
+                    border: '1px solid #333',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Clear Selection
+                </button>
+              </div>
+            )}
+          </div>
           {users.length === 0 ? (
             <p style={{ opacity: 0.7, textAlign: 'center', padding: '2rem' }}>No users found</p>
           ) : (
@@ -701,6 +950,18 @@ export default function AdminPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #333' }}>
+                    <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>
+                      <input
+                        type="checkbox"
+                        checked={
+                          users.filter(u => u.role !== 'admin').length > 0 &&
+                          selectedUsers.size === users.filter(u => u.role !== 'admin').length
+                        }
+                        onChange={handleSelectAllUsers}
+                        style={{ cursor: users.some(u => u.role !== 'admin') ? 'pointer' : 'not-allowed' }}
+                        disabled={users.every(u => u.role === 'admin')}
+                      />
+                    </th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Username</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Role</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Status</th>
@@ -710,6 +971,22 @@ export default function AdminPage() {
                 <tbody>
                   {users.map((u) => (
                     <tr key={u.id} style={{ borderBottom: '1px solid #333' }}>
+                      <td style={{ padding: '0.75rem' }}>
+                        {u.role === 'admin' ? (
+                          <input
+                            type="checkbox"
+                            disabled
+                            style={{ cursor: 'not-allowed', opacity: 0.4 }}
+                          />
+                        ) : (
+                          <input
+                            type="checkbox"
+                            checked={selectedUsers.has(u.id)}
+                            onChange={() => handleSelectUser(u.id, u.role)}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        )}
+                      </td>
                       <td style={{ padding: '0.75rem' }}>{u.username}</td>
                       <td style={{ padding: '0.75rem' }}>
                         {editingUser === u.id ? (
