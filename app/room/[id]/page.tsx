@@ -178,11 +178,34 @@ export default function RoomPage() {
     });
   }, []);
 
+  // Modify SoundCloud embed URL to force minimal/browser-only player
+  const getSoundCloudEmbedUrl = useCallback((originalUrl: string) => {
+    try {
+      const url = new URL(originalUrl);
+      // Force these parameters to suppress mobile app prompts and show minimal player
+      url.searchParams.set('show_teaser', 'false');
+      url.searchParams.set('visual', 'false');
+      url.searchParams.set('show_artwork', 'false');
+      url.searchParams.set('show_user', 'false');
+      url.searchParams.set('show_comments', 'false');
+      url.searchParams.set('show_reposts', 'false');
+      url.searchParams.set('sharing', 'false');
+      url.searchParams.set('liking', 'false');
+      url.searchParams.set('download', 'false');
+      url.searchParams.set('buying', 'false');
+      return url.toString();
+    } catch {
+      return originalUrl;
+    }
+  }, []);
+
   const renderSongPlayer = useCallback(
     (song: Song, variant: 'card' | 'compact' = 'card') => {
       // For soundcloud_embed, the URL is already the full embed src from SoundCloud
+      // but we modify it to force minimal player without app prompts
       if (song.sourceType === 'soundcloud_embed') {
         const height = variant === 'card' ? 150 : 140;
+        const modifiedUrl = getSoundCloudEmbedUrl(song.url);
         return (
           <div
             style={{
@@ -202,7 +225,7 @@ export default function RoomPage() {
               style={{ border: 'none' }}
               scrolling="no"
               sandbox="allow-scripts allow-same-origin"
-              src={song.url}
+              src={modifiedUrl}
             />
           </div>
         );
@@ -248,7 +271,7 @@ export default function RoomPage() {
         />
       );
     },
-    [handleExclusiveAudioPlay, cleanSoundCloudUrl]
+    [handleExclusiveAudioPlay, cleanSoundCloudUrl, getSoundCloudEmbedUrl]
   );
 
   useEffect(() => {
