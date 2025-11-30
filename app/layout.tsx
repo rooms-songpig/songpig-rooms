@@ -20,6 +20,12 @@ export const metadata: Metadata = {
   description: "Private rooms to A/B your songs with friends. Invite-only. Votes and comments stay private.",
 };
 
+// Only show deployment banner in non-production environments by default.
+// You can force it on in production by setting NEXT_PUBLIC_SHOW_DEPLOYMENT_BANNER="true".
+const showDeploymentBanner =
+  process.env.NODE_ENV !== "production" ||
+  process.env.NEXT_PUBLIC_SHOW_DEPLOYMENT_BANNER === "true";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -37,7 +43,7 @@ export default function RootLayout({
           maxWidth: '100vw',
         }}
       >
-        <DeploymentBanner />
+        {showDeploymentBanner && <DeploymentBanner />}
         <div style={{ flex: 1, overflowX: 'hidden', maxWidth: '100vw' }}>
           {children}
         </div>

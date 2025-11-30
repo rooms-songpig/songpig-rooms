@@ -4,6 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+// Dev-only helpers: enabled automatically in non-production,
+// or explicitly when NEXT_PUBLIC_SHOW_DEV_HELPERS="true".
+const SHOW_DEV_HELPERS =
+  process.env.NODE_ENV !== 'production' ||
+  process.env.NEXT_PUBLIC_SHOW_DEV_HELPERS === 'true';
+
 export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState('');
@@ -183,6 +189,89 @@ export default function LoginPage() {
             </Link>
           </div>
         </form>
+        
+        {SHOW_DEV_HELPERS && (
+          <div
+            style={{
+              marginTop: '1.25rem',
+              fontSize: '0.85rem',
+              opacity: 0.8,
+              background: '#020617',
+              borderRadius: '0.75rem',
+              padding: '0.75rem 1rem',
+              border: '1px dashed #334155',
+            }}
+          >
+            <p style={{ marginBottom: '0.5rem', fontWeight: 500 }}>
+              Dev helpers (only visible in dev / staging):
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
+                justifyContent: 'center',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setUsername('admin');
+                  setPassword('admin123');
+                }}
+                style={{
+                  background: '#1e293b',
+                  color: '#f9fafb',
+                  border: '1px solid #475569',
+                  padding: '0.5rem 0.9rem',
+                  borderRadius: '999px',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Fill Admin (admin / admin123)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setUsername('jean');
+                  setPassword('password123');
+                }}
+                style={{
+                  background: '#1e293b',
+                  color: '#f9fafb',
+                  border: '1px solid #475569',
+                  padding: '0.5rem 0.9rem',
+                  borderRadius: '999px',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Fill Artist (jean / password123)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setUsername('listener');
+                  setPassword('password123');
+                }}
+                style={{
+                  background: '#1e293b',
+                  color: '#f9fafb',
+                  border: '1px solid #475569',
+                  padding: '0.5rem 0.9rem',
+                  borderRadius: '999px',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Fill Listener (listener / password123)
+              </button>
+            </div>
+          </div>
+        )}
 
         <div style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.85rem', opacity: 0.7 }}>
           <p>Default admin: username=admin, password=admin123</p>
