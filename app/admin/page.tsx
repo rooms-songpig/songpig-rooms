@@ -490,17 +490,48 @@ export default function AdminPage() {
             }}
             onClick={() => setShowFeedback(!showFeedback)}
           >
-            <h2 style={{ margin: 0 }}>
-              Feedback & Bug Reports 
+            <h2
+              style={{
+                margin: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                flexWrap: 'wrap',
+              }}
+            >
+              <span>Feedback &amp; Bug Reports</span>
+
+              {/* Tiny legend icon with hover tooltip */}
+              <span
+                style={{ cursor: 'help', fontSize: '0.85rem', opacity: 0.7 }}
+                title={
+                  'Status legend:\n' +
+                  'Open – new, not started\n' +
+                  'In Progress – being worked on\n' +
+                  'Resolved – fixed and live\n' +
+                  'Closed – fully done\n' +
+                  "Won't Fix – valid but not planning to do\n\n" +
+                  'Priority legend:\n' +
+                  'Critical – blocks core flows or money\n' +
+                  'High – important but not blocking\n' +
+                  'Normal – typical item\n' +
+                  'Low – nice to have'
+                }
+              >
+                ⓘ
+              </span>
+
               {feedback.filter(f => f.status === 'open').length > 0 && (
-                <span style={{ 
-                  marginLeft: '0.5rem', 
-                  background: '#ef4444', 
-                  color: '#fff', 
-                  padding: '0.1rem 0.5rem', 
-                  borderRadius: '1rem', 
-                  fontSize: '0.8rem' 
-                }}>
+                <span
+                  style={{
+                    marginLeft: '0.25rem',
+                    background: '#ef4444',
+                    color: '#fff',
+                    padding: '0.1rem 0.5rem',
+                    borderRadius: '1rem',
+                    fontSize: '0.8rem',
+                  }}
+                >
                   {feedback.filter(f => f.status === 'open').length} open
                 </span>
               )}
@@ -681,6 +712,7 @@ export default function AdminPage() {
                           value={item.status}
                           onChange={(e) => handleUpdateFeedback(item.id, { status: e.target.value })}
                           disabled={updatingFeedback === item.id}
+                          title="Status: Open, In Progress, Resolved, Closed, Won't Fix"
                           style={{
                             padding: '0.25rem 0.5rem',
                             borderRadius: '0.25rem',
@@ -700,6 +732,7 @@ export default function AdminPage() {
                           value={item.priority}
                           onChange={(e) => handleUpdateFeedback(item.id, { priority: e.target.value })}
                           disabled={updatingFeedback === item.id}
+                          title="Priority: Critical, High, Normal, Low"
                           style={{
                             padding: '0.25rem 0.5rem',
                             borderRadius: '0.25rem',
