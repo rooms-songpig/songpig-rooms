@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { getCurrentUser, getAuthHeaders } from '@/app/lib/auth-helpers';
+import { useState, useEffect } from 'react';
+import { getCurrentUser, getAuthHeaders, AUTH_CHANGE_EVENT, type AuthUser } from '@/app/lib/auth-helpers';
 
 type FeedbackType = 'bug' | 'feature' | 'question' | 'other';
 
@@ -13,9 +13,31 @@ export default function FeedbackButton() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() =>
+    typeof window === 'undefined' ? null : getCurrentUser()
+  );
 
-  const user = getCurrentUser();
-  
+  useEffect(() => {
+    const syncUser = () => setUser(getCurrentUser());
+
+    syncUser();
+    window.addEventListener(AUTH_CHANGE_EVENT, syncUser);
+    window.addEventListener('storage', syncUser);
+    window.addEventListener('focus', syncUser);
+
+    return () => {
+      window.removeEventListener(AUTH_CHANGE_EVENT, syncUser);
+      window.removeEventListener('storage', syncUser);
+      window.removeEventListener('focus', syncUser);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user && isOpen) {
+      setIsOpen(false);
+    }
+  }, [user, isOpen]);
+
   // Don't show button if not logged in
   if (!user) return null;
 
@@ -84,7 +106,7 @@ export default function FeedbackButton() {
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: '1.5rem',
-          zIndex: 999,
+          zIndex: 1100,
           transition: 'transform 0.2s, box-shadow 0.2s',
         }}
         onMouseEnter={(e) => {
@@ -96,6 +118,7 @@ export default function FeedbackButton() {
           e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
         }}
         title="Submit Feedback"
+        aria-label="Submit feedback"
       >
         💡
       </button>

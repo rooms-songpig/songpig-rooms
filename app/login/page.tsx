@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { setCurrentUser } from '@/app/lib/auth-helpers';
 
 // Dev-only helpers: enabled automatically in non-production,
 // or explicitly when NEXT_PUBLIC_SHOW_DEV_HELPERS="true".
@@ -36,10 +37,11 @@ export default function LoginPage() {
       if (data.error) {
         setError(data.error);
       } else if (data.user) {
-        // Store user in localStorage
-        localStorage.setItem('user', JSON.stringify(data.user));
-        localStorage.setItem('userId', data.user.id);
-        localStorage.setItem('userRole', data.user.role);
+        const normalizedUser = {
+          ...data.user,
+          status: data.user.status || 'active',
+        };
+        setCurrentUser(normalizedUser);
         
         // Redirect based on role
         if (data.user.role === 'admin') {

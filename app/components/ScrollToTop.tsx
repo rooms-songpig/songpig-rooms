@@ -32,8 +32,8 @@ export default function ScrollToTop() {
       onClick={scrollToTop}
       style={{
         position: 'fixed',
-        bottom: '2rem',
-        right: '2rem',
+        bottom: '5.5rem',
+        right: '1.5rem',
         background: '#3b82f6',
         color: 'white',
         border: 'none',
@@ -46,7 +46,7 @@ export default function ScrollToTop() {
         justifyContent: 'center',
         fontSize: '1.5rem',
         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
-        zIndex: 999,
+        zIndex: 1000,
         transition: 'all 0.3s ease',
       }}
       onMouseEnter={(e) => {

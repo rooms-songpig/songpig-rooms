@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { setCurrentUser } from '@/app/lib/auth-helpers';
 
 function RegisterContent() {
   const router = useRouter();
@@ -41,20 +42,11 @@ function RegisterContent() {
           return;
         }
         
-        // Store user in localStorage with all fields
         const userData = {
-          id: data.user.id,
-          username: data.user.username,
-          role: data.user.role,
+          ...data.user,
           status: data.user.status || 'active',
-          email: data.user.email,
-          bio: data.user.bio,
-          createdAt: data.user.createdAt,
         };
-        
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('userId', data.user.id);
-        localStorage.setItem('userRole', data.user.role);
+        setCurrentUser(userData);
         
         // Note: createUser() now verifies the user can be read back before returning
         // So we can proceed immediately. The API routes also have retry logic.

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser, getAuthHeaders, logout } from '@/app/lib/auth-helpers';
+import { getCurrentUser, getAuthHeaders, logout, setCurrentUser } from '@/app/lib/auth-helpers';
 import { normalizeText, formatTimestamp } from '@/app/lib/utils';
 import { logger } from '@/app/lib/logger';
 import AudioPlayer from '@/app/components/AudioPlayer';
@@ -589,13 +589,14 @@ export default function RoomPage() {
             const userData = await userRes.json();
             
             if (userData.user) {
-              // Update localStorage with fresh user data
-              localStorage.setItem('user', JSON.stringify(userData.user));
-              localStorage.setItem('userId', userData.user.id);
-              localStorage.setItem('userRole', userData.user.role);
-              setUser(userData.user);
-              setUserId(userData.user.id);
-              setUploader(userData.user.username);
+              const refreshedUser = {
+                ...userData.user,
+                status: userData.user.status || 'active',
+              };
+              setCurrentUser(refreshedUser);
+              setUser(refreshedUser);
+              setUserId(refreshedUser.id);
+              setUploader(refreshedUser.username);
               
               // Show BOTH the error AND the info message - don't replace the error
               const refreshErrorDetails = errorDetails + `\n\nUser refresh succeeded. User ID: ${userData.user.id}, Username: ${userData.user.username}`;
