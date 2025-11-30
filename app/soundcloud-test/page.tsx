@@ -3,6 +3,12 @@ export const metadata = {
 };
 
 export default function SoundCloudTestPage() {
+  // This is the EXACT src URL extracted from SoundCloud's embed code.
+  // When adding songs, artists should paste the full <iframe> code from SoundCloud,
+  // and we extract this src automatically.
+  const embedSrc =
+    'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/soundcloud%3Atracks%3A2221470425%3Fsecret_token%3Ds-ItCn8A5N42y&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=false&show_reposts=false&show_teaser=false&sharing=false&liking=false&show_playcount=false&show_artwork=false';
+
   return (
     <main
       style={{
@@ -29,6 +35,9 @@ export default function SoundCloudTestPage() {
         }}
       >
         <h2 style={{ marginTop: 0, marginBottom: 16 }}>Maximum Stealth Player</h2>
+        <p style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: 16 }}>
+          This uses the exact embed src from SoundCloud&apos;s Share → Embed panel.
+        </p>
 
         <div
           style={{
@@ -45,7 +54,7 @@ export default function SoundCloudTestPage() {
             frameBorder="no"
             allow="autoplay; encrypted-media"
             sandbox="allow-scripts allow-same-origin"
-            src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/soundcloud%3Atracks%3A2221470425%3Fsecret_token%3Ds-ItCn8A5N42y&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=false&show_reposts=false&show_teaser=false&sharing=false&liking=false&show_playcount=false&show_artwork=false"
+            src={embedSrc}
           />
         </div>
       </div>

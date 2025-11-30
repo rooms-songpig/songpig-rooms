@@ -15,12 +15,14 @@ import ScrollToTop from '@/app/components/ScrollToTop';
 import CommentAuthorTooltip from '@/app/components/CommentAuthorTooltip';
 import CommentThread from '@/app/components/CommentThread';
 
+type SongSourceType = 'direct' | 'soundcloud' | 'soundcloud_embed';
+
 interface Song {
   id: string;
   title: string;
   url: string;
   uploader: string;
-  sourceType: 'direct' | 'soundcloud';
+  sourceType: SongSourceType;
   comments: Array<{ id: string; userId: string; text: string; timestamp: number }>;
 }
 
@@ -58,7 +60,8 @@ export default function RoomPage() {
   const [showAddSong, setShowAddSong] = useState(false);
   const [songTitle, setSongTitle] = useState('');
   const [songUrl, setSongUrl] = useState('');
-  const [songSourceType, setSongSourceType] = useState<'direct' | 'soundcloud'>('direct');
+  const [songSourceType, setSongSourceType] = useState<SongSourceType>('direct');
+  const [soundcloudEmbedCode, setSoundcloudEmbedCode] = useState('');
   const [uploader, setUploader] = useState('');
   const [userId, setUserId] = useState('');
   const [commentTexts, setCommentTexts] = useState<{ [songId: string]: string }>({});
@@ -87,21 +90,31 @@ export default function RoomPage() {
   const songUrlRef = useRef<HTMLInputElement>(null);
   const [autoVersion2, setAutoVersion2] = useState(false);
   const isSongUrlValid = useMemo(() => {
+    if (songSourceType === 'soundcloud_embed') {
+      // For embed code, check that it contains an iframe src with w.soundcloud.com
+      return soundcloudEmbedCode.toLowerCase().includes('w.soundcloud.com/player');
+    }
     const trimmed = songUrl.trim();
     if (!trimmed) return false;
     if (songSourceType === 'soundcloud') {
       return trimmed.toLowerCase().includes('soundcloud.com/');
     }
     return true;
-  }, [songUrl, songSourceType]);
+  }, [songUrl, songSourceType, soundcloudEmbedCode]);
 
   const songUrlError = useMemo(() => {
+    if (songSourceType === 'soundcloud_embed') {
+      if (soundcloudEmbedCode.trim() && !soundcloudEmbedCode.toLowerCase().includes('w.soundcloud.com/player')) {
+        return 'Paste the full <iframe> embed code from SoundCloud\'s Share panel.';
+      }
+      return '';
+    }
     if (!songUrl.trim()) return '';
     if (songSourceType === 'soundcloud' && !songUrl.toLowerCase().includes('soundcloud.com/')) {
       return 'SoundCloud private links must include soundcloud.com and the secret code (s-XXXX).';
     }
     return '';
-  }, [songUrl, songSourceType]);
+  }, [songUrl, songSourceType, soundcloudEmbedCode]);
 
   
   // Reply to comments
@@ -123,6 +136,16 @@ export default function RoomPage() {
       // If URL constructor fails (maybe already encoded api URL), fall back to original
       return trimmed;
     }
+  }, []);
+
+  // Extract the src URL from a SoundCloud embed iframe code
+  const extractSoundCloudEmbedSrc = useCallback((embedCode: string): string | null => {
+    const srcMatch = embedCode.match(/src=["']([^"']+)["']/i);
+    if (srcMatch && srcMatch[1]) {
+      // Decode HTML entities if present
+      return srcMatch[1].replace(/&amp;/g, '&');
+    }
+    return null;
   }, []);
 
   const transformAudioUrl = useCallback(
@@ -157,6 +180,34 @@ export default function RoomPage() {
 
   const renderSongPlayer = useCallback(
     (song: Song, variant: 'card' | 'compact' = 'card') => {
+      // For soundcloud_embed, the URL is already the full embed src from SoundCloud
+      if (song.sourceType === 'soundcloud_embed') {
+        const height = variant === 'card' ? 150 : 140;
+        return (
+          <div
+            style={{
+              width: '100%',
+              borderRadius: '0.75rem',
+              overflow: 'hidden',
+              border: '1px solid #1f2937',
+              background: '#0b1120',
+              height,
+            }}
+          >
+            <iframe
+              title={`${song.title} — SoundCloud player`}
+              allow="autoplay; encrypted-media"
+              width="100%"
+              height="166"
+              style={{ border: 'none' }}
+              scrolling="no"
+              sandbox="allow-scripts allow-same-origin"
+              src={song.url}
+            />
+          </div>
+        );
+      }
+
       if (song.sourceType === 'soundcloud') {
         const height = variant === 'card' ? 160 : 140;
         const iframeHeight = 180;
@@ -197,7 +248,7 @@ export default function RoomPage() {
         />
       );
     },
-    [handleExclusiveAudioPlay]
+    [handleExclusiveAudioPlay, cleanSoundCloudUrl]
   );
 
   useEffect(() => {
@@ -595,9 +646,12 @@ export default function RoomPage() {
 
   const handleAddSong = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!songTitle.trim() || !songUrl.trim() || !room) return;
+    
+    // For soundcloud_embed, we need the embed code, not the URL field
+    const effectiveUrl = songSourceType === 'soundcloud_embed' ? soundcloudEmbedCode : songUrl;
+    if (!songTitle.trim() || !effectiveUrl.trim() || !room) return;
 
-    logger.info('Starting song addition', { roomId, songTitle, songUrl: songUrl.substring(0, 50) + '...' });
+    logger.info('Starting song addition', { roomId, songTitle, sourceType: songSourceType });
 
     // Verify user is still authenticated and sync state
     const currentUser = getCurrentUser();
@@ -635,11 +689,30 @@ export default function RoomPage() {
         message: 'Please provide a valid audio link.',
         type: 'error',
         details:
-          songSourceType === 'soundcloud'
-            ? 'Use the SoundCloud private/secret link (Share → Copy secret link).'
+          songSourceType === 'soundcloud_embed'
+            ? 'Paste the full <iframe> embed code from SoundCloud\'s Share → Embed tab.'
             : undefined,
       });
       return;
+    }
+
+    // For soundcloud_embed, extract the src from the iframe code
+    let finalUrl: string;
+    let finalSourceType: SongSourceType = songSourceType;
+    
+    if (songSourceType === 'soundcloud_embed') {
+      const extractedSrc = extractSoundCloudEmbedSrc(soundcloudEmbedCode);
+      if (!extractedSrc) {
+        setToast({
+          message: 'Could not extract embed URL from the iframe code.',
+          type: 'error',
+          details: 'Make sure you copied the full <iframe ...></iframe> code from SoundCloud.',
+        });
+        return;
+      }
+      finalUrl = extractedSrc;
+    } else {
+      finalUrl = transformAudioUrl(songUrl.trim(), songSourceType);
     }
 
     try {
@@ -654,8 +727,8 @@ export default function RoomPage() {
         headers: authHeaders,
         body: JSON.stringify({
           title: normalizeText(songTitle),
-          url: transformAudioUrl(songUrl.trim(), songSourceType),
-          sourceType: songSourceType,
+          url: finalUrl,
+          sourceType: finalSourceType,
         }),
       });
 
@@ -747,6 +820,7 @@ export default function RoomPage() {
         // Show feedback
         setSongTitle('');
         setSongUrl('');
+        setSoundcloudEmbedCode('');
         setAutoVersion2(false);
         // Reset comparison pair state so it can be fetched again with new songs
         setHasFetchedPair(false);
@@ -1651,7 +1725,7 @@ export default function RoomPage() {
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                     {[
                       { value: 'direct' as const, label: 'Direct / Dropbox link' },
-                      { value: 'soundcloud' as const, label: 'SoundCloud (private link)' },
+                      { value: 'soundcloud_embed' as const, label: 'SoundCloud (embed code)' },
                     ].map((option) => (
                       <button
                         key={option.value}
@@ -1674,122 +1748,142 @@ export default function RoomPage() {
                   <p style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '0.5rem' }}>
                     {songSourceType === 'direct'
                       ? 'Paste a cleaned Dropbox, Google Drive (share → anyone with link), AWS S3, or any HTTPS audio URL. Dropbox links are auto-converted to raw playback.'
-                      : 'Open SoundCloud → Share → Copy private/secret link (looks like https://soundcloud.com/.../s-XXXX). The track will play inside Song Pig without leaving the page.'}
+                      : 'Open SoundCloud → your track → Share → Embed → copy the full <iframe> code. Works with private tracks!'}
                   </p>
                 </div>
-                <div style={{ marginBottom: '1rem' }}>
-                  <label
-                    style={{
-                      display: 'block',
-                      marginBottom: '0.5rem',
-                      fontSize: '0.9rem',
-                      opacity: 0.9,
-                    }}
-                  >
-                    Audio URL *
-                  </label>
-                  <input
-                    ref={songUrlRef}
-                    type="url"
-                    value={songUrl}
-                    onChange={(e) => setSongUrl(e.target.value)}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      background: '#0f0f1e',
-                      border: '1px solid #333',
-                      borderRadius: '0.5rem',
-                      color: '#f9fafb',
-                      fontSize: '1rem',
-                    }}
-                    placeholder={
-                      songSourceType === 'soundcloud'
-                        ? 'https://soundcloud.com/artist/track/s-XXXX'
-                        : 'https://example.com/audio.mp3'
-                    }
-                  />
-                  {songUrlError && (
-                    <p style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-                      {songUrlError}
+                {songSourceType === 'soundcloud_embed' ? (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label
+                      style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontSize: '0.9rem',
+                        opacity: 0.9,
+                      }}
+                    >
+                      SoundCloud Embed Code *
+                    </label>
+                    <textarea
+                      value={soundcloudEmbedCode}
+                      onChange={(e) => setSoundcloudEmbedCode(e.target.value)}
+                      rows={4}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        background: '#0f0f1e',
+                        border: '1px solid #333',
+                        borderRadius: '0.5rem',
+                        color: '#f9fafb',
+                        fontSize: '0.85rem',
+                        fontFamily: 'monospace',
+                        resize: 'vertical',
+                      }}
+                      placeholder='<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=..."></iframe>'
+                    />
+                    {songUrlError && (
+                      <p style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                        {songUrlError}
+                      </p>
+                    )}
+                    <p style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '0.5rem' }}>
+                      Go to SoundCloud → your track → Share → Embed tab → copy the entire iframe code
                     </p>
-                  )}
-                  {/* Test profile URLs button */}
-                  <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSongSourceType('direct');
-                        setSongUrl('https://www.dropbox.com/scl/fi/y1qotzbjavsmo4te8oilq/When-the-Letters-Stopped-659.mp3?rlkey=ip5mrrp04dex4x3myrex5qibj&st=tlaswv6t&dl=0');
-                      }}
-                      style={{
-                        background: '#1a1a2e',
-                        color: '#f9fafb',
-                        border: '1px solid #333',
-                        padding: '0.25rem 0.75rem',
-                        borderRadius: '0.375rem',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Test URL 1
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSongSourceType('direct');
-                        setSongUrl('https://www.dropbox.com/scl/fi/najl5njoxxgrte5wq0rxq/Marve-My-Love_mastered.wav?rlkey=dh8uo11wn0z4a587t1epaaxrv&st=8hlre10m&dl=0');
-                      }}
-                      style={{
-                        background: '#1a1a2e',
-                        color: '#f9fafb',
-                        border: '1px solid #333',
-                        padding: '0.25rem 0.75rem',
-                        borderRadius: '0.375rem',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Test URL 2
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSongSourceType('soundcloud');
-                        setSongUrl('https://soundcloud.com/iron-incense/when-the-letters-stopped-623-ver-1-1/s-ItCn8A5N42y');
-                      }}
-                      style={{
-                        background: '#1a1a2e',
-                        color: '#f9fafb',
-                        border: '1px solid #333',
-                        padding: '0.25rem 0.75rem',
-                        borderRadius: '0.375rem',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                      }}
-                    >
-                        SoundCloud V1
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSongSourceType('soundcloud');
-                        setSongUrl('https://soundcloud.com/iron-incense/when-the-letters-stopped-659-ver-2-2/s-6QHBgJwCsmi');
-                      }}
-                      style={{
-                        background: '#1a1a2e',
-                        color: '#f9fafb',
-                        border: '1px solid #333',
-                        padding: '0.25rem 0.75rem',
-                        borderRadius: '0.375rem',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      SoundCloud V2
-                    </button>
+                    {/* Test embed button */}
+                    <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSoundcloudEmbedCode('<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay; encrypted-media" sandbox="allow-scripts allow-same-origin" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/soundcloud%3Atracks%3A2221470425%3Fsecret_token%3Ds-ItCn8A5N42y&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=false&show_reposts=false&show_teaser=false&sharing=false&liking=false&show_playcount=false&show_artwork=false"></iframe>');
+                        }}
+                        style={{
+                          background: '#1a1a2e',
+                          color: '#f9fafb',
+                          border: '1px solid #333',
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Test Embed V1
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label
+                      style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontSize: '0.9rem',
+                        opacity: 0.9,
+                      }}
+                    >
+                      Audio URL *
+                    </label>
+                    <input
+                      ref={songUrlRef}
+                      type="url"
+                      value={songUrl}
+                      onChange={(e) => setSongUrl(e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        background: '#0f0f1e',
+                        border: '1px solid #333',
+                        borderRadius: '0.5rem',
+                        color: '#f9fafb',
+                        fontSize: '1rem',
+                      }}
+                      placeholder="https://example.com/audio.mp3"
+                    />
+                    {songUrlError && (
+                      <p style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                        {songUrlError}
+                      </p>
+                    )}
+                    {/* Test profile URLs button */}
+                    <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSongSourceType('direct');
+                          setSongUrl('https://www.dropbox.com/scl/fi/y1qotzbjavsmo4te8oilq/When-the-Letters-Stopped-659.mp3?rlkey=ip5mrrp04dex4x3myrex5qibj&st=tlaswv6t&dl=0');
+                        }}
+                        style={{
+                          background: '#1a1a2e',
+                          color: '#f9fafb',
+                          border: '1px solid #333',
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Test URL 1
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSongSourceType('direct');
+                          setSongUrl('https://www.dropbox.com/scl/fi/najl5njoxxgrte5wq0rxq/Marve-My-Love_mastered.wav?rlkey=dh8uo11wn0z4a587t1epaaxrv&st=8hlre10m&dl=0');
+                        }}
+                        style={{
+                          background: '#1a1a2e',
+                          color: '#f9fafb',
+                          border: '1px solid #333',
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Test URL 2
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 <button
                   type="submit"

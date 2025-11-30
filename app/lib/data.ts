@@ -18,7 +18,7 @@ export interface Comment {
   updatedAt?: number;
 }
 
-export type SongSourceType = 'direct' | 'soundcloud';
+export type SongSourceType = 'direct' | 'soundcloud' | 'soundcloud_embed';
 
 export interface Song {
   id: string;
