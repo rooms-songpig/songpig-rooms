@@ -394,6 +394,52 @@ export default function AdminPage() {
           
           {showFeedback && (
             <div style={{ marginTop: '1rem' }}>
+              {/* Copy button for open items */}
+              {feedback.filter(f => f.status === 'open' || f.status === 'in_progress').length > 0 && (
+                <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => {
+                      const openItems = feedback
+                        .filter(f => f.status === 'open' || f.status === 'in_progress')
+                        .map(f => `[${f.type.toUpperCase()}] ${f.title}\n${f.description}\n(Status: ${f.status}, Priority: ${f.priority})`)
+                        .join('\n\n---\n\n');
+                      navigator.clipboard.writeText(openItems);
+                      alert('Copied ' + feedback.filter(f => f.status === 'open' || f.status === 'in_progress').length + ' open items to clipboard!');
+                    }}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #3b82f6',
+                      background: 'transparent',
+                      color: '#3b82f6',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                    }}
+                  >
+                    📋 Copy Open Items
+                  </button>
+                  <button
+                    onClick={() => {
+                      const allItems = feedback
+                        .map(f => `[${f.type.toUpperCase()}] ${f.title}\n${f.description}\n(Status: ${f.status}, Priority: ${f.priority})`)
+                        .join('\n\n---\n\n');
+                      navigator.clipboard.writeText(allItems);
+                      alert('Copied all ' + feedback.length + ' items to clipboard!');
+                    }}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #666',
+                      background: 'transparent',
+                      color: '#888',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                    }}
+                  >
+                    📋 Copy All Items
+                  </button>
+                </div>
+              )}
               {feedback.length === 0 ? (
                 <p style={{ opacity: 0.7, textAlign: 'center', padding: '2rem' }}>No feedback submitted yet</p>
               ) : (
