@@ -1882,107 +1882,23 @@ export default function RoomPage() {
                       Comments ({comparisonPair.songA.comments?.length || 0})
                     </h4>
                     
-                    {/* Comment guidelines */}
-                    <div style={{ 
-                      background: '#0f0f1e', 
-                      padding: '0.75rem', 
-                      borderRadius: '0.5rem', 
-                      marginBottom: '0.75rem',
-                      fontSize: '0.85rem',
-                      opacity: 0.7,
-                      fontStyle: 'italic'
-                    }}>
-                      <p style={{ marginBottom: '0.5rem', fontWeight: '500' }}>Helpful feedback examples:</p>
-                      <ul style={{ margin: 0, paddingLeft: '1.25rem', listStyle: 'disc' }}>
-                        <li>"The vocals are clearer in this version"</li>
-                        <li>"This mix has better bass response"</li>
-                        <li>"The intro is more engaging"</li>
-                      </ul>
-                    </div>
-                    
-                    {/* Display existing comments */}
-                    {comparisonPair.songA.comments && comparisonPair.songA.comments.length > 0 && (
-                      <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        {comparisonPair.songA.comments.map((comment: any) => (
-                          <div
-                            key={comment.id}
-                            style={{
-                              background: '#0f0f1e',
-                              padding: '0.75rem',
-                              borderRadius: '0.5rem',
-                              fontSize: '0.85rem',
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                              <CommentAuthorTooltip
-                                authorId={comment.authorId || (comment as any).userId}
-                                authorUsername={comment.authorUsername || (comment as any).userId}
-                                isAnonymous={comment.isAnonymous || false}
-                              >
-                                <span style={{
-                                  fontSize: '0.9rem',
-                                  fontWeight: '600',
-                                  color: '#4a9eff',
-                                  marginRight: '1rem',
-                                  cursor: comment.isAnonymous ? 'default' : 'pointer',
-                                }}>
-                                  {comment.isAnonymous ? 'Anonymous' : comment.authorUsername || (comment as any).userId}
-                                </span>
-                              </CommentAuthorTooltip>
-                              <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>
-                                {formatTimestamp(comment.createdAt || comment.timestamp)}
-                              </span>
-                            </div>
-                            <p style={{ margin: 0, opacity: 0.9 }}>{comment.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Add comment form */}
-                    {!isGuest && (
-                      <div>
-                        <textarea
-                          value={commentTexts[comparisonPair.songA?.id || ''] || ''}
-                          onChange={(e) => comparisonPair.songA && setCommentTexts({ ...commentTexts, [comparisonPair.songA.id]: e.target.value })}
-                          placeholder="Add a comment about this version..."
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            background: '#0f0f1e',
-                            border: '1px solid #333',
-                            borderRadius: '0.5rem',
-                            color: '#f9fafb',
-                            fontSize: '0.9rem',
-                            minHeight: '80px',
-                            resize: 'vertical',
-                            marginBottom: '0.5rem',
-                          }}
-                        />
-                        <button
-                          onClick={() => comparisonPair.songA && handleAddComment(comparisonPair.songA.id)}
-                          disabled={!commentTexts[comparisonPair.songA?.id || '']?.trim()}
-                          style={{
-                            background: !commentTexts[comparisonPair.songA?.id || '']?.trim() ? '#555' : '#3b82f6',
-                            color: 'white',
-                            border: 'none',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.85rem',
-                            cursor: !commentTexts[comparisonPair.songA.id]?.trim() ? 'not-allowed' : 'pointer',
-                          }}
-                        >
-                          Post Comment
-                        </button>
-                      </div>
-                    )}
-                    {isGuest && (
-                      <div style={{ padding: '0.75rem', background: '#0f0f1e', borderRadius: '0.5rem', fontSize: '0.85rem', opacity: 0.7, textAlign: 'center' }}>
-                        <Link href={`/register?redirect=/room/${roomId}`} style={{ color: '#3b82f6', textDecoration: 'underline' }}>
-                          Register to comment
-                        </Link>
-                      </div>
-                    )}
+                    <CommentThread
+                      comments={(comparisonPair.songA.comments || []).map((c: any) => ({
+                        id: c.id,
+                        text: c.text,
+                        authorId: c.authorId || c.userId,
+                        authorUsername: c.authorUsername || c.userId,
+                        isAnonymous: c.isAnonymous || false,
+                        parentCommentId: c.parentCommentId,
+                        createdAt: c.createdAt || c.timestamp,
+                      }))}
+                      songId={comparisonPair.songA.id}
+                      roomId={roomId || ''}
+                      currentUserId={userId}
+                      isGuest={isGuest}
+                      onCommentAdded={fetchRoom}
+                      formatTimestamp={formatTimestamp}
+                    />
                   </div>
                 </div>
 
@@ -2052,107 +1968,23 @@ export default function RoomPage() {
                       Comments ({comparisonPair.songB.comments?.length || 0})
                     </h4>
                     
-                    {/* Comment guidelines */}
-                    <div style={{ 
-                      background: '#0f0f1e', 
-                      padding: '0.75rem', 
-                      borderRadius: '0.5rem', 
-                      marginBottom: '0.75rem',
-                      fontSize: '0.85rem',
-                      opacity: 0.7,
-                      fontStyle: 'italic'
-                    }}>
-                      <p style={{ marginBottom: '0.5rem', fontWeight: '500' }}>Helpful feedback examples:</p>
-                      <ul style={{ margin: 0, paddingLeft: '1.25rem', listStyle: 'disc' }}>
-                        <li>"The vocals are clearer in this version"</li>
-                        <li>"This mix has better bass response"</li>
-                        <li>"The intro is more engaging"</li>
-                      </ul>
-                    </div>
-                    
-                    {/* Display existing comments */}
-                    {comparisonPair.songB.comments && comparisonPair.songB.comments.length > 0 && (
-                      <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        {comparisonPair.songB.comments.map((comment: any) => (
-                          <div
-                            key={comment.id}
-                            style={{
-                              background: '#0f0f1e',
-                              padding: '0.75rem',
-                              borderRadius: '0.5rem',
-                              fontSize: '0.85rem',
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                              <CommentAuthorTooltip
-                                authorId={comment.authorId || (comment as any).userId}
-                                authorUsername={comment.authorUsername || (comment as any).userId}
-                                isAnonymous={comment.isAnonymous || false}
-                              >
-                                <span style={{
-                                  fontSize: '0.9rem',
-                                  fontWeight: '600',
-                                  color: '#4a9eff',
-                                  marginRight: '1rem',
-                                  cursor: comment.isAnonymous ? 'default' : 'pointer',
-                                }}>
-                                  {comment.isAnonymous ? 'Anonymous' : comment.authorUsername || (comment as any).userId}
-                                </span>
-                              </CommentAuthorTooltip>
-                              <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>
-                                {formatTimestamp(comment.createdAt || comment.timestamp)}
-                              </span>
-                            </div>
-                            <p style={{ margin: 0, opacity: 0.9 }}>{comment.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Add comment form */}
-                    {!isGuest && (
-                      <div>
-                        <textarea
-                          value={commentTexts[comparisonPair.songB?.id || ''] || ''}
-                          onChange={(e) => comparisonPair.songB && setCommentTexts({ ...commentTexts, [comparisonPair.songB.id]: e.target.value })}
-                          placeholder="Add a comment about this version..."
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            background: '#0f0f1e',
-                            border: '1px solid #333',
-                            borderRadius: '0.5rem',
-                            color: '#f9fafb',
-                            fontSize: '0.9rem',
-                            minHeight: '80px',
-                            resize: 'vertical',
-                            marginBottom: '0.5rem',
-                          }}
-                        />
-                        <button
-                          onClick={() => comparisonPair.songB && handleAddComment(comparisonPair.songB.id)}
-                          disabled={!commentTexts[comparisonPair.songB?.id || '']?.trim()}
-                          style={{
-                            background: !commentTexts[comparisonPair.songB?.id || '']?.trim() ? '#555' : '#3b82f6',
-                            color: 'white',
-                            border: 'none',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.85rem',
-                            cursor: !commentTexts[comparisonPair.songB.id]?.trim() ? 'not-allowed' : 'pointer',
-                          }}
-                        >
-                          Post Comment
-                        </button>
-                      </div>
-                    )}
-                    {isGuest && (
-                      <div style={{ padding: '0.75rem', background: '#0f0f1e', borderRadius: '0.5rem', fontSize: '0.85rem', opacity: 0.7, textAlign: 'center' }}>
-                        <Link href={`/register?redirect=/room/${roomId}`} style={{ color: '#3b82f6', textDecoration: 'underline' }}>
-                          Register to comment
-                        </Link>
-                      </div>
-                    )}
+                    <CommentThread
+                      comments={(comparisonPair.songB.comments || []).map((c: any) => ({
+                        id: c.id,
+                        text: c.text,
+                        authorId: c.authorId || c.userId,
+                        authorUsername: c.authorUsername || c.userId,
+                        isAnonymous: c.isAnonymous || false,
+                        parentCommentId: c.parentCommentId,
+                        createdAt: c.createdAt || c.timestamp,
+                      }))}
+                      songId={comparisonPair.songB.id}
+                      roomId={roomId || ''}
+                      currentUserId={userId}
+                      isGuest={isGuest}
+                      onCommentAdded={fetchRoom}
+                      formatTimestamp={formatTimestamp}
+                    />
                   </div>
                 </div>
               </div>
