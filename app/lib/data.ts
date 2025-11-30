@@ -18,12 +18,15 @@ export interface Comment {
   updatedAt?: number;
 }
 
+export type SongSourceType = 'direct' | 'soundcloud';
+
 export interface Song {
   id: string;
   title: string;
   url: string;
   uploader: string;
   uploaderId: string;
+  sourceType: SongSourceType;
   comments: Comment[];
 }
 
@@ -77,6 +80,7 @@ interface DbSong {
   url: string;
   uploader: string;
   uploader_id: string;
+  source_type: SongSourceType | null;
   created_at: string;
 }
 
@@ -134,6 +138,7 @@ function dbSongToSong(db: DbSong, comments: Comment[]): Song {
     url: db.url,
     uploader: db.uploader,
     uploaderId: db.uploader_id,
+    sourceType: db.source_type || 'direct',
     comments,
   };
 }
@@ -468,7 +473,14 @@ export const dataStore = {
   },
 
   // Add a song to a room
-  async addSong(roomId: string, title: string, url: string, uploader: string, uploaderId: string): Promise<Song | null> {
+  async addSong(
+    roomId: string,
+    title: string,
+    url: string,
+    uploader: string,
+    uploaderId: string,
+    sourceType: SongSourceType = 'direct'
+  ): Promise<Song | null> {
     logger.info('addSong: Starting', { roomId, title, uploader, uploaderId });
     
     // Verify room exists
@@ -493,6 +505,7 @@ export const dataStore = {
         url,
         uploader,
         uploader_id: uploaderId,
+        source_type: sourceType,
         created_at: now,
       })
       .select()
@@ -523,6 +536,7 @@ export const dataStore = {
       url: data.url,
       uploader: data.uploader,
       uploaderId: data.uploader_id,
+      sourceType: data.source_type || 'direct',
       comments: [],
     };
 

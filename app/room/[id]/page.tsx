@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser, getAuthHeaders, logout, setCurrentUser } from '@/app/lib/auth-helpers';
@@ -20,6 +20,7 @@ interface Song {
   title: string;
   url: string;
   uploader: string;
+  sourceType: 'direct' | 'soundcloud';
   comments: Array<{ id: string; userId: string; text: string; timestamp: number }>;
 }
 
@@ -57,6 +58,7 @@ export default function RoomPage() {
   const [showAddSong, setShowAddSong] = useState(false);
   const [songTitle, setSongTitle] = useState('');
   const [songUrl, setSongUrl] = useState('');
+  const [songSourceType, setSongSourceType] = useState<'direct' | 'soundcloud'>('direct');
   const [uploader, setUploader] = useState('');
   const [userId, setUserId] = useState('');
   const [commentTexts, setCommentTexts] = useState<{ [songId: string]: string }>({});
@@ -84,20 +86,44 @@ export default function RoomPage() {
   const songTitleRef = useRef<HTMLInputElement>(null);
   const songUrlRef = useRef<HTMLInputElement>(null);
   const [autoVersion2, setAutoVersion2] = useState(false);
+  const isSongUrlValid = useMemo(() => {
+    const trimmed = songUrl.trim();
+    if (!trimmed) return false;
+    if (songSourceType === 'soundcloud') {
+      return trimmed.toLowerCase().includes('soundcloud.com/');
+    }
+    return true;
+  }, [songUrl, songSourceType]);
+
+  const songUrlError = useMemo(() => {
+    if (!songUrl.trim()) return '';
+    if (songSourceType === 'soundcloud' && !songUrl.toLowerCase().includes('soundcloud.com/')) {
+      return 'SoundCloud private links must include soundcloud.com and the secret code (s-XXXX).';
+    }
+    return '';
+  }, [songUrl, songSourceType]);
+
   
   // Reply to comments
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; songId: string; authorName: string } | null>(null);
   const [replyText, setReplyText] = useState('');
 
-  const transformAudioUrl = useCallback((url: string) => {
-    if (!url) return url;
-    if (url.includes('dropbox.com')) {
-      if (url.includes('?dl=0') || url.includes('?dl=1')) {
-        return url.replace('?dl=0', '?raw=1').replace('?dl=1', '?raw=1');
-      }
-      return url.includes('?') ? `${url}&raw=1` : `${url}?raw=1`;
+  const transformAudioUrl = useCallback((url: string, sourceType: 'direct' | 'soundcloud') => {
+    const trimmed = url.trim();
+    if (!trimmed) return trimmed;
+
+    if (sourceType === 'soundcloud') {
+      return trimmed;
     }
-    return url;
+
+    if (trimmed.includes('dropbox.com')) {
+      if (trimmed.includes('?dl=0') || trimmed.includes('?dl=1')) {
+        return trimmed.replace('?dl=0', '?raw=1').replace('?dl=1', '?raw=1');
+      }
+      return trimmed.includes('?') ? `${trimmed}&raw=1` : `${trimmed}?raw=1`;
+    }
+
+    return trimmed;
   }, []);
 
   const handleExclusiveAudioPlay = useCallback((audio: HTMLAudioElement) => {
@@ -108,6 +134,49 @@ export default function RoomPage() {
       return audio;
     });
   }, []);
+
+  const renderSongPlayer = useCallback(
+    (song: Song, variant: 'card' | 'compact' = 'card') => {
+      if (song.sourceType === 'soundcloud') {
+        const visual = variant === 'card' ? 'true' : 'false';
+        const height = variant === 'card' ? 200 : 140;
+        const embedUrl = `https://w.soundcloud.com/player/?url=${encodeURIComponent(
+          song.url
+        )}&color=%233b82f6&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=${visual}`;
+
+        return (
+          <div
+            style={{
+              width: '100%',
+              borderRadius: '0.75rem',
+              overflow: 'hidden',
+              border: '1px solid #1f2937',
+              background: '#0b1120',
+            }}
+          >
+            <iframe
+              title={`${song.title} — SoundCloud player`}
+              allow="autoplay"
+              width="100%"
+              height={height}
+              style={{ border: 'none' }}
+              scrolling="no"
+              src={embedUrl}
+            />
+          </div>
+        );
+      }
+
+      return (
+        <AudioPlayer
+          src={song.url}
+          onRequestPlay={handleExclusiveAudioPlay}
+          className={variant === 'compact' ? 'compact-player' : undefined}
+        />
+      );
+    },
+    [handleExclusiveAudioPlay]
+  );
 
   useEffect(() => {
     const checkMobile = () => {
@@ -539,6 +608,18 @@ export default function RoomPage() {
       return;
     }
 
+    if (!isSongUrlValid) {
+      setToast({
+        message: 'Please provide a valid audio link.',
+        type: 'error',
+        details:
+          songSourceType === 'soundcloud'
+            ? 'Use the SoundCloud private/secret link (Share → Copy secret link).'
+            : undefined,
+      });
+      return;
+    }
+
     try {
       const authHeaders = getAuthHeaders() as Record<string, string>;
       console.log('Song addition request headers:', { 
@@ -551,7 +632,8 @@ export default function RoomPage() {
         headers: authHeaders,
         body: JSON.stringify({
           title: normalizeText(songTitle),
-          url: transformAudioUrl(songUrl.trim()),
+          url: transformAudioUrl(songUrl.trim(), songSourceType),
+          sourceType: songSourceType,
         }),
       });
 
@@ -1451,10 +1533,7 @@ export default function RoomPage() {
                         <div style={{ fontSize: '0.85rem', opacity: 0.7 }}>
                           by {song.uploader}
                         </div>
-                        <AudioPlayer
-                          src={song.url}
-                          onRequestPlay={handleExclusiveAudioPlay}
-                        />
+                        {renderSongPlayer(song, 'compact')}
                       </div>
                       {room.status === 'draft' && (room.artistId === userId || user?.role === 'admin') && (
                         <button
@@ -1545,6 +1624,46 @@ export default function RoomPage() {
                       opacity: 0.9,
                     }}
                   >
+                    Audio Source *
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {[
+                      { value: 'direct' as const, label: 'Direct / Dropbox link' },
+                      { value: 'soundcloud' as const, label: 'SoundCloud (private link)' },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setSongSourceType(option.value)}
+                        style={{
+                          padding: '0.4rem 0.9rem',
+                          borderRadius: '999px',
+                          border: option.value === songSourceType ? '1px solid #3b82f6' : '1px solid #333',
+                          background: option.value === songSourceType ? 'rgba(59,130,246,0.18)' : 'transparent',
+                          color: '#f9fafb',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '0.5rem' }}>
+                    {songSourceType === 'direct'
+                      ? 'Paste a cleaned Dropbox, Google Drive (share → anyone with link), AWS S3, or any HTTPS audio URL. Dropbox links are auto-converted to raw playback.'
+                      : 'Open SoundCloud → Share → Copy private/secret link (looks like https://soundcloud.com/.../s-XXXX). The track will play inside Song Pig without leaving the page.'}
+                  </p>
+                </div>
+                <div style={{ marginBottom: '1rem' }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: '0.5rem',
+                      fontSize: '0.9rem',
+                      opacity: 0.9,
+                    }}
+                  >
                     Audio URL *
                   </label>
                   <input
@@ -1562,13 +1681,25 @@ export default function RoomPage() {
                       color: '#f9fafb',
                       fontSize: '1rem',
                     }}
-                    placeholder="https://example.com/audio.mp3"
+                    placeholder={
+                      songSourceType === 'soundcloud'
+                        ? 'https://soundcloud.com/artist/track/s-XXXX'
+                        : 'https://example.com/audio.mp3'
+                    }
                   />
+                  {songUrlError && (
+                    <p style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                      {songUrlError}
+                    </p>
+                  )}
                   {/* Test profile URLs button */}
                   <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                     <button
                       type="button"
-                      onClick={() => setSongUrl('https://www.dropbox.com/scl/fi/y1qotzbjavsmo4te8oilq/When-the-Letters-Stopped-659.mp3?rlkey=ip5mrrp04dex4x3myrex5qibj&st=tlaswv6t&dl=0')}
+                      onClick={() => {
+                        setSongSourceType('direct');
+                        setSongUrl('https://www.dropbox.com/scl/fi/y1qotzbjavsmo4te8oilq/When-the-Letters-Stopped-659.mp3?rlkey=ip5mrrp04dex4x3myrex5qibj&st=tlaswv6t&dl=0');
+                      }}
                       style={{
                         background: '#1a1a2e',
                         color: '#f9fafb',
@@ -1583,7 +1714,10 @@ export default function RoomPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSongUrl('https://www.dropbox.com/scl/fi/najl5njoxxgrte5wq0rxq/Marve-My-Love_mastered.wav?rlkey=dh8uo11wn0z4a587t1epaaxrv&st=8hlre10m&dl=0')}
+                      onClick={() => {
+                        setSongSourceType('direct');
+                        setSongUrl('https://www.dropbox.com/scl/fi/najl5njoxxgrte5wq0rxq/Marve-My-Love_mastered.wav?rlkey=dh8uo11wn0z4a587t1epaaxrv&st=8hlre10m&dl=0');
+                      }}
                       style={{
                         background: '#1a1a2e',
                         color: '#f9fafb',
@@ -1596,20 +1730,56 @@ export default function RoomPage() {
                     >
                       Test URL 2
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSongSourceType('soundcloud');
+                        setSongUrl('https://soundcloud.com/iron-incense/when-the-letters-stopped-623-ver-1-1/s-BltIfEUQX1F');
+                      }}
+                      style={{
+                        background: '#1a1a2e',
+                        color: '#f9fafb',
+                        border: '1px solid #333',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      SoundCloud V1
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSongSourceType('soundcloud');
+                        setSongUrl('https://soundcloud.com/iron-incense/when-the-letters-stopped-659-ver-2-2/s-6QHBgJwCsmi');
+                      }}
+                      style={{
+                        background: '#1a1a2e',
+                        color: '#f9fafb',
+                        border: '1px solid #333',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      SoundCloud V2
+                    </button>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 <button
                   type="submit"
-                  disabled={!songTitle.trim() || !songUrl.trim()}
+                  disabled={!songTitle.trim() || !isSongUrlValid}
                   style={{
-                    background: (!songTitle.trim() || !songUrl.trim()) ? '#555' : '#3b82f6',
+                    background: (!songTitle.trim() || !isSongUrlValid) ? '#555' : '#3b82f6',
                     color: 'white',
                     border: 'none',
                     padding: isMobile ? '0.875rem 1.25rem' : '0.75rem 1.5rem',
                     borderRadius: '0.5rem',
                     fontSize: isMobile ? '0.95rem' : '1rem',
-                    cursor: (!songTitle.trim() || !songUrl.trim()) ? 'not-allowed' : 'pointer',
+                    cursor: (!songTitle.trim() || !isSongUrlValid) ? 'not-allowed' : 'pointer',
                     fontWeight: '500',
                     minHeight: isMobile ? '44px' : 'auto',
                   }}
@@ -1741,10 +1911,7 @@ export default function RoomPage() {
                         </div>
                       </div>
 
-                      <AudioPlayer
-                        src={song.url}
-                        onRequestPlay={handleExclusiveAudioPlay}
-                      />
+                      {renderSongPlayer(song)}
 
                       <div
                         style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #333' }}
@@ -1860,10 +2027,7 @@ export default function RoomPage() {
                   >
                     Uploaded by {comparisonPair.songA.uploader}
                   </p>
-                  <AudioPlayer
-                    src={comparisonPair.songA.url}
-                    onRequestPlay={handleExclusiveAudioPlay}
-                  />
+                  {renderSongPlayer(comparisonPair.songA)}
                   <button
                     onClick={() => comparisonPair.songA && handleComparison(comparisonPair.songA.id)}
                     disabled={comparing || isGuest}
@@ -1947,10 +2111,7 @@ export default function RoomPage() {
                   >
                     Uploaded by {comparisonPair.songB.uploader}
                   </p>
-                  <AudioPlayer
-                    src={comparisonPair.songB.url}
-                    onRequestPlay={handleExclusiveAudioPlay}
-                  />
+                  {renderSongPlayer(comparisonPair.songB)}
                   <button
                     onClick={() => comparisonPair.songB && handleComparison(comparisonPair.songB.id)}
                     disabled={comparing || isGuest}

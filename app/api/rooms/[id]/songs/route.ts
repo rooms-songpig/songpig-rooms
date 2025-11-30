@@ -40,7 +40,11 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { title, url } = body;
+    const { title, url, sourceType = 'direct' } = body as {
+      title?: string;
+      url?: string;
+      sourceType?: 'direct' | 'soundcloud';
+    };
 
     if (!title || !url) {
       return NextResponse.json(
@@ -49,7 +53,21 @@ export async function POST(
       );
     }
 
-    const song = await dataStore.addSong(id, title, url, username, userId);
+    if (!['direct', 'soundcloud'].includes(sourceType)) {
+      return NextResponse.json(
+        { error: 'Invalid audio source type' },
+        { status: 400 }
+      );
+    }
+
+    if (sourceType === 'soundcloud' && !url.includes('soundcloud.com')) {
+      return NextResponse.json(
+        { error: 'SoundCloud links must include soundcloud.com' },
+        { status: 400 }
+      );
+    }
+
+    const song = await dataStore.addSong(id, title, url, username, userId, sourceType);
 
     if (!song) {
       return NextResponse.json({ error: 'Failed to add song' }, { status: 500 });
