@@ -697,6 +697,25 @@ export const dataStore = {
       return { songA: null, songB: null };
     }
 
+    // Load comments for all songs in this room
+    const { data: commentsData } = await supabaseServer
+      .from('comments')
+      .select('*')
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: true });
+
+    // Build a map of songId -> comments
+    const commentsMap = new Map<string, Comment[]>();
+    if (commentsData) {
+      for (const dbComment of commentsData as DbComment[]) {
+        const comment = dbCommentToComment(dbComment);
+        if (!commentsMap.has(comment.songId)) {
+          commentsMap.set(comment.songId, []);
+        }
+        commentsMap.get(comment.songId)!.push(comment);
+      }
+    }
+
     // Get all comparisons this user has made
     const { data: comparisonsData } = await supabaseServer
       .from('comparisons')
@@ -721,8 +740,8 @@ export const dataStore = {
 
         if (!alreadyCompared) {
           return {
-            songA: dbSongToSong(songA, []),
-            songB: dbSongToSong(songB, []),
+            songA: dbSongToSong(songA, commentsMap.get(songA.id) || []),
+            songB: dbSongToSong(songB, commentsMap.get(songB.id) || []),
           };
         }
       }
@@ -730,8 +749,8 @@ export const dataStore = {
 
     // If all pairs have been compared, return the first pair
     return {
-      songA: dbSongToSong(songsData[0] as DbSong, []),
-      songB: dbSongToSong(songsData[1] as DbSong, []),
+      songA: dbSongToSong(songsData[0] as DbSong, commentsMap.get((songsData[0] as DbSong).id) || []),
+      songB: dbSongToSong(songsData[1] as DbSong, commentsMap.get((songsData[1] as DbSong).id) || []),
     };
   },
 
