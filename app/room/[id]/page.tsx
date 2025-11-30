@@ -108,12 +108,30 @@ export default function RoomPage() {
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; songId: string; authorName: string } | null>(null);
   const [replyText, setReplyText] = useState('');
 
-  const transformAudioUrl = useCallback((url: string, sourceType: 'direct' | 'soundcloud') => {
+  const cleanSoundCloudUrl = useCallback((input: string) => {
+    const trimmed = input.trim();
+    if (!trimmed) return trimmed;
+    try {
+      const parsed = new URL(trimmed);
+      if (!parsed.hostname.includes('soundcloud.com')) {
+        return trimmed;
+      }
+      parsed.search = '';
+      parsed.hash = '';
+      return parsed.toString();
+    } catch {
+      // If URL constructor fails (maybe already encoded api URL), fall back to original
+      return trimmed;
+    }
+  }, []);
+
+  const transformAudioUrl = useCallback(
+    (url: string, sourceType: 'direct' | 'soundcloud') => {
     const trimmed = url.trim();
     if (!trimmed) return trimmed;
 
     if (sourceType === 'soundcloud') {
-      return trimmed;
+        return cleanSoundCloudUrl(trimmed);
     }
 
     if (trimmed.includes('dropbox.com')) {
@@ -124,7 +142,9 @@ export default function RoomPage() {
     }
 
     return trimmed;
-  }, []);
+    },
+    [cleanSoundCloudUrl]
+  );
 
   const handleExclusiveAudioPlay = useCallback((audio: HTMLAudioElement) => {
     setPlayingAudio((current) => {
@@ -141,7 +161,7 @@ export default function RoomPage() {
         const height = variant === 'card' ? 160 : 140;
         const iframeHeight = 180;
         const embedUrl = `https://w.soundcloud.com/player/?url=${encodeURIComponent(
-          song.url
+          cleanSoundCloudUrl(song.url)
         )}&color=%233b82f6&auto_play=false&hide_related=false&show_comments=true&show_user=false&show_reposts=false&show_teaser=false&sharing=false&liking=false&show_playcount=false&show_artwork=false`;
 
         return (
@@ -1736,7 +1756,7 @@ export default function RoomPage() {
                       type="button"
                       onClick={() => {
                         setSongSourceType('soundcloud');
-                        setSongUrl('https://soundcloud.com/iron-incense/when-the-letters-stopped-623-ver-1-1/s-BltIfEUQX1F');
+                        setSongUrl('https://soundcloud.com/iron-incense/when-the-letters-stopped-623-ver-1-1/s-ItCn8A5N42y');
                       }}
                       style={{
                         background: '#1a1a2e',
@@ -1748,7 +1768,7 @@ export default function RoomPage() {
                         cursor: 'pointer',
                       }}
                     >
-                      SoundCloud V1
+                        SoundCloud V1
                     </button>
                     <button
                       type="button"
