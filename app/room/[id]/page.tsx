@@ -1919,6 +1919,7 @@ export default function RoomPage() {
                     background: 'rgba(59, 130, 246, 0.08)',
                     borderRadius: '0.5rem',
                     border: '1px dashed #3b82f6',
+                    opacity: (user?.allowManagedUploads ?? true) ? 1 : 0.5,
                   }}>
                     <label
                       style={{
@@ -1929,21 +1930,27 @@ export default function RoomPage() {
                       }}
                     >
                       Or upload directly to SongPig Cloud
+                      {!(user?.allowManagedUploads ?? true) && (
+                        <span style={{ color: '#f87171', fontSize: '0.85rem', marginLeft: '0.5rem' }}>
+                          (Disabled - Contact admin)
+                        </span>
+                      )}
                     </label>
                     <input
                       ref={fileInputRef}
                       type="file"
                       accept="audio/*"
                       onChange={handleFileSelect}
-                      disabled={isUploading}
+                      disabled={isUploading || !(user?.allowManagedUploads ?? true)}
                       style={{
                         width: '100%',
                         padding: '0.5rem',
-                        background: '#0f0f1e',
+                        background: !(user?.allowManagedUploads ?? true) ? '#1a1a2e' : '#0f0f1e',
                         border: '1px solid #333',
                         borderRadius: '0.5rem',
-                        color: '#f9fafb',
+                        color: !(user?.allowManagedUploads ?? true) ? '#666' : '#f9fafb',
                         fontSize: '0.9rem',
+                        cursor: !(user?.allowManagedUploads ?? true) ? 'not-allowed' : 'pointer',
                       }}
                     />
                     {selectedFile && (

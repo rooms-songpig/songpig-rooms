@@ -133,6 +133,10 @@ export const userStore = {
         status: 'active',
         bio: '',
         created_at: now,
+        // Default storage settings for new users
+        allow_managed_uploads: true,
+        max_cloud_songs: 6,
+        storage_used_bytes: 0,
       })
       .select()
       .limit(1);
