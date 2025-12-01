@@ -13,6 +13,10 @@ interface User {
   role: 'admin' | 'artist' | 'listener';
   status: 'active' | 'disabled' | 'deleted';
   createdAt: number;
+  allowManagedUploads?: boolean;
+  maxCloudSongs?: number;
+  storageUsedBytes?: number;
+  storageLimitBytes?: number;
 }
 
 interface Room {
@@ -54,6 +58,8 @@ export default function AdminPage() {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<'admin' | 'artist' | 'listener'>('listener');
   const [editStatus, setEditStatus] = useState<'active' | 'disabled' | 'deleted'>('active');
+  const [editAllowManagedUploads, setEditAllowManagedUploads] = useState<boolean>(true);
+  const [editMaxCloudSongs, setEditMaxCloudSongs] = useState<number>(6);
   const [selectedRooms, setSelectedRooms] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<'draft' | 'active' | 'archived' | 'deleted'>('active');
   const [changingBulkStatus, setChangingBulkStatus] = useState(false);
@@ -186,6 +192,8 @@ export default function AdminPage() {
         body: JSON.stringify({
           role: editRole,
           status: editStatus,
+          allowManagedUploads: editAllowManagedUploads,
+          maxCloudSongs: editMaxCloudSongs,
         }),
       });
 
@@ -206,6 +214,8 @@ export default function AdminPage() {
     setEditingUser(u.id);
     setEditRole(u.role);
     setEditStatus(u.status);
+    setEditAllowManagedUploads(u.allowManagedUploads ?? true);
+    setEditMaxCloudSongs(u.maxCloudSongs ?? 6);
   };
 
   const cancelEditing = () => {
@@ -1286,6 +1296,8 @@ export default function AdminPage() {
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Username</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Role</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Status</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Cloud Uploads</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Max Songs</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Actions</th>
                   </tr>
                 </thead>
@@ -1353,6 +1365,43 @@ export default function AdminPage() {
                           <span style={{ color: u.status === 'active' ? '#10b981' : u.status === 'disabled' ? '#ef4444' : '#888' }}>
                             {u.status}
                           </span>
+                        )}
+                      </td>
+                      <td style={{ padding: '0.75rem' }}>
+                        {editingUser === u.id ? (
+                          <input
+                            type="checkbox"
+                            checked={editAllowManagedUploads}
+                            onChange={(e) => setEditAllowManagedUploads(e.target.checked)}
+                            disabled={u.role === 'admin'}
+                            style={{ cursor: u.role === 'admin' ? 'not-allowed' : 'pointer' }}
+                          />
+                        ) : (
+                          <span style={{ color: (u.allowManagedUploads ?? true) ? '#10b981' : '#ef4444' }}>
+                            {(u.allowManagedUploads ?? true) ? '✓ Enabled' : '✗ Disabled'}
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: '0.75rem' }}>
+                        {editingUser === u.id ? (
+                          <input
+                            type="number"
+                            value={editMaxCloudSongs}
+                            onChange={(e) => setEditMaxCloudSongs(parseInt(e.target.value) || 6)}
+                            disabled={u.role === 'admin'}
+                            min="0"
+                            max="100"
+                            style={{
+                              background: '#0f0f1e',
+                              color: '#f9fafb',
+                              border: '1px solid #333',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.375rem',
+                              width: '60px',
+                            }}
+                          />
+                        ) : (
+                          <span>{u.maxCloudSongs ?? 6}</span>
                         )}
                       </td>
                       <td style={{ padding: '0.75rem' }}>

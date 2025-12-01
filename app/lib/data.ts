@@ -2,6 +2,7 @@ import { normalizeText } from './utils';
 import { userStore } from './users';
 import { supabaseServer } from './supabase-server';
 import { logger } from './logger';
+import { deleteFile } from './cloudflare-r2';
 
 // Data store interfaces
 export interface Comment {
@@ -570,15 +571,65 @@ export const dataStore = {
       return false;
     }
 
-    const { error } = await supabaseServer
+    // Load song to get storage info
+    const { data: songData, error: songError } = await supabaseServer
+      .from('songs')
+      .select('id, room_id, storage_type, storage_key')
+      .eq('id', songId)
+      .eq('room_id', roomId)
+      .single();
+
+    if (songError || !songData) {
+      console.error('Error loading song for removal:', songError);
+      return false;
+    }
+
+    // Delete comments linked to this song
+    const { error: commentsError } = await supabaseServer
+      .from('comments')
+      .delete()
+      .eq('song_id', songId)
+      .eq('room_id', roomId);
+
+    if (commentsError) {
+      console.error('Error removing song comments:', commentsError);
+      // Continue anyway to avoid leaving orphaned songs
+    }
+
+    // Delete comparisons involving this song in this room
+    const { error: comparisonsError } = await supabaseServer
+      .from('comparisons')
+      .delete()
+      .eq('room_id', roomId)
+      .or(`song_a_id.eq.${songId},song_b_id.eq.${songId}`);
+
+    if (comparisonsError) {
+      console.error('Error removing song comparisons:', comparisonsError);
+      // Continue anyway
+    }
+
+    // Delete the song row itself
+    const { error: songDeleteError } = await supabaseServer
       .from('songs')
       .delete()
       .eq('id', songId)
       .eq('room_id', roomId);
 
-    if (error) {
-      console.error('Error removing song:', error);
+    if (songDeleteError) {
+      console.error('Error removing song:', songDeleteError);
       return false;
+    }
+
+    // If this was a Cloudflare-hosted song, attempt to delete the file
+    if (songData.storage_type === 'cloudflare' && songData.storage_key) {
+      const deleted = await deleteFile(songData.storage_key as string);
+      if (!deleted) {
+        console.warn('Failed to delete Cloudflare file for song', {
+          songId,
+          roomId,
+          storageKey: songData.storage_key,
+        });
+      }
     }
 
     // Update room updated_at

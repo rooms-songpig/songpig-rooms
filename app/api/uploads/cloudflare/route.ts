@@ -8,6 +8,7 @@ import {
   getExtensionForType,
 } from '@/app/lib/cloudflare-r2';
 import { userStore } from '@/app/lib/users';
+import { supabaseServer } from '@/app/lib/supabase-server';
 
 // POST /api/uploads/cloudflare - Get a pre-signed upload URL
 export async function POST(request: NextRequest) {
@@ -48,16 +49,49 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check allow_managed_uploads flag (admins bypass this check)
-    // Note: This requires the database migration to be run first
-    // For now, we'll allow all artists until the migration is complete
-    // TODO: Uncomment after migration
-    // if (userRole !== 'admin' && !user.allowManagedUploads) {
-    //   return NextResponse.json(
-    //     { error: 'You do not have permission to use cloud uploads. Contact an admin to enable this feature.' },
-    //     { status: 403 }
-    //   );
-    // }
+    // Enforce managed-upload permissions and per-artist caps (artists only)
+    if (userRole !== 'admin') {
+      const allowManaged = user.allowManagedUploads !== false; // default to true if undefined
+      if (!allowManaged) {
+        return NextResponse.json(
+          {
+            error: 'Cloud uploads are disabled for your account. Contact support if you need access.',
+            code: 'MANAGED_UPLOADS_DISABLED',
+          },
+          { status: 403 }
+        );
+      }
+
+      const maxCloudSongs = user.maxCloudSongs ?? 6;
+      if (maxCloudSongs <= 0) {
+        return NextResponse.json(
+          {
+            error: 'You are not allowed to upload songs to SongPig Cloud at this time.',
+            code: 'MANAGED_UPLOADS_DISABLED',
+          },
+          { status: 403 }
+        );
+      }
+
+      // Count existing Cloudflare-hosted songs for this uploader
+      const { count, error: countError } = await supabaseServer
+        .from('songs')
+        .select('id', { count: 'exact', head: true })
+        .eq('uploader_id', userId)
+        .eq('storage_type', 'cloudflare');
+
+      if (!countError && typeof count === 'number' && count >= maxCloudSongs) {
+        return NextResponse.json(
+          {
+            error: `You have reached your SongPig Cloud upload limit (${maxCloudSongs} songs).`,
+            code: 'STORAGE_LIMIT_REACHED',
+            maxCloudSongs,
+            currentCloudSongs: count,
+          },
+          { status: 403 }
+        );
+      }
+    }
 
     // Parse request body
     const body = await request.json();

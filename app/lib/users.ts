@@ -12,6 +12,11 @@ export interface User {
   createdAt: number;
   lastLogin?: number;
   bio?: string;
+  // Managed upload / storage fields (optional for backward compatibility)
+  allowManagedUploads?: boolean;
+  maxCloudSongs?: number;
+  storageLimitBytes?: number | null;
+  storageUsedBytes?: number;
 }
 
 // Database user type (snake_case)
@@ -25,6 +30,11 @@ interface DbUser {
   bio: string | null;
   created_at: string;
   last_login: string | null;
+  // Managed uploads / storage columns
+  allow_managed_uploads?: boolean | null;
+  max_cloud_songs?: number | null;
+  storage_limit_bytes?: number | null;
+  storage_used_bytes?: number | null;
 }
 
 // Convert database user to application user
@@ -39,6 +49,10 @@ function dbUserToUser(dbUser: DbUser): User {
     createdAt: new Date(dbUser.created_at).getTime(),
     lastLogin: dbUser.last_login ? new Date(dbUser.last_login).getTime() : undefined,
     bio: dbUser.bio || undefined,
+    allowManagedUploads: dbUser.allow_managed_uploads ?? undefined,
+    maxCloudSongs: dbUser.max_cloud_songs ?? undefined,
+    storageLimitBytes: dbUser.storage_limit_bytes ?? null,
+    storageUsedBytes: dbUser.storage_used_bytes ?? undefined,
   };
 }
 
@@ -53,6 +67,18 @@ function userToDbUser(user: Partial<User>): Partial<DbUser> {
   if (user.bio !== undefined) dbUser.bio = user.bio || null;
   if (user.createdAt !== undefined) dbUser.created_at = new Date(user.createdAt).toISOString();
   if (user.lastLogin !== undefined) dbUser.last_login = user.lastLogin ? new Date(user.lastLogin).toISOString() : null;
+   if (user.allowManagedUploads !== undefined) {
+     dbUser.allow_managed_uploads = user.allowManagedUploads;
+   }
+   if (user.maxCloudSongs !== undefined) {
+     dbUser.max_cloud_songs = user.maxCloudSongs;
+   }
+   if (user.storageLimitBytes !== undefined) {
+     dbUser.storage_limit_bytes = user.storageLimitBytes;
+   }
+   if (user.storageUsedBytes !== undefined) {
+     dbUser.storage_used_bytes = user.storageUsedBytes;
+   }
   return dbUser;
 }
 

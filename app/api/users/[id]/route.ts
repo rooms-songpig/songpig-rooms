@@ -50,7 +50,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { role, status, username, bio } = body;
+    const { role, status, username, bio, allowManagedUploads, maxCloudSongs } = body;
 
     const user = await userStore.getUser(id);
     if (!user) {
@@ -126,6 +126,13 @@ export async function PATCH(
     }
     if (bio !== undefined) {
       updates.bio = bio;
+    }
+    // Admin-only: managed uploads settings
+    if (allowManagedUploads !== undefined && isAdmin) {
+      updates.allowManagedUploads = allowManagedUploads;
+    }
+    if (maxCloudSongs !== undefined && isAdmin && typeof maxCloudSongs === 'number' && maxCloudSongs >= 0) {
+      updates.maxCloudSongs = maxCloudSongs;
     }
 
     const updatedUser = await userStore.updateUser(id, updates);

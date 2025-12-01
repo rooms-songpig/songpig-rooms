@@ -92,6 +92,7 @@ export default function RoomPage() {
   const songTitleRef = useRef<HTMLInputElement>(null);
   const songUrlRef = useRef<HTMLInputElement>(null);
   const [autoVersion2, setAutoVersion2] = useState(false);
+  const [acceptedUploadTerms, setAcceptedUploadTerms] = useState(false);
   // Cloud upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -775,6 +776,13 @@ export default function RoomPage() {
     const effectiveUrl = songSourceType === 'soundcloud_embed' ? soundcloudEmbedCode : songUrl;
     
     if (!songTitle.trim() || !room) return;
+    if (!acceptedUploadTerms) {
+      setToast({
+        message: 'Please confirm you own the rights to this audio and agree to the upload terms before adding a song.',
+        type: 'error',
+      });
+      return;
+    }
     if (!isCloudUpload && !effectiveUrl.trim()) return;
 
     logger.info('Starting song addition', { roomId, songTitle, sourceType: songSourceType });
@@ -2130,18 +2138,48 @@ export default function RoomPage() {
                     </div>
                   </div>
                 )}
+                {/* Upload terms & conditions */}
+                <div style={{ marginBottom: '1rem', marginTop: '0.5rem' }}>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '0.5rem',
+                      fontSize: '0.8rem',
+                      lineHeight: 1.4,
+                      opacity: 0.85,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={acceptedUploadTerms}
+                      onChange={(e) => setAcceptedUploadTerms(e.target.checked)}
+                      style={{ marginTop: '0.15rem' }}
+                    />
+                    <span>
+                      I confirm I own or have the rights to this audio and will not upload infringing or illegal content.
+                      I agree to hold Song Pig harmless for content I upload and accept the{' '}
+                      <Link href="/terms" style={{ color: '#93c5fd', textDecoration: 'underline' }}>
+                        Terms of Use
+                      </Link>
+                      .
+                    </span>
+                  </label>
+                </div>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 <button
                   type="submit"
-                  disabled={!songTitle.trim() || !isSongUrlValid}
+                  disabled={!songTitle.trim() || !isSongUrlValid || !acceptedUploadTerms || isUploading}
                   style={{
-                    background: (!songTitle.trim() || !isSongUrlValid) ? '#555' : '#3b82f6',
+                    background: (!songTitle.trim() || !isSongUrlValid || !acceptedUploadTerms || isUploading) ? '#555' : '#3b82f6',
                     color: 'white',
                     border: 'none',
                     padding: isMobile ? '0.875rem 1.25rem' : '0.75rem 1.5rem',
                     borderRadius: '0.5rem',
                     fontSize: isMobile ? '0.95rem' : '1rem',
-                    cursor: (!songTitle.trim() || !isSongUrlValid) ? 'not-allowed' : 'pointer',
+                    cursor: (!songTitle.trim() || !isSongUrlValid || !acceptedUploadTerms || isUploading)
+                      ? 'not-allowed'
+                      : 'pointer',
                     fontWeight: '500',
                     minHeight: isMobile ? '44px' : 'auto',
                   }}
