@@ -1542,8 +1542,10 @@ export default function RoomPage() {
                 gap: '0.5rem', 
                 flexWrap: 'wrap',
                 width: '100%',
+                maxWidth: '100%',
                 justifyContent: isMobile ? 'flex-start' : 'flex-end',
                 marginTop: isMobile ? '1rem' : 0,
+                boxSizing: 'border-box',
               }}>
                 {room.status === 'draft' && (
                   <button
@@ -1583,124 +1585,169 @@ export default function RoomPage() {
                       cursor: changingStatus || room.songs.length < 2 ? 'not-allowed' : 'pointer',
                       fontWeight: '500',
                       minHeight: isMobile ? '44px' : 'auto',
+                      flexShrink: 0,
                     }}
                   >
                     Make Active
                   </button>
                 )}
                 {room.status === 'active' && (
-                  <button
-                    onClick={async () => {
-                      if (!confirm('Archive this room? It will no longer accept new comparisons.')) return;
-                      setChangingStatus(true);
-                      try {
-                        const res = await fetch(`/api/rooms/${roomId}/status`, {
-                          method: 'PATCH',
-                          headers: getAuthHeaders(),
-                          body: JSON.stringify({ status: 'archived' }),
-                        });
-                        const data = await res.json();
-                        if (data.error) {
-                          setToast({ message: data.error, type: 'error' });
-                        } else {
-                          setToast({ message: 'Room archived successfully', type: 'success' });
-                          fetchRoom();
+                  <>
+                    <button
+                      onClick={async () => {
+                        if (!confirm('Archive this room? It will no longer accept new comparisons.')) return;
+                        setChangingStatus(true);
+                        try {
+                          const res = await fetch(`/api/rooms/${roomId}/status`, {
+                            method: 'PATCH',
+                            headers: getAuthHeaders(),
+                            body: JSON.stringify({ status: 'archived' }),
+                          });
+                          const data = await res.json();
+                          if (data.error) {
+                            setToast({ message: data.error, type: 'error' });
+                          } else {
+                            setToast({ message: 'Room archived successfully', type: 'success' });
+                            fetchRoom();
+                          }
+                        } catch (error) {
+                          setToast({ message: 'Failed to update room status', type: 'error' });
+                        } finally {
+                          setChangingStatus(false);
                         }
-                      } catch (error) {
-                        setToast({ message: 'Failed to update room status', type: 'error' });
-                      } finally {
-                        setChangingStatus(false);
-                      }
-                    }}
-                    disabled={changingStatus}
-                    style={{
-                      background: changingStatus ? '#555' : '#6b7280',
-                      color: 'white',
-                      border: 'none',
-                      padding: isMobile ? '0.625rem 1rem' : '0.5rem 1rem',
-                      borderRadius: '0.5rem',
-                      fontSize: '0.85rem',
-                      cursor: changingStatus ? 'not-allowed' : 'pointer',
-                      minHeight: isMobile ? '44px' : 'auto',
-                    }}
-                  >
-                    Archive
-                  </button>
+                      }}
+                      disabled={changingStatus}
+                      style={{
+                        background: changingStatus ? '#555' : '#6b7280',
+                        color: 'white',
+                        border: 'none',
+                        padding: isMobile ? '0.625rem 1rem' : '0.5rem 1rem',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.85rem',
+                        cursor: changingStatus ? 'not-allowed' : 'pointer',
+                        minHeight: isMobile ? '44px' : 'auto',
+                        flexShrink: 0,
+                      }}
+                    >
+                      Archive
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm('Delete this room? This action can be undone by an admin.')) return;
+                        setChangingStatus(true);
+                        try {
+                          const res = await fetch(`/api/rooms/${roomId}/status`, {
+                            method: 'PATCH',
+                            headers: getAuthHeaders(),
+                            body: JSON.stringify({ status: 'deleted' }),
+                          });
+                          const data = await res.json();
+                          if (data.error) {
+                            setToast({ message: data.error, type: 'error' });
+                          } else {
+                            setToast({ message: 'Room deleted successfully', type: 'success' });
+                            setTimeout(() => router.push('/'), 1000);
+                          }
+                        } catch (error) {
+                          setToast({ message: 'Failed to delete room', type: 'error' });
+                        } finally {
+                          setChangingStatus(false);
+                        }
+                      }}
+                      disabled={changingStatus}
+                      style={{
+                        background: changingStatus ? '#555' : '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        padding: isMobile ? '0.625rem 1rem' : '0.5rem 1rem',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.85rem',
+                        cursor: changingStatus ? 'not-allowed' : 'pointer',
+                        minHeight: isMobile ? '44px' : 'auto',
+                        flexShrink: 0,
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </>
                 )}
                 {room.status === 'archived' && (
-                  <button
-                    onClick={async () => {
-                      setChangingStatus(true);
-                      try {
-                        const res = await fetch(`/api/rooms/${roomId}/status`, {
-                          method: 'PATCH',
-                          headers: getAuthHeaders(),
-                          body: JSON.stringify({ status: 'active' }),
-                        });
-                        const data = await res.json();
-                        if (data.error) {
-                          alert(data.error);
-                        } else {
-                          fetchRoom();
+                  <>
+                    <button
+                      onClick={async () => {
+                        setChangingStatus(true);
+                        try {
+                          const res = await fetch(`/api/rooms/${roomId}/status`, {
+                            method: 'PATCH',
+                            headers: getAuthHeaders(),
+                            body: JSON.stringify({ status: 'active' }),
+                          });
+                          const data = await res.json();
+                          if (data.error) {
+                            alert(data.error);
+                          } else {
+                            fetchRoom();
+                          }
+                        } catch (error) {
+                          alert('Failed to update room status');
+                        } finally {
+                          setChangingStatus(false);
                         }
-                      } catch (error) {
-                        alert('Failed to update room status');
-                      } finally {
-                        setChangingStatus(false);
-                      }
-                    }}
-                    disabled={changingStatus}
-                    style={{
-                      background: changingStatus ? '#555' : '#10b981',
-                      color: 'white',
-                      border: 'none',
-                      padding: isMobile ? '0.625rem 1rem' : '0.5rem 1rem',
-                      borderRadius: '0.5rem',
-                      fontSize: '0.85rem',
-                      cursor: changingStatus ? 'not-allowed' : 'pointer',
-                      minHeight: isMobile ? '44px' : 'auto',
-                    }}
-                  >
-                    Restore
-                  </button>
-                )}
-                {room.status !== 'deleted' && (
-                  <button
-                    onClick={async () => {
-                      if (!confirm('Delete this room? This action can be undone by an admin.')) return;
-                      setChangingStatus(true);
-                      try {
-                        const res = await fetch(`/api/rooms/${roomId}/status`, {
-                          method: 'PATCH',
-                          headers: getAuthHeaders(),
-                          body: JSON.stringify({ status: 'deleted' }),
-                        });
-                        const data = await res.json();
-                        if (data.error) {
-                          setToast({ message: data.error, type: 'error' });
-                        } else {
-                          setToast({ message: 'Room deleted successfully', type: 'success' });
-                          setTimeout(() => router.push('/'), 1000);
+                      }}
+                      disabled={changingStatus}
+                      style={{
+                        background: changingStatus ? '#555' : '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        padding: isMobile ? '0.625rem 1rem' : '0.5rem 1rem',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.85rem',
+                        cursor: changingStatus ? 'not-allowed' : 'pointer',
+                        minHeight: isMobile ? '44px' : 'auto',
+                        flexShrink: 0,
+                      }}
+                    >
+                      Restore
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm('Delete this room? This action can be undone by an admin.')) return;
+                        setChangingStatus(true);
+                        try {
+                          const res = await fetch(`/api/rooms/${roomId}/status`, {
+                            method: 'PATCH',
+                            headers: getAuthHeaders(),
+                            body: JSON.stringify({ status: 'deleted' }),
+                          });
+                          const data = await res.json();
+                          if (data.error) {
+                            setToast({ message: data.error, type: 'error' });
+                          } else {
+                            setToast({ message: 'Room deleted successfully', type: 'success' });
+                            setTimeout(() => router.push('/'), 1000);
+                          }
+                        } catch (error) {
+                          setToast({ message: 'Failed to delete room', type: 'error' });
+                        } finally {
+                          setChangingStatus(false);
                         }
-                      } catch (error) {
-                        setToast({ message: 'Failed to delete room', type: 'error' });
-                      } finally {
-                        setChangingStatus(false);
-                      }
-                    }}
-                    disabled={changingStatus}
-                    style={{
-                      background: changingStatus ? '#555' : '#ef4444',
-                      color: 'white',
-                      border: 'none',
-                      padding: '0.5rem 1rem',
-                      borderRadius: '0.5rem',
-                      fontSize: '0.85rem',
-                      cursor: changingStatus ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    Delete
-                  </button>
+                      }}
+                      disabled={changingStatus}
+                      style={{
+                        background: changingStatus ? '#555' : '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        padding: isMobile ? '0.625rem 1rem' : '0.5rem 1rem',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.85rem',
+                        cursor: changingStatus ? 'not-allowed' : 'pointer',
+                        minHeight: isMobile ? '44px' : 'auto',
+                        flexShrink: 0,
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </>
                 )}
               </div>
             )}

@@ -189,7 +189,16 @@ function SingleComment({
         }}
       >
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '0.5rem',
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          gap: '0.5rem',
+        }}>
           <CommentAuthorTooltip
             authorId={comment.authorId}
             authorUsername={comment.authorUsername}
@@ -200,12 +209,21 @@ function SingleComment({
                 fontWeight: '600',
                 color: '#4a9eff',
                 cursor: comment.isAnonymous ? 'default' : 'pointer',
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word',
+                flexShrink: 1,
+                minWidth: 0,
               }}
             >
               {authorName}
             </span>
           </CommentAuthorTooltip>
-          <span style={{ fontSize: '0.75rem', opacity: 0.5 }}>
+          <span style={{ 
+            fontSize: '0.75rem', 
+            opacity: 0.5,
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+          }}>
             {formatTimestamp(comment.createdAt)}
           </span>
         </div>
@@ -220,6 +238,9 @@ function SingleComment({
           gap: '0.5rem', 
           fontSize: '0.8rem',
           flexWrap: 'wrap',
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
         }}>
           {/* Like button - simple text, turns blue when liked */}
           <button
@@ -515,6 +536,9 @@ export default function CommentThread({
               cursor: newCommentText.trim() && !submitting ? 'pointer' : 'not-allowed',
               fontWeight: '500',
               minHeight: '44px',
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
             }}
           >
             {submitting ? 'Posting...' : 'Comment'}
