@@ -1374,22 +1374,26 @@ export default function RoomPage() {
           </button>
           <div style={{ 
             display: 'flex', 
-            flexDirection: isMobile ? 'column' : 'row', 
-            justifyContent: 'space-between', 
-            alignItems: 'flex-start', 
+            flexDirection: 'column',
+            alignItems: 'center',
             width: '100%', 
-            maxWidth: '100%',
-            gap: isMobile ? '1rem' : '2rem',
+            maxWidth: isMobile ? '100%' : '1200px',
+            margin: isMobile ? '0' : '0 auto',
+            gap: isMobile ? '1rem' : '1.5rem',
             boxSizing: 'border-box',
             overflow: 'hidden',
           }}>
-            <div style={{ flex: 1, minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
+            <div style={{ 
+              width: '100%',
+              maxWidth: '100%', 
+              boxSizing: 'border-box',
+            }}>
               <div style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
                 gap: '1rem', 
                 marginBottom: '0.5rem',
-                flexWrap: 'wrap',
+                flexWrap: isMobile ? 'wrap' : 'nowrap',
                 width: '100%',
               }}>
                 {/* Status badge on the left */}
@@ -1403,6 +1407,7 @@ export default function RoomPage() {
                     fontWeight: '600',
                     textTransform: 'uppercase',
                     flexShrink: 0,
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {room.status}
@@ -1548,8 +1553,9 @@ export default function RoomPage() {
                 flexWrap: 'nowrap',
                 width: '100%',
                 maxWidth: '100%',
-                justifyContent: isMobile ? 'flex-start' : 'flex-end',
-                marginTop: isMobile ? '1rem' : 0,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginTop: 0,
                 boxSizing: 'border-box',
                 overflow: 'hidden',
               }}>
