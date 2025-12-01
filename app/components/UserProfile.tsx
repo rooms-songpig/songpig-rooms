@@ -9,8 +9,18 @@ export default function UserProfile() {
   const router = useRouter();
   const user = getCurrentUser();
   const [showMenu, setShowMenu] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   if (!user) return null;
 
@@ -69,7 +79,7 @@ export default function UserProfile() {
         position: 'relative',
         overflowX: 'hidden',
       }}>
-        {/* Main Title - Centered */}
+        {/* Main Title - Centered, hidden on very small screens */}
         <Link
           href="/"
           style={{
@@ -81,6 +91,7 @@ export default function UserProfile() {
             width: '100%',
             maxWidth: '600px',
             padding: '0 1rem',
+            display: isMobile ? 'none' : 'block', // Hide on mobile to prevent overlap
           }}
         >
           <h1 style={{
@@ -102,7 +113,15 @@ export default function UserProfile() {
           </h1>
         </Link>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, position: 'relative', zIndex: 2 }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '0.75rem', 
+          flex: 1, 
+          position: 'relative', 
+          zIndex: 2,
+          minWidth: 0, // Allow flex shrink
+        }}>
           <div
             ref={buttonRef}
             style={{

@@ -70,6 +70,7 @@ export default function Home() {
   const [recentComments, setRecentComments] = useState<RecentComment[]>([]);
   const [songStats, setSongStats] = useState<SongStat[]>([]);
   const [showAllComments, setShowAllComments] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false); // Collapsed by default
 
   const formatRoomNameWithArtist = useCallback(
     (value: string) => {
@@ -311,34 +312,15 @@ export default function Home() {
     >
       <UserProfile />
       <div style={{ maxWidth: '100%', margin: '0 auto', padding: '0 0.5rem', boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <div>
-            <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
-              Songpig Listening Rooms
-            </h1>
-            <p style={{ opacity: 0.8, marginBottom: '0.5rem' }}>
-              Welcome, {user.username} ({user.role})
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            {user.role === 'admin' && (
-              <Link
-                href="/admin"
-                style={{
-                  background: '#1a1a2e',
-                  color: '#f9fafb',
-                  border: '1px solid #333',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '0.5rem',
-                  fontSize: '0.9rem',
-                  textDecoration: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                Admin Dashboard
-              </Link>
-            )}
-          </div>
+        <div style={{ marginBottom: '2rem', marginTop: '1rem' }}>
+          <p style={{ 
+            opacity: 0.8, 
+            marginBottom: '0.5rem',
+            fontSize: 'clamp(0.9rem, 2.5vw, 1rem)',
+            wordBreak: 'break-word',
+          }}>
+            Welcome, <strong>{user.username}</strong> <span style={{ opacity: 0.7 }}>({user.role})</span>
+          </p>
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
@@ -492,7 +474,12 @@ export default function Home() {
             border: '1px solid #333',
           }}>
             <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Your Stats</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', textAlign: 'center' }}>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(70px, 1fr))', 
+              gap: '1rem', 
+              textAlign: 'center' 
+            }}>
               <div>
                 <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6', margin: 0 }}>
                   {artistStats.totalRooms}
@@ -530,25 +517,42 @@ export default function Home() {
             marginBottom: '2rem',
             border: '1px solid #333',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showFeedback ? '1rem' : 0 }}>
               <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Recent Feedback</h2>
-              {recentComments.length > 5 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {recentComments.length > 3 && (
+                  <button
+                    onClick={() => setShowAllComments(!showAllComments)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#3b82f6',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      display: showFeedback ? 'block' : 'none',
+                    }}
+                  >
+                    {showAllComments ? 'Show less' : `Show all (${recentComments.length})`}
+                  </button>
+                )}
                 <button
-                  onClick={() => setShowAllComments(!showAllComments)}
+                  onClick={() => setShowFeedback(!showFeedback)}
                   style={{
                     background: 'transparent',
                     border: 'none',
                     color: '#3b82f6',
                     cursor: 'pointer',
                     fontSize: '0.85rem',
+                    fontWeight: '500',
                   }}
                 >
-                  {showAllComments ? 'Show less' : `Show all (${recentComments.length})`}
+                  {showFeedback ? 'Hide' : `Show (${recentComments.length})`}
                 </button>
-              )}
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {(showAllComments ? recentComments : recentComments.slice(0, 5)).map((comment) => (
+            {showFeedback && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {(showAllComments ? recentComments : recentComments.slice(0, 3)).map((comment) => (
                 <Link
                   key={comment.id}
                   href={`/room/${comment.roomId}`}
@@ -577,8 +581,9 @@ export default function Home() {
                     {comment.roomName}
                   </p>
                 </Link>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
