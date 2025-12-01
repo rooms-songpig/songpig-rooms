@@ -977,6 +977,7 @@ export default function RoomPage() {
           fileInputRef.current.value = '';
         }
         setAutoVersion2(false);
+        setAcceptedUploadTerms(false); // Reset terms checkbox for next song
         // Reset comparison pair state so it can be fetched again with new songs
         setHasFetchedPair(false);
         setComparisonPair({ songA: null, songB: null });
