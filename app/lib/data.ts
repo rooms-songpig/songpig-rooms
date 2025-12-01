@@ -19,6 +19,7 @@ export interface Comment {
 }
 
 export type SongSourceType = 'direct' | 'soundcloud' | 'soundcloud_embed';
+export type SongStorageType = 'external' | 'cloudflare';
 
 export interface Song {
   id: string;
@@ -27,6 +28,8 @@ export interface Song {
   uploader: string;
   uploaderId: string;
   sourceType: SongSourceType;
+  storageType: SongStorageType;
+  storageKey?: string;
   comments: Comment[];
 }
 
@@ -81,6 +84,8 @@ interface DbSong {
   uploader: string;
   uploader_id: string;
   source_type: SongSourceType | null;
+  storage_type: SongStorageType | null;
+  storage_key: string | null;
   created_at: string;
 }
 
@@ -139,6 +144,8 @@ function dbSongToSong(db: DbSong, comments: Comment[]): Song {
     uploader: db.uploader,
     uploaderId: db.uploader_id,
     sourceType: db.source_type || 'direct',
+    storageType: db.storage_type || 'external',
+    storageKey: db.storage_key || undefined,
     comments,
   };
 }
@@ -479,9 +486,11 @@ export const dataStore = {
     url: string,
     uploader: string,
     uploaderId: string,
-    sourceType: SongSourceType = 'direct'
+    sourceType: SongSourceType = 'direct',
+    storageType: SongStorageType = 'external',
+    storageKey?: string
   ): Promise<Song | null> {
-    logger.info('addSong: Starting', { roomId, title, uploader, uploaderId });
+    logger.info('addSong: Starting', { roomId, title, uploader, uploaderId, storageType });
     
     // Verify room exists
     const { data: roomData } = await supabaseServer
@@ -506,6 +515,8 @@ export const dataStore = {
         uploader,
         uploader_id: uploaderId,
         source_type: sourceType,
+        storage_type: storageType,
+        storage_key: storageKey || null,
         created_at: now,
       })
       .select()
@@ -518,7 +529,7 @@ export const dataStore = {
       return null;
     }
 
-    logger.info('addSong: Song inserted', { roomId, songId: data.id, title, insertTime });
+    logger.info('addSong: Song inserted', { roomId, songId: data.id, title, storageType, insertTime });
 
     // Update room updated_at
     const updateStartTime = Date.now();
@@ -537,10 +548,12 @@ export const dataStore = {
       uploader: data.uploader,
       uploaderId: data.uploader_id,
       sourceType: data.source_type || 'direct',
+      storageType: data.storage_type || 'external',
+      storageKey: data.storage_key || undefined,
       comments: [],
     };
 
-    logger.info('addSong: Success', { roomId, songId: song.id, title, totalTime: insertTime + updateTime });
+    logger.info('addSong: Success', { roomId, songId: song.id, title, storageType, totalTime: insertTime + updateTime });
     return song;
   },
 

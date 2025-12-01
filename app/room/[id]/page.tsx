@@ -16,6 +16,7 @@ import CommentAuthorTooltip from '@/app/components/CommentAuthorTooltip';
 import CommentThread from '@/app/components/CommentThread';
 
 type SongSourceType = 'direct' | 'soundcloud' | 'soundcloud_embed';
+type SongStorageType = 'external' | 'cloudflare';
 
 interface Song {
   id: string;
@@ -23,6 +24,8 @@ interface Song {
   url: string;
   uploader: string;
   sourceType: SongSourceType;
+  storageType?: SongStorageType;
+  storageKey?: string;
   comments: Array<{ id: string; userId: string; text: string; timestamp: number }>;
 }
 
@@ -89,7 +92,16 @@ export default function RoomPage() {
   const songTitleRef = useRef<HTMLInputElement>(null);
   const songUrlRef = useRef<HTMLInputElement>(null);
   const [autoVersion2, setAutoVersion2] = useState(false);
+  // Cloud upload state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isSongUrlValid = useMemo(() => {
+    // Cloud upload is valid if we have a file selected
+    if (songSourceType === 'direct' && selectedFile) {
+      return true;
+    }
     if (songSourceType === 'soundcloud_embed') {
       // For embed code, check that it contains an iframe src with w.soundcloud.com
       return soundcloudEmbedCode.toLowerCase().includes('w.soundcloud.com/player');
@@ -100,7 +112,7 @@ export default function RoomPage() {
       return trimmed.toLowerCase().includes('soundcloud.com/');
     }
     return true;
-  }, [songUrl, songSourceType, soundcloudEmbedCode]);
+  }, [songUrl, songSourceType, soundcloudEmbedCode, selectedFile]);
 
   const songUrlError = useMemo(() => {
     if (songSourceType === 'soundcloud_embed') {
@@ -177,6 +189,92 @@ export default function RoomPage() {
       return audio;
     });
   }, []);
+
+  // Handle file selection for cloud upload
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/wave', 'audio/x-wav', 
+                         'audio/aiff', 'audio/x-aiff', 'audio/flac', 'audio/x-flac', 
+                         'audio/ogg', 'audio/webm', 'audio/mp4', 'audio/x-m4a'];
+      if (!validTypes.includes(file.type)) {
+        setToast({ 
+          message: 'Unsupported audio format. Please use MP3, WAV, AIFF, FLAC, OGG, WebM, or M4A.', 
+          type: 'error' 
+        });
+        return;
+      }
+      // Validate file size (100MB max)
+      if (file.size > 100 * 1024 * 1024) {
+        setToast({ message: 'File too large. Maximum size is 100MB.', type: 'error' });
+        return;
+      }
+      setSelectedFile(file);
+      // Auto-fill title from filename if empty
+      if (!songTitle.trim()) {
+        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+        setSongTitle(nameWithoutExt);
+      }
+    }
+  }, [songTitle]);
+
+  // Upload file to Cloudflare R2
+  const uploadFileToR2 = useCallback(async (file: File): Promise<{ url: string; storageKey: string } | null> => {
+    if (!roomId) return null;
+    
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    try {
+      const authHeaders = getAuthHeaders() as Record<string, string>;
+      
+      // Step 1: Get pre-signed upload URL
+      const presignRes = await fetch('/api/uploads/cloudflare', {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({
+          roomId,
+          fileName: file.name,
+          contentType: file.type || 'audio/mpeg',
+        }),
+      });
+      
+      if (!presignRes.ok) {
+        const error = await presignRes.json();
+        throw new Error(error.error || 'Failed to get upload URL');
+      }
+      
+      const { uploadUrl, storageKey, publicUrl } = await presignRes.json();
+      
+      // Step 2: Upload file directly to R2
+      setUploadProgress(10);
+      
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type || 'audio/mpeg',
+        },
+        body: file,
+      });
+      
+      if (!uploadRes.ok) {
+        throw new Error('Failed to upload file to cloud storage');
+      }
+      
+      setUploadProgress(100);
+      return { url: publicUrl, storageKey };
+    } catch (error) {
+      console.error('Upload error:', error);
+      setToast({ 
+        message: `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+        type: 'error' 
+      });
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  }, [roomId]);
 
   // Modify SoundCloud embed URL to force minimal/browser-only player
   const getSoundCloudEmbedUrl = useCallback((originalUrl: string) => {
@@ -670,9 +768,14 @@ export default function RoomPage() {
   const handleAddSong = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // For soundcloud_embed, we need the embed code, not the URL field
+    // For cloud upload, we need a selected file
+    // For soundcloud_embed, we need the embed code
+    // For direct, we need the URL
+    const isCloudUpload = songSourceType === 'direct' && selectedFile;
     const effectiveUrl = songSourceType === 'soundcloud_embed' ? soundcloudEmbedCode : songUrl;
-    if (!songTitle.trim() || !effectiveUrl.trim() || !room) return;
+    
+    if (!songTitle.trim() || !room) return;
+    if (!isCloudUpload && !effectiveUrl.trim()) return;
 
     logger.info('Starting song addition', { roomId, songTitle, sourceType: songSourceType });
 
@@ -720,10 +823,23 @@ export default function RoomPage() {
     }
 
     // For soundcloud_embed, extract the src from the iframe code
+    // For cloud upload, upload the file first
     let finalUrl: string;
     let finalSourceType: SongSourceType = songSourceType;
+    let finalStorageType: SongStorageType = 'external';
+    let finalStorageKey: string | undefined;
     
-    if (songSourceType === 'soundcloud_embed') {
+    if (isCloudUpload && selectedFile) {
+      // Upload file to R2 first
+      const uploadResult = await uploadFileToR2(selectedFile);
+      if (!uploadResult) {
+        return; // Error already shown by uploadFileToR2
+      }
+      finalUrl = uploadResult.url;
+      finalStorageType = 'cloudflare';
+      finalStorageKey = uploadResult.storageKey;
+      finalSourceType = 'direct'; // Cloud files are always direct playback
+    } else if (songSourceType === 'soundcloud_embed') {
       const extractedSrc = extractSoundCloudEmbedSrc(soundcloudEmbedCode);
       if (!extractedSrc) {
         setToast({
@@ -752,6 +868,8 @@ export default function RoomPage() {
           title: normalizeText(songTitle),
           url: finalUrl,
           sourceType: finalSourceType,
+          storageType: finalStorageType,
+          storageKey: finalStorageKey,
         }),
       });
 
@@ -838,12 +956,18 @@ export default function RoomPage() {
           songTitle: data.song.title,
           roomId,
           userId: currentUserId,
+          storageType: finalStorageType,
         });
 
         // Show feedback
         setSongTitle('');
         setSongUrl('');
         setSoundcloudEmbedCode('');
+        setSelectedFile(null);
+        setUploadProgress(0);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
         setAutoVersion2(false);
         // Reset comparison pair state so it can be fetched again with new songs
         setHasFetchedPair(false);
@@ -1753,12 +1877,16 @@ export default function RoomPage() {
                       <button
                         key={option.value}
                         type="button"
-                        onClick={() => setSongSourceType(option.value)}
+                        onClick={() => {
+                          setSongSourceType(option.value);
+                          setSelectedFile(null);
+                          if (fileInputRef.current) fileInputRef.current.value = '';
+                        }}
                         style={{
                           padding: '0.4rem 0.9rem',
                           borderRadius: '999px',
-                          border: option.value === songSourceType ? '1px solid #3b82f6' : '1px solid #333',
-                          background: option.value === songSourceType ? 'rgba(59,130,246,0.18)' : 'transparent',
+                          border: option.value === songSourceType && !selectedFile ? '1px solid #3b82f6' : '1px solid #333',
+                          background: option.value === songSourceType && !selectedFile ? 'rgba(59,130,246,0.18)' : 'transparent',
                           color: '#f9fafb',
                           fontSize: '0.8rem',
                           cursor: 'pointer',
@@ -1774,6 +1902,100 @@ export default function RoomPage() {
                       : 'Open SoundCloud → your track → Share → Embed → copy the full <iframe> code. Works with private tracks!'}
                   </p>
                 </div>
+
+                {/* Cloud Upload Option */}
+                {songSourceType === 'direct' && (
+                  <div style={{ 
+                    marginBottom: '1rem',
+                    padding: '1rem',
+                    background: 'rgba(59, 130, 246, 0.08)',
+                    borderRadius: '0.5rem',
+                    border: '1px dashed #3b82f6',
+                  }}>
+                    <label
+                      style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontSize: '0.9rem',
+                        color: '#93c5fd',
+                      }}
+                    >
+                      Or upload directly to SongPig Cloud
+                    </label>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="audio/*"
+                      onChange={handleFileSelect}
+                      disabled={isUploading}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        background: '#0f0f1e',
+                        border: '1px solid #333',
+                        borderRadius: '0.5rem',
+                        color: '#f9fafb',
+                        fontSize: '0.9rem',
+                      }}
+                    />
+                    {selectedFile && (
+                      <div style={{ 
+                        marginTop: '0.5rem', 
+                        padding: '0.5rem',
+                        background: 'rgba(34, 197, 94, 0.1)',
+                        borderRadius: '0.375rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                      }}>
+                        <span style={{ color: '#22c55e' }}>✓</span>
+                        <span style={{ fontSize: '0.85rem' }}>
+                          {selectedFile.name} ({(selectedFile.size / (1024 * 1024)).toFixed(1)} MB)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedFile(null);
+                            if (fileInputRef.current) fileInputRef.current.value = '';
+                          }}
+                          style={{
+                            marginLeft: 'auto',
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#f87171',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                    {isUploading && (
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <div style={{
+                          height: '4px',
+                          background: '#1f2937',
+                          borderRadius: '2px',
+                          overflow: 'hidden',
+                        }}>
+                          <div style={{
+                            width: `${uploadProgress}%`,
+                            height: '100%',
+                            background: '#3b82f6',
+                            transition: 'width 0.3s ease',
+                          }} />
+                        </div>
+                        <p style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '0.25rem' }}>
+                          Uploading... {uploadProgress}%
+                        </p>
+                      </div>
+                    )}
+                    <p style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '0.5rem' }}>
+                      Supports MP3, WAV, AIFF, FLAC, OGG, WebM, M4A (max 100MB)
+                    </p>
+                  </div>
+                )}
                 {songSourceType === 'soundcloud_embed' ? (
                   <div style={{ marginBottom: '1rem' }}>
                     <label
@@ -1842,14 +2064,15 @@ export default function RoomPage() {
                         opacity: 0.9,
                       }}
                     >
-                      Audio URL *
+                      Audio URL {!selectedFile && '*'}
                     </label>
                     <input
                       ref={songUrlRef}
                       type="url"
                       value={songUrl}
                       onChange={(e) => setSongUrl(e.target.value)}
-                      required
+                      required={!selectedFile}
+                      disabled={!!selectedFile}
                       style={{
                         width: '100%',
                         padding: '0.75rem',

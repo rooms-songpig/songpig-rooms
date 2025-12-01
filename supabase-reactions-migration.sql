@@ -17,3 +17,4 @@ CREATE INDEX IF NOT EXISTS idx_comment_reactions_comment_id ON comment_reactions
 CREATE INDEX IF NOT EXISTS idx_comment_reactions_user_id ON comment_reactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_comment_reactions_type ON comment_reactions(reaction_type);
 
+

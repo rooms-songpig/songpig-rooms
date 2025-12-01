@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dataStore } from '@/app/lib/data';
+import type { SongSourceType, SongStorageType } from '@/app/lib/data';
 
 // POST /api/rooms/[id]/songs - Add a song to a room (artist only)
 export async function POST(
@@ -40,10 +41,18 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { title, url, sourceType = 'direct' } = body as {
+    const { 
+      title, 
+      url, 
+      sourceType = 'direct',
+      storageType = 'external',
+      storageKey,
+    } = body as {
       title?: string;
       url?: string;
-      sourceType?: 'direct' | 'soundcloud' | 'soundcloud_embed';
+      sourceType?: SongSourceType;
+      storageType?: SongStorageType;
+      storageKey?: string;
     };
 
     if (!title || !url) {
@@ -56,6 +65,21 @@ export async function POST(
     if (!['direct', 'soundcloud', 'soundcloud_embed'].includes(sourceType)) {
       return NextResponse.json(
         { error: 'Invalid audio source type' },
+        { status: 400 }
+      );
+    }
+
+    if (!['external', 'cloudflare'].includes(storageType)) {
+      return NextResponse.json(
+        { error: 'Invalid storage type' },
+        { status: 400 }
+      );
+    }
+
+    // Cloudflare storage requires a storage key
+    if (storageType === 'cloudflare' && !storageKey) {
+      return NextResponse.json(
+        { error: 'Storage key is required for cloud-hosted files' },
         { status: 400 }
       );
     }
@@ -75,13 +99,22 @@ export async function POST(
       );
     }
 
-    const song = await dataStore.addSong(id, title, url, username, userId, sourceType);
+    const song = await dataStore.addSong(
+      id, 
+      title, 
+      url, 
+      username, 
+      userId, 
+      sourceType,
+      storageType,
+      storageKey
+    );
 
     if (!song) {
       return NextResponse.json({ error: 'Failed to add song' }, { status: 500 });
     }
 
-    console.log('Song added successfully:', song.id);
+    console.log('Song added successfully:', song.id, 'Storage:', storageType);
     return NextResponse.json({ song }, { status: 201 });
   } catch (error) {
     console.error('Error adding song:', error);

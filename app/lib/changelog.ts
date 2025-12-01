@@ -18,3 +18,4 @@ export const getCurrentVersionInfo = cache(async (): Promise<{ version: string; 
   return { version: '0.0.0', date: undefined };
 });
 
+

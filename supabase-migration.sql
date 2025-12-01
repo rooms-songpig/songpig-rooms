@@ -107,3 +107,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_comparisons_user_pair_unique
 ON comparisons(user_id, room_id, LEAST(song_a_id, song_b_id), GREATEST(song_a_id, song_b_id));
 
 
+
