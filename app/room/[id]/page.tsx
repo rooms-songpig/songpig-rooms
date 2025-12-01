@@ -1331,8 +1331,11 @@ export default function RoomPage() {
           "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         padding: isMobile ? '0.75rem' : '1.5rem',
         overflowX: 'hidden',
+        overflowY: 'auto',
         maxWidth: '100vw',
+        width: '100%',
         boxSizing: 'border-box',
+        position: 'relative',
       }}
     >
       <PageLabel pageName={`Room: ${room?.name || roomId || 'Loading'}`} />
@@ -1542,12 +1545,13 @@ export default function RoomPage() {
               <div style={{ 
                 display: 'flex', 
                 gap: '0.5rem', 
-                flexWrap: 'wrap',
+                flexWrap: 'nowrap',
                 width: '100%',
                 maxWidth: '100%',
                 justifyContent: isMobile ? 'flex-start' : 'flex-end',
                 marginTop: isMobile ? '1rem' : 0,
                 boxSizing: 'border-box',
+                overflow: 'hidden',
               }}>
                 {room.status === 'draft' && (
                   <button
@@ -1635,7 +1639,8 @@ export default function RoomPage() {
                     </button>
                     <button
                       onClick={async () => {
-                        if (!confirm('Delete this room? This action can be undone by an admin.')) return;
+                        const confirmed = window.confirm('⚠️ Are you sure you want to DELETE this room?\n\nThis action can be undone by an admin, but all room data will be marked as deleted.\n\nClick OK to confirm deletion.');
+                        if (!confirmed) return;
                         setChangingStatus(true);
                         try {
                           const res = await fetch(`/api/rooms/${roomId}/status`, {
@@ -1713,7 +1718,8 @@ export default function RoomPage() {
                     </button>
                     <button
                       onClick={async () => {
-                        if (!confirm('Delete this room? This action can be undone by an admin.')) return;
+                        const confirmed = window.confirm('⚠️ Are you sure you want to DELETE this room?\n\nThis action can be undone by an admin, but all room data will be marked as deleted.\n\nClick OK to confirm deletion.');
+                        if (!confirmed) return;
                         setChangingStatus(true);
                         try {
                           const res = await fetch(`/api/rooms/${roomId}/status`, {

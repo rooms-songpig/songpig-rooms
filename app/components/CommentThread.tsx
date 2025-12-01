@@ -500,10 +500,23 @@ export default function CommentThread({
   };
 
   return (
-    <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
+    <div style={{ 
+      width: '100%', 
+      maxWidth: '100%', 
+      boxSizing: 'border-box', 
+      overflow: 'hidden',
+      position: 'relative',
+    }}>
       {/* Add comment form */}
       {!isGuest && (
-        <div style={{ marginBottom: '1.5rem', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+        <div style={{ 
+          marginBottom: '1.5rem', 
+          width: '100%', 
+          maxWidth: '100%', 
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+          position: 'relative',
+        }}>
           <textarea
             value={newCommentText}
             onChange={(e) => setNewCommentText(e.target.value)}
@@ -521,6 +534,10 @@ export default function CommentThread({
               resize: 'vertical',
               marginBottom: '0.5rem',
               boxSizing: 'border-box',
+              wordBreak: 'break-word',
+              overflowWrap: 'break-word',
+              overflowX: 'hidden',
+              overflowY: 'auto',
             }}
           />
           <button
