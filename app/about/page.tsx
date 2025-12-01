@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import UserProfile from '@/app/components/UserProfile';
 import ScrollToTop from '@/app/components/ScrollToTop';
+import PageLabel from '@/app/components/PageLabel';
 
 export default function AboutPage() {
   const version = '0.1.0-alpha';
@@ -20,6 +21,7 @@ export default function AboutPage() {
       display: 'flex',
       flexDirection: 'column',
     }}>
+      <PageLabel pageName="About" />
       <UserProfile />
       <div style={{ 
         maxWidth: '800px', 

@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import Link from 'next/link';
 import UserProfile from '@/app/components/UserProfile';
 import ScrollToTop from '@/app/components/ScrollToTop';
+import PageLabel from '@/app/components/PageLabel';
 import { getChangelogContent } from '@/app/lib/changelog';
 
 export const metadata = {
@@ -116,6 +117,7 @@ export default async function ChangelogPage() {
         flexDirection: 'column',
       }}
     >
+      <PageLabel pageName="Changelog" />
       <UserProfile />
       <div style={{ maxWidth: '900px', margin: '0 auto', width: '100%', flex: 1 }}>
         <div style={{ margin: '2rem 0 1.5rem' }}>

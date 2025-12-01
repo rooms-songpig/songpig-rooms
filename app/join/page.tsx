@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import PageLabel from '@/app/components/PageLabel';
 
 function JoinPageContent() {
   const router = useRouter();
@@ -188,6 +189,7 @@ export default function JoinPage() {
         padding: '2rem',
       }}
     >
+      <PageLabel pageName="Join Room" />
       <Suspense fallback={<LoadingFallback />}>
         <JoinPageContent />
       </Suspense>

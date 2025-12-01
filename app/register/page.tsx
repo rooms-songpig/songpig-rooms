@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { setCurrentUser } from '@/app/lib/auth-helpers';
+import PageLabel from '@/app/components/PageLabel';
 
 function RegisterContent() {
   const router = useRouter();
@@ -76,6 +77,7 @@ function RegisterContent() {
         padding: '2rem',
       }}
     >
+      <PageLabel pageName="Register" />
       <div style={{ maxWidth: '400px', width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Register</h1>

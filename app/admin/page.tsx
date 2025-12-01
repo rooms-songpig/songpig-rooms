@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { getCurrentUser, getAuthHeaders, logout } from '@/app/lib/auth-helpers';
 import UserProfile from '@/app/components/UserProfile';
 import ScrollToTop from '@/app/components/ScrollToTop';
+import PageLabel from '@/app/components/PageLabel';
 
 interface User {
   id: string;
@@ -564,6 +565,7 @@ export default function AdminPage() {
         boxSizing: 'border-box',
       }}
     >
+      <PageLabel pageName="Admin Dashboard" />
       <UserProfile />
       <div style={{ maxWidth: '100%', margin: '0 auto', padding: '0 0.5rem', boxSizing: 'border-box' }}>
         <div style={{ marginBottom: '2rem' }}>

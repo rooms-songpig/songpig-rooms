@@ -8,6 +8,7 @@ import UserProfile from '@/app/components/UserProfile';
 import Breadcrumb from '@/app/components/Breadcrumb';
 import ScrollToTop from '@/app/components/ScrollToTop';
 import Toast from '@/app/components/Toast';
+import PageLabel from '@/app/components/PageLabel';
 
 interface User {
   id: string;
@@ -119,6 +120,7 @@ export default function ProfilePage() {
 
   return (
     <main style={{ minHeight: '100vh', background: '#0f0f23', color: '#fff', padding: '2rem' }}>
+      <PageLabel pageName="Profile" />
       <UserProfile />
       <div style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '2rem' }}>
         <Breadcrumb

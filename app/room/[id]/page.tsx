@@ -14,6 +14,7 @@ import GuestPrompt from '@/app/components/GuestPrompt';
 import ScrollToTop from '@/app/components/ScrollToTop';
 import CommentAuthorTooltip from '@/app/components/CommentAuthorTooltip';
 import CommentThread from '@/app/components/CommentThread';
+import PageLabel from '@/app/components/PageLabel';
 
 type SongSourceType = 'direct' | 'soundcloud' | 'soundcloud_embed';
 type SongStorageType = 'external' | 'cloudflare';
@@ -1334,6 +1335,7 @@ export default function RoomPage() {
         boxSizing: 'border-box',
       }}
     >
+      <PageLabel pageName={`Room: ${room?.name || roomId || 'Loading'}`} />
       <UserProfile />
       <div style={{ maxWidth: '100%', margin: '0 auto', padding: '0 0.5rem', boxSizing: 'border-box' }}>
         <div style={{ marginBottom: '2rem' }}>

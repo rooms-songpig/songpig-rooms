@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { setCurrentUser } from '@/app/lib/auth-helpers';
+import PageLabel from '@/app/components/PageLabel';
 
 // Dev-only helpers: enabled automatically in non-production,
 // or explicitly when NEXT_PUBLIC_SHOW_DEV_HELPERS="true".
@@ -71,6 +72,7 @@ export default function LoginPage() {
         padding: '2rem',
       }}
     >
+      <PageLabel pageName="Login" />
       <div style={{ maxWidth: '400px', width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Login</h1>

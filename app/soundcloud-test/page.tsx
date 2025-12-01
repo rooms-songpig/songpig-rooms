@@ -1,3 +1,5 @@
+import PageLabel from '@/app/components/PageLabel';
+
 export const metadata = {
   title: 'SoundCloud Private Embed Test',
 };
@@ -23,6 +25,7 @@ export default function SoundCloudTestPage() {
           "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       }}
     >
+      <PageLabel pageName="SoundCloud Test" />
       <div
         style={{
           width: '100%',
