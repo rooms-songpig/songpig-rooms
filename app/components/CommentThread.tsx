@@ -169,13 +169,23 @@ function SingleComment({
   };
 
   return (
-    <div style={{ marginLeft: depth > 0 && !isMobile ? '1.5rem' : depth > 0 && isMobile ? '0.75rem' : 0 }}>
+    <div style={{ 
+      marginLeft: depth > 0 && !isMobile ? '1.5rem' : depth > 0 && isMobile ? '0.75rem' : 0,
+      width: '100%',
+      maxWidth: '100%',
+      boxSizing: 'border-box',
+      overflow: 'hidden',
+    }}>
       <div
         style={{
           background: depth > 0 ? '#0a0a15' : '#0f0f1e',
           padding: isMobile ? '0.75rem' : '1rem',
           borderRadius: '0.75rem',
           borderLeft: depth > 0 ? '3px solid #3b82f6' : 'none',
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
         }}
       >
         {/* Header */}
@@ -201,7 +211,7 @@ function SingleComment({
         </div>
 
         {/* Comment text */}
-        <p style={{ margin: '0 0 0.75rem 0', lineHeight: 1.5 }}>{comment.text}</p>
+        <p style={{ margin: '0 0 0.75rem 0', lineHeight: 1.5, wordBreak: 'break-word', overflowWrap: 'break-word' }}>{comment.text}</p>
 
         {/* Actions row - Facebook/Twitter style */}
         <div style={{ 
@@ -457,16 +467,17 @@ export default function CommentThread({
   };
 
   return (
-    <div>
+    <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
       {/* Add comment form */}
       {!isGuest && (
-        <div style={{ marginBottom: '1.5rem' }}>
+        <div style={{ marginBottom: '1.5rem', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
           <textarea
             value={newCommentText}
             onChange={(e) => setNewCommentText(e.target.value)}
             placeholder="Write a comment..."
             style={{
               width: '100%',
+              maxWidth: '100%',
               padding: '0.75rem',
               background: '#0f0f1e',
               border: '1px solid #333',
@@ -476,6 +487,7 @@ export default function CommentThread({
               minHeight: '80px',
               resize: 'vertical',
               marginBottom: '0.5rem',
+              boxSizing: 'border-box',
             }}
           />
           <button
@@ -510,7 +522,7 @@ export default function CommentThread({
           No comments yet. Be the first to share your thoughts!
         </p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
           {parentComments.map(comment => (
             <SingleComment
               key={comment.id}

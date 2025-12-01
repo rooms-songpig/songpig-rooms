@@ -1384,7 +1384,12 @@ export default function RoomPage() {
                 >
                   {room.status}
                 </span>
-                <h1 style={{ fontSize: '2rem', margin: 0 }}>
+                <h1 style={{ 
+                  fontSize: isMobile ? '1.5rem' : '2rem', 
+                  margin: 0,
+                  wordBreak: 'break-word',
+                  lineHeight: 1.2,
+                }}>
                   {(() => {
                     const artistName = room.artistName ? normalizeText(room.artistName) : 'Unknown Artist';
                     const baseName = normalizeText(room.name);
@@ -1394,28 +1399,17 @@ export default function RoomPage() {
                   })()}
                 </h1>
               </div>
-              {room.artistName && (
-                <div style={{ marginBottom: '0.5rem' }}>
+              {room.artistBio && (
+                <div style={{ marginBottom: '0.5rem', marginTop: '0.5rem' }}>
                   <p style={{
-                    fontSize: '0.85rem',
-                    opacity: 0.7,
-                    marginBottom: '0.25rem',
-                    fontStyle: 'italic',
-                    fontFamily: 'Georgia, serif'
+                    fontSize: '0.9rem',
+                    opacity: 0.8,
+                    lineHeight: '1.4',
+                    maxWidth: '100%',
+                    wordBreak: 'break-word',
                   }}>
-                    by {room.artistName}
+                    {room.artistBio}
                   </p>
-                  {room.artistBio && (
-                    <p style={{
-                      fontSize: '0.9rem',
-                      opacity: 0.8,
-                      marginTop: '0.5rem',
-                      lineHeight: '1.4',
-                      maxWidth: '600px'
-                    }}>
-                      {room.artistBio}
-                    </p>
-                  )}
                 </div>
               )}
               {room.description && (
@@ -1507,7 +1501,14 @@ export default function RoomPage() {
             </div>
             {/* Room Status Controls (Owner/Admin Only) */}
             {(room.artistId === userId || user?.role === 'admin') && (
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div style={{ 
+                display: 'flex', 
+                gap: '0.5rem', 
+                flexWrap: 'wrap',
+                width: '100%',
+                justifyContent: isMobile ? 'flex-start' : 'flex-end',
+                marginTop: isMobile ? '1rem' : 0,
+              }}>
                 {room.status === 'draft' && (
                   <button
                     onClick={async () => {
@@ -2268,7 +2269,16 @@ export default function RoomPage() {
                     No songs yet. Add one to get started!
                   </p>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '1rem' }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '1.5rem', 
+                    marginTop: '1rem',
+                    width: '100%',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden',
+                  }}>
                 {room.songs.map((song) => {
                   const winRate = winRates[song.id];
                   const hasStats = winRate && (winRate.wins + winRate.losses > 0);
@@ -2281,6 +2291,10 @@ export default function RoomPage() {
                         padding: isMobile ? '1rem' : '1.5rem',
                         borderRadius: '0.75rem',
                         border: '1px solid #333',
+                        width: '100%',
+                        maxWidth: '100%',
+                        boxSizing: 'border-box',
+                        overflow: 'hidden',
                       }}
                     >
                       <div
@@ -2322,9 +2336,17 @@ export default function RoomPage() {
                       {renderSongPlayer(song)}
 
                       <div
-                        style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #333' }}
+                        style={{ 
+                          marginTop: '1.5rem', 
+                          paddingTop: '1.5rem', 
+                          borderTop: '1px solid #333',
+                          width: '100%',
+                          maxWidth: '100%',
+                          boxSizing: 'border-box',
+                          overflow: 'hidden',
+                        }}
                       >
-                        <h4 style={{ fontSize: '1rem', marginBottom: '0.75rem' }}>
+                        <h4 style={{ fontSize: '1rem', marginBottom: '0.75rem', wordBreak: 'break-word' }}>
                           Comments ({song.comments.length})
                         </h4>
                         
