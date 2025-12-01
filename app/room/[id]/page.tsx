@@ -1341,7 +1341,7 @@ export default function RoomPage() {
             items={[
               { label: 'Home', href: '/' },
               ...(user?.role === 'admin' ? [{ label: 'Admin Dashboard', href: '/admin' }] : []),
-              { label: room.name },
+              // Don't show room name in breadcrumb since it's already in the h1 title
             ]}
           />
           <button
@@ -1367,9 +1367,26 @@ export default function RoomPage() {
           >
             ← Back
           </button>
-          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', gap: isMobile ? '1rem' : '2rem' }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: isMobile ? 'column' : 'row', 
+            justifyContent: 'space-between', 
+            alignItems: 'flex-start', 
+            width: '100%', 
+            maxWidth: '100%',
+            gap: isMobile ? '1rem' : '2rem',
+            boxSizing: 'border-box',
+            overflow: 'hidden',
+          }}>
+            <div style={{ flex: 1, minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '1rem', 
+                marginBottom: '0.5rem',
+                flexWrap: 'wrap',
+                width: '100%',
+              }}>
                 {/* Status badge on the left */}
                 <span
                   style={{
@@ -1380,6 +1397,7 @@ export default function RoomPage() {
                     fontSize: '0.75rem',
                     fontWeight: '600',
                     textTransform: 'uppercase',
+                    flexShrink: 0,
                   }}
                 >
                   {room.status}
@@ -1388,7 +1406,10 @@ export default function RoomPage() {
                   fontSize: isMobile ? '1.5rem' : '2rem', 
                   margin: 0,
                   wordBreak: 'break-word',
+                  overflowWrap: 'break-word',
                   lineHeight: 1.2,
+                  flex: 1,
+                  minWidth: 0,
                 }}>
                   {(() => {
                     const artistName = room.artistName ? normalizeText(room.artistName) : 'Unknown Artist';
@@ -1413,7 +1434,13 @@ export default function RoomPage() {
                 </div>
               )}
               {room.description && (
-                <p style={{ opacity: 0.8, marginBottom: '0.5rem' }}>
+                <p style={{ 
+                  opacity: 0.8, 
+                  marginBottom: '0.5rem',
+                  wordBreak: 'break-word',
+                  overflowWrap: 'break-word',
+                  maxWidth: '100%',
+                }}>
                   {room.description}
                 </p>
               )}
@@ -1422,8 +1449,17 @@ export default function RoomPage() {
                   {room.songs.length}/2 songs added
                 </p>
               )}
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-                <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>
+              <div style={{ 
+                display: 'flex', 
+                gap: '1rem', 
+                alignItems: 'center', 
+                flexWrap: 'wrap', 
+                marginTop: '0.5rem',
+                width: '100%',
+                maxWidth: '100%',
+                boxSizing: 'border-box',
+              }}>
+                <p style={{ fontSize: '0.9rem', opacity: 0.7, wordBreak: 'break-word' }}>
                   Invite code:
                   <strong
                     onClick={() => {
@@ -1838,12 +1874,14 @@ export default function RoomPage() {
                     required
                     style={{
                       width: '100%',
+                      maxWidth: '100%',
                       padding: '0.75rem',
                       background: '#0f0f1e',
                       border: '1px solid #333',
                       borderRadius: '0.5rem',
                       color: '#f9fafb',
                       fontSize: '1rem',
+                      boxSizing: 'border-box',
                     }}
                     placeholder="e.g., Track 1"
                   />
@@ -1946,6 +1984,7 @@ export default function RoomPage() {
                       disabled={isUploading || !(user?.allowManagedUploads ?? true)}
                       style={{
                         width: '100%',
+                        maxWidth: '100%',
                         padding: '0.5rem',
                         background: !(user?.allowManagedUploads ?? true) ? '#1a1a2e' : '#0f0f1e',
                         border: '1px solid #333',
@@ -1953,6 +1992,7 @@ export default function RoomPage() {
                         color: !(user?.allowManagedUploads ?? true) ? '#666' : '#f9fafb',
                         fontSize: '0.9rem',
                         cursor: !(user?.allowManagedUploads ?? true) ? 'not-allowed' : 'pointer',
+                        boxSizing: 'border-box',
                       }}
                     />
                     {selectedFile && (
@@ -2031,6 +2071,7 @@ export default function RoomPage() {
                       rows={4}
                       style={{
                         width: '100%',
+                        maxWidth: '100%',
                         padding: '0.75rem',
                         background: '#0f0f1e',
                         border: '1px solid #333',
@@ -2039,6 +2080,9 @@ export default function RoomPage() {
                         fontSize: '0.85rem',
                         fontFamily: 'monospace',
                         resize: 'vertical',
+                        boxSizing: 'border-box',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word',
                       }}
                       placeholder='<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=..."></iframe>'
                     />
@@ -2092,12 +2136,16 @@ export default function RoomPage() {
                       disabled={!!selectedFile}
                       style={{
                         width: '100%',
+                        maxWidth: '100%',
                         padding: '0.75rem',
                         background: '#0f0f1e',
                         border: '1px solid #333',
                         borderRadius: '0.5rem',
                         color: '#f9fafb',
                         fontSize: '1rem',
+                        boxSizing: 'border-box',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word',
                       }}
                       placeholder="https://example.com/audio.mp3"
                     />
@@ -2425,6 +2473,10 @@ export default function RoomPage() {
                   gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))',
                   gap: isMobile ? '1.5rem' : '2rem',
                   marginBottom: '2rem',
+                  width: '100%',
+                  maxWidth: '100%',
+                  boxSizing: 'border-box',
+                  overflow: 'hidden',
                 }}
               >
                 {/* Song A */}
@@ -2436,6 +2488,10 @@ export default function RoomPage() {
                     border: '2px solid #333',
                     display: 'flex',
                     flexDirection: 'column',
+                    width: '100%',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden',
                   }}
                 >
                   <h3
@@ -2443,6 +2499,8 @@ export default function RoomPage() {
                       fontSize: isMobile ? '1.25rem' : '1.5rem',
                       marginBottom: '0.5rem',
                       textAlign: 'center',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
                     }}
                   >
                     {comparisonPair.songA.title}
@@ -2453,6 +2511,7 @@ export default function RoomPage() {
                       opacity: 0.7,
                       marginBottom: '1rem',
                       textAlign: 'center',
+                      wordBreak: 'break-word',
                     }}
                   >
                     Uploaded by {comparisonPair.songA.uploader}
@@ -2471,9 +2530,11 @@ export default function RoomPage() {
                       cursor: comparing || isGuest ? 'not-allowed' : 'pointer',
                       fontWeight: '600',
                       width: '100%',
+                      maxWidth: '100%',
                       marginBottom: '1rem',
                       position: 'relative',
                       minHeight: isMobile ? '44px' : 'auto',
+                      boxSizing: 'border-box',
                     }}
                   >
                     {comparing
@@ -2486,8 +2547,21 @@ export default function RoomPage() {
                   </button>
                   
                   {/* Comments section for Song A in compare mode */}
-                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #333' }}>
-                    <h4 style={{ fontSize: '0.9rem', marginBottom: '0.75rem', opacity: 0.8 }}>
+                  <div style={{ 
+                    marginTop: '1rem', 
+                    paddingTop: '1rem', 
+                    borderTop: '1px solid #333',
+                    width: '100%',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden',
+                  }}>
+                    <h4 style={{ 
+                      fontSize: '0.9rem', 
+                      marginBottom: '0.75rem', 
+                      opacity: 0.8,
+                      wordBreak: 'break-word',
+                    }}>
                       Comments ({comparisonPair.songA.comments?.length || 0})
                     </h4>
                     
@@ -2520,6 +2594,10 @@ export default function RoomPage() {
                     border: '2px solid #333',
                     display: 'flex',
                     flexDirection: 'column',
+                    width: '100%',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden',
                   }}
                 >
                   <h3
@@ -2527,6 +2605,8 @@ export default function RoomPage() {
                       fontSize: isMobile ? '1.25rem' : '1.5rem',
                       marginBottom: '0.5rem',
                       textAlign: 'center',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
                     }}
                   >
                     {comparisonPair.songB.title}
@@ -2537,6 +2617,7 @@ export default function RoomPage() {
                       opacity: 0.7,
                       marginBottom: '1rem',
                       textAlign: 'center',
+                      wordBreak: 'break-word',
                     }}
                   >
                     Uploaded by {comparisonPair.songB.uploader}
@@ -2555,9 +2636,11 @@ export default function RoomPage() {
                       cursor: comparing || isGuest ? 'not-allowed' : 'pointer',
                       fontWeight: '600',
                       width: '100%',
+                      maxWidth: '100%',
                       marginBottom: '1rem',
                       position: 'relative',
                       minHeight: isMobile ? '44px' : 'auto',
+                      boxSizing: 'border-box',
                     }}
                   >
                     {comparing
@@ -2570,8 +2653,21 @@ export default function RoomPage() {
                   </button>
                   
                   {/* Comments section for Song B in compare mode */}
-                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #333' }}>
-                    <h4 style={{ fontSize: '0.9rem', marginBottom: '0.75rem', opacity: 0.8 }}>
+                  <div style={{ 
+                    marginTop: '1rem', 
+                    paddingTop: '1rem', 
+                    borderTop: '1px solid #333',
+                    width: '100%',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden',
+                  }}>
+                    <h4 style={{ 
+                      fontSize: '0.9rem', 
+                      marginBottom: '0.75rem', 
+                      opacity: 0.8,
+                      wordBreak: 'break-word',
+                    }}>
                       Comments ({comparisonPair.songB.comments?.length || 0})
                     </h4>
                     

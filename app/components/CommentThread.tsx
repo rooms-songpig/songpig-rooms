@@ -315,7 +315,15 @@ function SingleComment({
 
         {/* Reply form */}
         {showReplyForm && (
-          <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #333' }}>
+          <div style={{ 
+            marginTop: '1rem', 
+            paddingTop: '1rem', 
+            borderTop: '1px solid #333',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+            overflow: 'hidden',
+          }}>
             <textarea
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
@@ -323,6 +331,7 @@ function SingleComment({
               autoFocus
               style={{
                 width: '100%',
+                maxWidth: '100%',
                 padding: '0.75rem',
                 background: '#050816',
                 border: '1px solid #333',
@@ -332,6 +341,9 @@ function SingleComment({
                 minHeight: '80px',
                 resize: 'vertical',
                 marginBottom: '0.5rem',
+                boxSizing: 'border-box',
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word',
               }}
             />
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
