@@ -9,6 +9,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
+// Type assertion after validation
+const SUPABASE_URL: string = supabaseUrl;
+const SUPABASE_ANON_KEY: string = supabaseAnonKey;
+
 // GET /auth/callback - Handle OAuth callback from Supabase
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -32,7 +36,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Exchange code for session
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,
