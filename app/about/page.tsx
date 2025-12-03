@@ -61,7 +61,7 @@ export default function AboutPage() {
             <li>Song comparison and A/B testing</li>
             <li>Voting system to determine preferred versions</li>
             <li>Comment system for detailed feedback</li>
-            <li>User roles: Admin, Artist, Listener</li>
+            <li>User roles: Admin, Artist, Reviewer</li>
             <li>Guest access for viewing rooms</li>
             <li>Invite code system for room sharing</li>
             <li>Win rate tracking and statistics</li>
@@ -101,10 +101,10 @@ export default function AboutPage() {
           </h2>
           <p style={{ lineHeight: '1.8', marginBottom: '1rem' }}>
             <strong>For Artists:</strong> Register as an artist, create a room, add your song versions, 
-            and share the invite code with listeners.
+            and share the invite code with reviewers and fans.
           </p>
           <p style={{ lineHeight: '1.8', marginBottom: '1rem' }}>
-            <strong>For Listeners:</strong> Register as a listener or continue as a guest to view rooms 
+            <strong>For Reviewers:</strong> Register as a reviewer or continue as a guest to view rooms 
             and provide feedback through voting and comments.
           </p>
           <p style={{ lineHeight: '1.8' }}>

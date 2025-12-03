@@ -72,6 +72,8 @@ export default function Home() {
   const [songStats, setSongStats] = useState<SongStat[]>([]);
   const [showAllComments, setShowAllComments] = useState(false);
   const [showAllSongs, setShowAllSongs] = useState(false);
+  const [welcomeRole, setWelcomeRole] = useState<'artist' | 'reviewer' | null>(null);
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
 
   const formatRoomNameWithArtist = useCallback(
     (value: string) => {
@@ -109,6 +111,30 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Failed to fetch artist stats:', error);
+    }
+  }, []);
+
+  // Parse ?welcome=artist|reviewer from the URL to show a one-time banner
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const welcome = params.get('welcome');
+      if (welcome === 'artist' || welcome === 'reviewer') {
+        setWelcomeRole(welcome);
+        setShowWelcomeBanner(true);
+
+        // Remove the welcome param from the URL to avoid repetition on refresh
+        params.delete('welcome');
+        const newSearch = params.toString();
+        const newUrl =
+          window.location.pathname +
+          (newSearch ? `?${newSearch}` : '') +
+          window.location.hash;
+        window.history.replaceState(null, '', newUrl);
+      }
+    } catch {
+      // Ignore URL parsing errors
     }
   }, []);
 
@@ -298,6 +324,74 @@ export default function Home() {
       <PageLabel pageName="Home" />
       <UserProfile />
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 0.5rem', boxSizing: 'border-box' }}>
+        {/* Welcome banner after registration / first login */}
+        {showWelcomeBanner && welcomeRole && (
+          <div
+            style={{
+              marginTop: '1rem',
+              marginBottom: '1.5rem',
+              padding: '1rem 1.25rem',
+              borderRadius: '0.75rem',
+              background:
+                welcomeRole === 'artist'
+                  ? 'rgba(34,197,94,0.12)'
+                  : 'rgba(59,130,246,0.12)',
+              border:
+                welcomeRole === 'artist'
+                  ? '1px solid rgba(34,197,94,0.5)'
+                  : '1px solid rgba(59,130,246,0.5)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: '0.75rem',
+            }}
+          >
+            <div style={{ fontSize: '1.5rem' }}>
+              {welcomeRole === 'artist' ? '🎉' : '🎧'}
+            </div>
+            <div style={{ flex: 1 }}>
+              <h2
+                style={{
+                  margin: 0,
+                  marginBottom: '0.35rem',
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                }}
+              >
+                {welcomeRole === 'artist'
+                  ? 'Welcome to the SongPig artist family!'
+                  : 'Welcome to the SongPig reviewer community!'}
+              </h2>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: '0.9rem',
+                  opacity: 0.85,
+                  lineHeight: 1.5,
+                }}
+              >
+                {welcomeRole === 'artist'
+                  ? "You can create private rooms, upload tracks, and invite trusted reviewers. You’re also a reviewer by default, so you can help other artists refine their songs."
+                  : "Thank you for lending your ears to artists on SongPig. Your votes and comments directly help artists make better creative decisions."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowWelcomeBanner(false)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#e5e7eb',
+                cursor: 'pointer',
+                fontSize: '1.1rem',
+                padding: '0.25rem',
+              }}
+              aria-label="Dismiss welcome message"
+            >
+              ×
+            </button>
+          </div>
+        )}
         
         {/* Hero Section for Artists */}
         {isArtist && artistStats && (
@@ -453,7 +547,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Listener Welcome */}
+        {/* Reviewer Welcome */}
         {!isArtist && (
           <div style={{ 
             textAlign: 'center', 
@@ -468,7 +562,7 @@ export default function Home() {
               Welcome, {user.username}! 🎧
             </h1>
             <p style={{ opacity: 0.8, marginBottom: '1.5rem' }}>
-              Join rooms to listen and vote on songs
+              Join rooms, vote on songs, and share feedback to help artists improve.
             </p>
             <Link
               href="/join"

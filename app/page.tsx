@@ -187,7 +187,7 @@ export default function LandingPage() {
                 Get Feedback
               </h3>
               <p style={{ opacity: 0.8, lineHeight: '1.6' }}>
-                Listeners vote on their favorites and leave comments. All feedback stays private.
+                Reviewers vote on their favorites and leave comments. All feedback stays private.
               </p>
             </div>
           </div>

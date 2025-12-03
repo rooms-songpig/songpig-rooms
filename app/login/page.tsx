@@ -110,8 +110,8 @@ export default function LoginPage() {
       <PageLabel pageName="Login" />
       <div style={{ maxWidth: '400px', width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Login</h1>
-          <p style={{ opacity: 0.8 }}>Sign in to your account</p>
+          <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Welcome back</h1>
+          <p style={{ opacity: 0.8 }}>Sign in to continue to your SongPig dashboard.</p>
         </div>
 
         <form
@@ -362,7 +362,7 @@ export default function LoginPage() {
                   cursor: 'pointer',
                 }}
               >
-                Fill Listener (bob / bob123)
+                Fill Reviewer (bob / bob123)
               </button>
             </div>
           </div>

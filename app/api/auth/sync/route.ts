@@ -7,7 +7,13 @@ import { userStore } from '@/app/lib/users';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { supabaseUserId, email, name, avatarUrl } = body;
+    const { supabaseUserId, email, name, avatarUrl, role } = body as {
+      supabaseUserId?: string;
+      email?: string | null;
+      name?: string | null;
+      avatarUrl?: string | null;
+      role?: 'artist' | 'listener' | string | null;
+    };
 
     if (!supabaseUserId) {
       return NextResponse.json(
@@ -81,6 +87,12 @@ export async function POST(request: NextRequest) {
       counter++;
     }
 
+    // Decide role for new user (artist or listener/reviewer)
+    let userRole: 'artist' | 'listener' = 'listener';
+    if (role === 'artist' || role === 'listener') {
+      userRole = role;
+    }
+
     // Create user with a temporary password (they'll use OAuth)
     // Generate a random password hash since OAuth users don't need password
     const tempPassword = `oauth_${Math.random().toString(36).substring(2, 15)}`;
@@ -93,7 +105,7 @@ export async function POST(request: NextRequest) {
         username: finalUsername,
         email: email || null,
         password_hash: passwordHash,
-        role: 'listener', // Default role, can be changed later
+        role: userRole, // Default role is listener (Reviewer) unless artist explicitly selected
         status: 'active',
         bio: '',
         created_at: now,

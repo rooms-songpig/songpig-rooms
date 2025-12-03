@@ -587,7 +587,7 @@ export default function AdminPage() {
               </p>
             </div>
             <div>
-              <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>Listeners</p>
+              <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>Reviewers</p>
               <p style={{ fontSize: '2rem', fontWeight: 'bold' }}>
                 {users.filter(u => u.role === 'listener').length}
               </p>
@@ -1190,7 +1190,7 @@ export default function AdminPage() {
                       cursor: 'pointer',
                     }}
                   >
-                    <option value="listener">Listener</option>
+                    <option value="listener">Reviewer</option>
                     <option value="artist">Artist</option>
                   </select>
                 </div>

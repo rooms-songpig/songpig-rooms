@@ -30,11 +30,13 @@ function RegisterContent() {
         throw new Error('Supabase URL not configured');
       }
 
+      const signupRole = role; // 'artist' | 'listener'
+
       // Redirect to Supabase Auth for Google OAuth
       const { data, error: signInError } = await supabaseBrowser.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback?signupRole=${signupRole}`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -88,8 +90,11 @@ function RegisterContent() {
         // So we can proceed immediately. The API routes also have retry logic.
         console.log('✅ User registered and verified by createUser():', data.user.id);
         
-        // Redirect to original destination or home
-        router.push(redirectUrl);
+        // Redirect to original destination or home with welcome banner hint
+        const welcomeRole = userData.role === 'artist' ? 'artist' : 'reviewer';
+        const basePath = redirectUrl === '/' ? '/dashboard' : redirectUrl;
+        const separator = basePath.includes('?') ? '&' : '?';
+        router.push(`${basePath}${separator}welcome=${welcomeRole}`);
       }
     } catch (error) {
       setError('Failed to register. Please try again.');
@@ -115,8 +120,10 @@ function RegisterContent() {
       <PageLabel pageName="Register" />
       <div style={{ maxWidth: '400px', width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Register</h1>
-          <p style={{ opacity: 0.8 }}>Create a new account</p>
+          <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Join the SongPig family</h1>
+          <p style={{ opacity: 0.8 }}>
+            Create your artist or reviewer account and start shaping better music.
+          </p>
         </div>
 
         <form
@@ -319,11 +326,12 @@ function RegisterContent() {
                   onChange={(e) => setRole('listener')}
                   style={{ cursor: 'pointer' }}
                 />
-                <span>Listener</span>
+                <span>Reviewer</span>
               </label>
             </div>
             <p style={{ fontSize: '0.85rem', opacity: 0.7, marginTop: '0.5rem' }}>
-              Artists can create rooms and add songs. Listeners can join rooms and provide feedback.
+              Artists can create rooms and add songs (and also review other artists).
+              Reviewers help artists by voting and giving feedback on tracks.
             </p>
           </div>
 

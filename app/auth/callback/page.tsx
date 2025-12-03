@@ -35,7 +35,14 @@ function AuthCallbackContent() {
           return;
         }
 
-        // 2) Parse tokens from URL hash (Supabase returns them here)
+        // 2) Get selected signup role (for Google sign-up flow)
+        const signupRoleParam = searchParams?.get('signupRole');
+        const signupRole =
+          signupRoleParam === 'artist' || signupRoleParam === 'listener'
+            ? signupRoleParam
+            : undefined;
+
+        // 3) Parse tokens from URL hash (Supabase returns them here)
         const hash =
           typeof window !== 'undefined' ? window.location.hash : '';
         const hashParams = new URLSearchParams(
@@ -45,7 +52,7 @@ function AuthCallbackContent() {
         const accessToken = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
 
-        // 3) If we have tokens in the hash, set the session explicitly
+        // 4) If we have tokens in the hash, set the session explicitly
         let user: any | null = null;
 
         if (accessToken && refreshToken) {
@@ -64,7 +71,7 @@ function AuthCallbackContent() {
           }
         }
 
-        // 4) Fallback: if we still don't have a user, try getSession()
+        // 5) Fallback: if we still don't have a user, try getSession()
         if (!user) {
           const {
             data: { session: existingSession },
@@ -91,7 +98,7 @@ function AuthCallbackContent() {
           return;
         }
 
-        // 5) Sync user with app's users table
+        // 6) Sync user with app's users table
         const syncResponse = await fetch('/api/auth/sync', {
           method: 'POST',
           headers: {
@@ -103,6 +110,7 @@ function AuthCallbackContent() {
             name: user.user_metadata?.full_name || user.user_metadata?.name,
             avatarUrl:
               user.user_metadata?.avatar_url || user.user_metadata?.picture,
+            role: signupRole,
           }),
         });
 
@@ -122,7 +130,7 @@ function AuthCallbackContent() {
         const { user: appUser } = await syncResponse.json();
 
         if (!cancelled) {
-          // 6) Persist user in localStorage for the app
+          // 7) Persist user in localStorage for the app
           setCurrentUser({
             id: appUser.id,
             username: appUser.username,
@@ -132,9 +140,18 @@ function AuthCallbackContent() {
             avatarUrl: appUser.avatar_url,
           });
 
-          // 7) Redirect based on role
+          // 8) Redirect based on role with welcome banner hint
+          const isArtist = appUser.role === 'artist';
+          const isReviewer = appUser.role === 'listener';
+          const basePath = appUser.role === 'admin' ? '/admin' : '/dashboard';
+          const welcomeParam = isArtist
+            ? 'artist'
+            : isReviewer
+            ? 'reviewer'
+            : null;
+
           const redirectPath =
-            appUser.role === 'admin' ? '/admin' : '/dashboard';
+            basePath + (welcomeParam ? `?welcome=${welcomeParam}` : '');
           router.push(redirectPath);
         }
       } catch (err: any) {
