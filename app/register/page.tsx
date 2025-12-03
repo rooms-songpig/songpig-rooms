@@ -122,7 +122,7 @@ function RegisterContent() {
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Join the SongPig family</h1>
           <p style={{ opacity: 0.8 }}>
-            Create your artist or reviewer account and start shaping better music.
+            Create your artist or reviewer account and help shape the next generation of songs.
           </p>
         </div>
 
@@ -330,8 +330,8 @@ function RegisterContent() {
               </label>
             </div>
             <p style={{ fontSize: '0.85rem', opacity: 0.7, marginTop: '0.5rem' }}>
-              Artists can create rooms and add songs (and also review other artists).
-              Reviewers help artists by voting and giving feedback on tracks.
+              Artists can create rooms and add songs – and every artist is also a reviewer by default.
+              Reviewers are the trusted ears who vote, comment, and help artists grow.
             </p>
           </div>
 

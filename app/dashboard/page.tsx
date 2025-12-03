@@ -371,8 +371,8 @@ export default function Home() {
                 }}
               >
                 {welcomeRole === 'artist'
-                  ? "You can create private rooms, upload tracks, and invite trusted reviewers. You’re also a reviewer by default, so you can help other artists refine their songs."
-                  : "Thank you for lending your ears to artists on SongPig. Your votes and comments directly help artists make better creative decisions."}
+                  ? "Congratulations – you’re now part of the SongPig family of artists. You can create private rooms, upload tracks, and invite trusted reviewers to help you make better creative decisions."
+                  : "Congratulations, and thank you for joining the SongPig reviewer community. We really appreciate you – without passionate music lovers like you, our artists wouldn’t get the feedback they need to grow."}
               </p>
             </div>
             <button
