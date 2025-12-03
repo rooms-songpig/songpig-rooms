@@ -253,7 +253,12 @@ export default function ProfilePage() {
         </form>
 
         <div style={{ marginTop: '2rem', padding: '1rem', background: '#1a1a2e', borderRadius: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>
-          <p><strong>Role:</strong> {user.role.charAt(0).toUpperCase() + user.role.slice(1)}</p>
+          <p>
+            <strong>Role:</strong>{' '}
+            {user.role === 'listener'
+              ? 'Reviewer'
+              : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+          </p>
           {user.email && <p><strong>Email:</strong> {user.email}</p>}
         </div>
       </div>

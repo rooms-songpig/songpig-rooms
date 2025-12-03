@@ -148,7 +148,7 @@ export default function UserProfile() {
               {user.username}
             </div>
             <div style={{ fontSize: '0.75rem', opacity: 0.7, textTransform: 'capitalize' }}>
-              {user.role}
+              {user.role === 'listener' ? 'Reviewer' : user.role}
             </div>
           </div>
         </div>

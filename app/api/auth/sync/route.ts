@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingUser) {
-      // User exists, update avatar if provided
+      // User exists, update avatar/email and optionally upgrade role
       const updates: any = {};
       if (avatarUrl !== undefined) {
         updates.avatar_url = avatarUrl;
@@ -39,22 +39,40 @@ export async function POST(request: NextRequest) {
         updates.email = email;
       }
 
+      // Allow upgrading a listener to artist if signupRole explicitly requested it
+      if (
+        role === 'artist' &&
+        existingUser.role === 'listener'
+      ) {
+        updates.role = 'artist';
+      }
+
+      let updatedUser = existingUser;
+
       if (Object.keys(updates).length > 0) {
-        await supabaseServer
+        const { data: updated, error: updateError } = await supabaseServer
           .from('users')
           .update(updates)
-          .eq('id', existingUser.id);
+          .eq('id', existingUser.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('Error updating existing user:', updateError);
+        } else if (updated) {
+          updatedUser = updated;
+        }
       }
 
       // Return user without password hash
-      const { password_hash, ...userResponse } = existingUser;
+      const { password_hash, ...userResponse } = updatedUser;
       return NextResponse.json({ 
         user: {
           ...userResponse,
-          id: existingUser.id,
-          username: existingUser.username,
-          role: existingUser.role,
-          status: existingUser.status,
+          id: updatedUser.id,
+          username: updatedUser.username,
+          role: updatedUser.role,
+          status: updatedUser.status,
         }
       });
     }
