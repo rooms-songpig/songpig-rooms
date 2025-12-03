@@ -113,29 +113,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Check for OAuth callback success (from hash)
-    if (typeof window !== 'undefined') {
-      const hash = window.location.hash;
-      if (hash.startsWith('#oauth_success=')) {
-        try {
-          const userDataStr = decodeURIComponent(hash.substring('#oauth_success='.length));
-          const userData = JSON.parse(userDataStr);
-          setCurrentUser(userData);
-          setUser(userData);
-          setCheckingAuth(false);
-          // Clear the hash
-          window.history.replaceState(null, '', window.location.pathname);
-          fetchRooms();
-          if (userData.role === 'artist' || userData.role === 'admin') {
-            fetchArtistStats();
-          }
-          return;
-        } catch (error) {
-          console.error('Error parsing OAuth callback:', error);
-        }
-      }
-    }
-
     // Check authentication
     const currentUser = getCurrentUser();
     if (!currentUser) {
