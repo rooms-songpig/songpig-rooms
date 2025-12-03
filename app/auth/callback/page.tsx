@@ -10,90 +10,181 @@ function AuthCallbackContent() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [processed, setProcessed] = useState(false);
 
   useEffect(() => {
-    const handleCallback = async () => {
-      try {
-        // Check for error in URL params
-        const errorParam = searchParams?.get('error');
-        const errorDescription = searchParams?.get('error_description');
+    // Check for error in URL params first
+    const errorParam = searchParams?.get('error');
+    const errorDescription = searchParams?.get('error_description');
+    
+    if (errorParam) {
+      setError(errorDescription || errorParam);
+      setLoading(false);
+      setTimeout(() => {
+        router.push(`/login?error=${encodeURIComponent(errorDescription || errorParam)}`);
+      }, 2000);
+      return;
+    }
+
+    // Set up auth state change listener
+    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         
-        if (errorParam) {
-          setError(errorDescription || errorParam);
+        // Only process SIGNED_IN event and only once
+        if (event === 'SIGNED_IN' && session && !processed) {
+          setProcessed(true);
+          
+          try {
+            const { user } = session;
+
+            // Sync user with app's users table
+            const syncResponse = await fetch('/api/auth/sync', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                supabaseUserId: user.id,
+                email: user.email,
+                name: user.user_metadata?.full_name || user.user_metadata?.name,
+                avatarUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture,
+              }),
+            });
+
+            if (!syncResponse.ok) {
+              const errorText = await syncResponse.text();
+              console.error('Error syncing user:', errorText);
+              setError('Failed to sync user account');
+              setLoading(false);
+              setTimeout(() => {
+                router.push('/login?error=sync_failed');
+              }, 2000);
+              return;
+            }
+
+            const { user: appUser } = await syncResponse.json();
+
+            // Set user in localStorage
+            setCurrentUser({
+              id: appUser.id,
+              username: appUser.username,
+              role: appUser.role,
+              status: appUser.status || 'active',
+              email: appUser.email,
+              avatarUrl: appUser.avatar_url,
+            });
+
+            // Redirect based on role
+            const redirectPath = appUser.role === 'admin' ? '/admin' : '/dashboard';
+            router.push(redirectPath);
+          } catch (err: any) {
+            console.error('Callback error:', err);
+            setError(err.message || 'An unexpected error occurred');
+            setLoading(false);
+            setTimeout(() => {
+              router.push('/login?error=callback_failed');
+            }, 2000);
+          }
+        }
+      }
+    );
+
+    // Also check if there's already a session (in case onAuthStateChange doesn't fire)
+    const checkExistingSession = async () => {
+      // Wait a moment for hash to be processed
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
+      
+      if (session && !processed) {
+        setProcessed(true);
+        
+        try {
+          const { user } = session;
+
+          // Sync user with app's users table
+          const syncResponse = await fetch('/api/auth/sync', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              supabaseUserId: user.id,
+              email: user.email,
+              name: user.user_metadata?.full_name || user.user_metadata?.name,
+              avatarUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture,
+            }),
+          });
+
+          if (!syncResponse.ok) {
+            const errorText = await syncResponse.text();
+            console.error('Error syncing user:', errorText);
+            setError('Failed to sync user account');
+            setLoading(false);
+            setTimeout(() => {
+              router.push('/login?error=sync_failed');
+            }, 2000);
+            return;
+          }
+
+          const { user: appUser } = await syncResponse.json();
+
+          // Set user in localStorage
+          setCurrentUser({
+            id: appUser.id,
+            username: appUser.username,
+            role: appUser.role,
+            status: appUser.status || 'active',
+            email: appUser.email,
+            avatarUrl: appUser.avatar_url,
+          });
+
+          // Redirect based on role
+          const redirectPath = appUser.role === 'admin' ? '/admin' : '/dashboard';
+          router.push(redirectPath);
+        } catch (err: any) {
+          console.error('Callback error:', err);
+          setError(err.message || 'An unexpected error occurred');
           setLoading(false);
           setTimeout(() => {
-            router.push(`/login?error=${encodeURIComponent(errorDescription || errorParam)}`);
+            router.push('/login?error=callback_failed');
           }, 2000);
-          return;
         }
-
-        // Get the session from Supabase (handles hash tokens automatically)
-        const { data: { session }, error: sessionError } = await supabaseBrowser.auth.getSession();
-
-        if (sessionError || !session || !session.user) {
-          console.error('Error getting session:', sessionError);
-          setError('Failed to authenticate');
+      } else if (!session && !processed) {
+        // No session after waiting, something went wrong
+        // Check for hash tokens manually
+        const hash = window.location.hash;
+        if (hash && hash.includes('access_token')) {
+          console.log('Hash contains tokens, waiting for Supabase to process...');
+          // Give it more time
+          setTimeout(async () => {
+            const { data: { session: retrySession } } = await supabaseBrowser.auth.getSession();
+            if (!retrySession && !processed) {
+              setError('Failed to process authentication');
+              setLoading(false);
+              setTimeout(() => {
+                router.push('/login?error=auth_failed');
+              }, 2000);
+            }
+          }, 2000);
+        } else {
+          setError('No authentication data received');
           setLoading(false);
           setTimeout(() => {
-            router.push('/login?error=auth_failed');
+            router.push('/login?error=no_auth_data');
           }, 2000);
-          return;
         }
-
-        const { user } = session;
-
-        // Sync user with app's users table
-        const syncResponse = await fetch('/api/auth/sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            supabaseUserId: user.id,
-            email: user.email,
-            name: user.user_metadata?.full_name || user.user_metadata?.name,
-            avatarUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture,
-          }),
-        });
-
-        if (!syncResponse.ok) {
-          const errorText = await syncResponse.text();
-          console.error('Error syncing user:', errorText);
-          setError('Failed to sync user account');
-          setLoading(false);
-          setTimeout(() => {
-            router.push('/login?error=sync_failed');
-          }, 2000);
-          return;
-        }
-
-        const { user: appUser } = await syncResponse.json();
-
-        // Set user in localStorage
-        setCurrentUser({
-          id: appUser.id,
-          username: appUser.username,
-          role: appUser.role,
-          status: appUser.status || 'active',
-          email: appUser.email,
-          avatarUrl: appUser.avatar_url,
-        });
-
-        // Redirect based on role
-        const redirectPath = appUser.role === 'admin' ? '/admin' : '/dashboard';
-        router.push(redirectPath);
-      } catch (err: any) {
-        console.error('Callback error:', err);
-        setError(err.message || 'An unexpected error occurred');
-        setLoading(false);
-        setTimeout(() => {
-          router.push('/login?error=callback_failed');
-        }, 2000);
       }
     };
 
-    handleCallback();
-  }, [router, searchParams]);
+    checkExistingSession();
+
+    // Cleanup subscription
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [router, searchParams, processed]);
 
   return (
     <main
