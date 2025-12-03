@@ -16,7 +16,7 @@ function AuthCallbackContent() {
 
     const handleCallback = async () => {
       try {
-        // Check for error in URL params first
+        // 1) Handle explicit error from provider/Supabase
         const errorParam = searchParams?.get('error');
         const errorDescription = searchParams?.get('error_description');
 
@@ -26,90 +26,116 @@ function AuthCallbackContent() {
             setLoading(false);
             setTimeout(() => {
               router.push(
-                `/login?error=${encodeURIComponent(errorDescription || errorParam)}`
+                `/login?error=${encodeURIComponent(
+                  errorDescription || errorParam
+                )}`
               );
             }, 2000);
           }
           return;
         }
 
-        // Poll for session so Supabase has time to process hash tokens
-        const maxAttempts = 10;
-        const delayMs = 400;
+        // 2) Parse tokens from URL hash (Supabase returns them here)
+        const hash =
+          typeof window !== 'undefined' ? window.location.hash : '';
+        const hashParams = new URLSearchParams(
+          hash.startsWith('#') ? hash.slice(1) : hash
+        );
 
-        for (let attempt = 0; attempt < maxAttempts && !cancelled; attempt++) {
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+
+        // 3) If we have tokens in the hash, set the session explicitly
+        let user: any | null = null;
+
+        if (accessToken && refreshToken) {
           const {
             data: { session },
+            error: setSessionError,
+          } = await supabaseBrowser.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (setSessionError || !session || !session.user) {
+            console.error('Error setting session from tokens:', setSessionError);
+          } else {
+            user = session.user;
+          }
+        }
+
+        // 4) Fallback: if we still don't have a user, try getSession()
+        if (!user) {
+          const {
+            data: { session: existingSession },
             error: sessionError,
           } = await supabaseBrowser.auth.getSession();
 
           if (sessionError) {
-            console.error('Error getting session:', sessionError);
+            console.error('Error getting existing session:', sessionError);
           }
 
-          if (session && session.user) {
-            const { user } = session;
-
-            // Sync user with app's users table
-            const syncResponse = await fetch('/api/auth/sync', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                supabaseUserId: user.id,
-                email: user.email,
-                name:
-                  user.user_metadata?.full_name || user.user_metadata?.name,
-                avatarUrl:
-                  user.user_metadata?.avatar_url ||
-                  user.user_metadata?.picture,
-              }),
-            });
-
-            if (!syncResponse.ok) {
-              const errorText = await syncResponse.text();
-              console.error('Error syncing user:', errorText);
-              if (!cancelled) {
-                setError('Failed to sync user account');
-                setLoading(false);
-                setTimeout(() => {
-                  router.push('/login?error=sync_failed');
-                }, 2000);
-              }
-              return;
-            }
-
-            const { user: appUser } = await syncResponse.json();
-
-            if (!cancelled) {
-              // Set user in localStorage
-              setCurrentUser({
-                id: appUser.id,
-                username: appUser.username,
-                role: appUser.role,
-                status: appUser.status || 'active',
-                email: appUser.email,
-                avatarUrl: appUser.avatar_url,
-              });
-
-              // Redirect based on role
-              const redirectPath =
-                appUser.role === 'admin' ? '/admin' : '/dashboard';
-              router.push(redirectPath);
-            }
-            return;
+          if (existingSession && existingSession.user) {
+            user = existingSession.user;
           }
-
-          await new Promise((resolve) => setTimeout(resolve, delayMs));
         }
 
+        if (!user) {
+          if (!cancelled) {
+            setError('Failed to complete sign-in');
+            setLoading(false);
+            setTimeout(() => {
+              router.push('/login?error=auth_failed');
+            }, 2000);
+          }
+          return;
+        }
+
+        // 5) Sync user with app's users table
+        const syncResponse = await fetch('/api/auth/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            supabaseUserId: user.id,
+            email: user.email,
+            name: user.user_metadata?.full_name || user.user_metadata?.name,
+            avatarUrl:
+              user.user_metadata?.avatar_url || user.user_metadata?.picture,
+          }),
+        });
+
+        if (!syncResponse.ok) {
+          const errorText = await syncResponse.text();
+          console.error('Error syncing user:', errorText);
+          if (!cancelled) {
+            setError('Failed to sync user account');
+            setLoading(false);
+            setTimeout(() => {
+              router.push('/login?error=sync_failed');
+            }, 2000);
+          }
+          return;
+        }
+
+        const { user: appUser } = await syncResponse.json();
+
         if (!cancelled) {
-          setError('Failed to complete sign-in');
-          setLoading(false);
-          setTimeout(() => {
-            router.push('/login?error=auth_failed');
-          }, 2000);
+          // 6) Persist user in localStorage for the app
+          setCurrentUser({
+            id: appUser.id,
+            username: appUser.username,
+            role: appUser.role,
+            status: appUser.status || 'active',
+            email: appUser.email,
+            avatarUrl: appUser.avatar_url,
+          });
+
+          // 7) Redirect based on role
+          const redirectPath =
+            appUser.role === 'admin' ? '/admin' : '/dashboard';
+          router.push(redirectPath);
         }
       } catch (err: any) {
         console.error('Callback error:', err);
@@ -151,16 +177,30 @@ function AuthCallbackContent() {
             <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
               Completing sign in...
             </h1>
-            <p style={{ opacity: 0.8 }}>Please wait while we set up your account.</p>
+            <p style={{ opacity: 0.8 }}>
+              Please wait while we set up your account.
+            </p>
           </>
         ) : error ? (
           <>
             <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>❌</div>
-            <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: '#fca5a5' }}>
+            <h1
+              style={{
+                fontSize: '1.5rem',
+                marginBottom: '0.5rem',
+                color: '#fca5a5',
+              }}
+            >
               Sign in failed
             </h1>
             <p style={{ opacity: 0.8 }}>{error}</p>
-            <p style={{ opacity: 0.6, marginTop: '1rem', fontSize: '0.9rem' }}>
+            <p
+              style={{
+                opacity: 0.6,
+                marginTop: '1rem',
+                fontSize: '0.9rem',
+              }}
+            >
               Redirecting to login...
             </p>
           </>
