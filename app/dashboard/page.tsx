@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser, getAuthHeaders, logout, setCurrentUser } from '@/app/lib/auth-helpers';
+import { getCurrentUser, getAuthHeaders, logout } from '@/app/lib/auth-helpers';
 import { normalizeText } from '@/app/lib/utils';
 import UserProfile from '@/app/components/UserProfile';
 import ScrollToTop from '@/app/components/ScrollToTop';
