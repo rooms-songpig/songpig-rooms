@@ -116,13 +116,27 @@ function AuthCallbackContent() {
 
         if (!syncResponse.ok) {
           const errorText = await syncResponse.text();
-          console.error('Error syncing user:', errorText);
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { error: errorText };
+          }
+          console.error('Error syncing user:', errorData);
           if (!cancelled) {
-            setError('Failed to sync user account');
+            setError(
+              errorData.details
+                ? `Failed to sync: ${errorData.details}`
+                : 'Failed to sync user account'
+            );
             setLoading(false);
             setTimeout(() => {
-              router.push('/login?error=sync_failed');
-            }, 2000);
+              router.push(
+                `/login?error=${encodeURIComponent(
+                  errorData.details || 'sync_failed'
+                )}`
+              );
+            }, 3000);
           }
           return;
         }

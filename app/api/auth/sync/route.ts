@@ -6,6 +6,15 @@ import { userStore } from '@/app/lib/users';
 // POST /api/auth/sync - Sync Supabase Auth user with app users table
 export async function POST(request: NextRequest) {
   try {
+    // Verify environment variables are set
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('SUPABASE_SERVICE_ROLE_KEY is missing in API route');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { supabaseUserId, email, name, avatarUrl, role } = body as {
       supabaseUserId?: string;
@@ -23,11 +32,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists by auth_id
-    const { data: existingUser } = await supabaseServer
+    const { data: existingUser, error: queryError } = await supabaseServer
       .from('users')
       .select('*')
       .eq('auth_id', supabaseUserId)
       .single();
+
+    if (queryError && queryError.code !== 'PGRST116') {
+      // PGRST116 is "not found" which is expected for new users
+      console.error('Error querying existing user:', queryError);
+      return NextResponse.json(
+        { error: 'Failed to check user existence', details: queryError.message },
+        { status: 500 }
+      );
+    }
 
     if (existingUser) {
       // User exists, update avatar/email and optionally upgrade role
@@ -139,7 +157,7 @@ export async function POST(request: NextRequest) {
     if (insertError) {
       console.error('Error creating user:', insertError);
       return NextResponse.json(
-        { error: 'Failed to create user' },
+        { error: 'Failed to create user', details: insertError.message },
         { status: 500 }
       );
     }
