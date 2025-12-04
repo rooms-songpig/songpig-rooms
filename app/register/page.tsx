@@ -13,7 +13,7 @@ function RegisterContent() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'artist' | 'listener'>('listener');
+  const [role, setRole] = useState<'artist' | 'listener' | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,6 +21,10 @@ function RegisterContent() {
   const redirectUrl = searchParams?.get('redirect') || '/';
 
   const handleGoogleSignUp = async () => {
+    if (!role) {
+      setError('Please choose an account type (Artist or Reviewer) before signing up with Google.');
+      return;
+    }
     setGoogleLoading(true);
     setError('');
 
@@ -58,6 +62,10 @@ function RegisterContent() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) return;
+    if (!role) {
+      setError('Please choose an account type (Artist or Reviewer).');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -66,7 +74,12 @@ function RegisterContent() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, email: email.trim() || undefined, role }),
+        body: JSON.stringify({
+          username,
+          password,
+          email: email.trim() || undefined,
+          role: role === 'artist' ? 'artist' : 'listener',
+        }),
       });
 
       const data = await res.json();
@@ -123,6 +136,9 @@ function RegisterContent() {
           <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Join the SongPig family</h1>
           <p style={{ opacity: 0.8 }}>
             Create your artist or reviewer account and help shape the next generation of songs.
+          </p>
+          <p style={{ opacity: 0.7, fontSize: '0.85rem', marginTop: '0.5rem' }}>
+            Your account type (Artist or Reviewer) applies whether you sign up with email or with Google.
           </p>
         </div>
 
@@ -190,7 +206,13 @@ function RegisterContent() {
                 fill="#EA4335"
               />
             </svg>
-            {googleLoading ? 'Signing up...' : 'Sign up with Google'}
+            {googleLoading
+              ? 'Signing up...'
+              : role === 'artist'
+              ? 'Sign up with Google as Artist'
+              : role === 'listener'
+              ? 'Sign up with Google as Reviewer'
+              : 'Sign up with Google (choose account type below)'}
           </button>
 
           <div

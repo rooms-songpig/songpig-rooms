@@ -30,6 +30,18 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingUser) {
+      // If account is disabled, treat as a hard ban - do not allow login via Google
+      if (existingUser.status === 'disabled') {
+        return NextResponse.json(
+          {
+            error: 'Account disabled',
+            details:
+              'Your Song Pig account has been disabled. Please contact the artist or site administrator if you think this is a mistake.',
+          },
+          { status: 403 }
+        );
+      }
+
       // User exists, update avatar/email and optionally adjust role
       const updates: any = {};
       if (avatarUrl !== undefined) {
