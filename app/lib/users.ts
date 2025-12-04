@@ -333,17 +333,44 @@ export const userStore = {
   },
 
   // Update user
-  async updateUser(id: string, updates: Partial<User>): Promise<User | null> {
+  async updateUser(
+    id: string,
+    updates: Partial<User>,
+    actingUserId?: string
+  ): Promise<User | null> {
     const user = await this.getUser(id);
     if (!user) return null;
 
-    // Prevent modifying admin accounts
+    // Load acting user (if provided) to determine super-admin privileges
+    let actingUser: User | undefined;
+    if (actingUserId) {
+      actingUser = await this.getUser(actingUserId);
+    }
+
+    const isSuperAdmin =
+      actingUser &&
+      actingUser.role === 'admin' &&
+      actingUser.username.toLowerCase() === 'admin';
+    const isSelfUpdate = actingUserId === id;
+
+    // Prevent modifying admin accounts unless super-admin is acting on another admin
     if (user.role === 'admin') {
-      if (updates.role && updates.role !== 'admin') {
-        throw new Error('Cannot change admin role');
-      }
-      if (updates.status && updates.status !== 'active') {
-        throw new Error('Cannot disable or delete admin accounts');
+      // Super-admin cannot demote or disable themselves
+      if (isSelfUpdate) {
+        if (updates.role && updates.role !== 'admin') {
+          throw new Error('Cannot change your own admin role');
+        }
+        if (updates.status && updates.status !== 'active') {
+          throw new Error('Cannot disable or delete your own admin account');
+        }
+      } else if (!isSuperAdmin) {
+        // Non super-admins cannot change other admin accounts
+        if (updates.role && updates.role !== 'admin') {
+          throw new Error('Cannot change admin role');
+        }
+        if (updates.status && updates.status !== 'active') {
+          throw new Error('Cannot disable or delete admin accounts');
+        }
       }
     }
 

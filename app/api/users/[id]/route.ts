@@ -98,21 +98,10 @@ export async function PATCH(
       );
     }
 
-    // Prevent disabling/deleting admin accounts
-    if (user.role === 'admin' && status && status !== 'active') {
-      return NextResponse.json(
-        { error: 'Cannot disable or delete admin accounts' },
-        { status: 400 }
-      );
-    }
-
-    // Prevent changing admin role
-    if (user.role === 'admin' && role && role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Cannot change admin role' },
-        { status: 400 }
-      );
-    }
+    // Additional safety: non-super-admins cannot modify other admin accounts
+    // The deeper enforcement lives in userStore.updateUser, which understands
+    // super-admin vs normal admin and self-updates. Here we only block
+    // obviously-invalid cases early when possible.
 
     const updates: any = {};
     if (role && ['admin', 'artist', 'listener'].includes(role)) {
@@ -135,7 +124,7 @@ export async function PATCH(
       updates.maxCloudSongs = maxCloudSongs;
     }
 
-    const updatedUser = await userStore.updateUser(id, updates);
+    const updatedUser = await userStore.updateUser(id, updates, userId);
 
     if (!updatedUser) {
       return NextResponse.json(

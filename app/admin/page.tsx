@@ -11,6 +11,7 @@ import PageLabel from '@/app/components/PageLabel';
 interface User {
   id: string;
   username: string;
+  email?: string;
   role: 'admin' | 'artist' | 'listener';
   status: 'active' | 'disabled' | 'deleted';
   createdAt: number;
@@ -66,6 +67,18 @@ export default function AdminPage() {
   const [changingBulkStatus, setChangingBulkStatus] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [userBulkStatus, setUserBulkStatus] = useState<'active' | 'disabled' | 'deleted'>('active');
+  // Debug: raw users (Supabase)
+  const [showRawUsers, setShowRawUsers] = useState(false);
+  const [rawUsers, setRawUsers] = useState<any[]>([]);
+  const [rawUsersLoading, setRawUsersLoading] = useState(false);
+  const [rawUsersError, setRawUsersError] = useState<string | null>(null);
+  const [rawUsersFilter, setRawUsersFilter] = useState('');
+  // Debug: raw rooms (Supabase)
+  const [showRawRooms, setShowRawRooms] = useState(false);
+  const [rawRooms, setRawRooms] = useState<any[]>([]);
+  const [rawRoomsLoading, setRawRoomsLoading] = useState(false);
+  const [rawRoomsError, setRawRoomsError] = useState<string | null>(null);
+  const [rawRoomsFilter, setRawRoomsFilter] = useState('');
   const [changingUserBulkStatus, setChangingUserBulkStatus] = useState(false);
   
   // Create user form state
@@ -135,6 +148,48 @@ export default function AdminPage() {
       console.error('Failed to fetch users:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRawUsers = async () => {
+    setRawUsersLoading(true);
+    setRawUsersError(null);
+    try {
+      const res = await fetch('/api/users/debug', {
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRawUsersError(data?.error || 'Failed to load raw users');
+      } else {
+        setRawUsers(Array.isArray(data.users) ? data.users : []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch raw users debug data:', error);
+      setRawUsersError('Failed to load raw users');
+    } finally {
+      setRawUsersLoading(false);
+    }
+  };
+
+  const fetchRawRooms = async () => {
+    setRawRoomsLoading(true);
+    setRawRoomsError(null);
+    try {
+      const res = await fetch('/api/rooms/debug', {
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRawRoomsError(data?.error || 'Failed to load raw rooms');
+      } else {
+        setRawRooms(Array.isArray(data.rooms) ? data.rooms : []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch raw rooms debug data:', error);
+      setRawRoomsError('Failed to load raw rooms');
+    } finally {
+      setRawRoomsLoading(false);
     }
   };
 
@@ -534,6 +589,52 @@ export default function AdminPage() {
     0
   );
 
+  // Helpers for debug grids
+  const downloadCsv = (rows: any[], filename: string) => {
+    if (!rows || rows.length === 0) {
+      alert('No data to export');
+      return;
+    }
+    const headers = Object.keys(rows[0]);
+    const escape = (value: any) => {
+      if (value === null || value === undefined) return '';
+      const str = String(value);
+      if (/[",\n]/.test(str)) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+    const lines = [
+      headers.join(','),
+      ...rows.map((row) => headers.map((h) => escape((row as any)[h])).join(',')),
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const filteredRawUsers = rawUsers.filter((u) => {
+    const term = rawUsersFilter.trim().toLowerCase();
+    if (!term) return true;
+    const username = (u.username || '').toLowerCase();
+    const email = (u.email || '').toLowerCase();
+    return username.includes(term) || email.includes(term);
+  });
+
+  const filteredRawRooms = rawRooms.filter((r) => {
+    const term = rawRoomsFilter.trim().toLowerCase();
+    if (!term) return true;
+    const name = (r.name || '').toLowerCase();
+    const invite = (r.invite_code || '').toLowerCase();
+    return name.includes(term) || invite.includes(term);
+  });
+
   if (loading || !user) {
     return (
       <main
@@ -609,6 +710,129 @@ export default function AdminPage() {
               <p style={{ fontSize: '2rem', fontWeight: 'bold' }}>{totalComments}</p>
             </div>
           </div>
+        </div>
+
+        {/* Debug: Raw Users (Supabase) */}
+        <div style={{ background: '#1a1a2e', padding: '1.5rem', borderRadius: '0.75rem', marginBottom: '2rem' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              cursor: 'pointer',
+            }}
+            onClick={() => {
+              const next = !showRawUsers;
+              setShowRawUsers(next);
+              if (next && rawUsers.length === 0 && !rawUsersLoading) {
+                fetchRawUsers();
+              }
+            }}
+          >
+            <h2 style={{ margin: 0 }}>Debug: Raw Users (Supabase)</h2>
+            <span style={{ fontSize: '1.5rem', opacity: 0.7 }}>{showRawUsers ? '−' : '+'}</span>
+          </div>
+          {showRawUsers && (
+            <div style={{ marginTop: '1rem' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                <input
+                  type="text"
+                  value={rawUsersFilter}
+                  onChange={(e) => setRawUsersFilter(e.target.value)}
+                  placeholder="Filter by username or email..."
+                  style={{
+                    minWidth: '220px',
+                    maxWidth: '320px',
+                    padding: '0.5rem 0.75rem',
+                    background: '#0f0f1e',
+                    border: '1px solid #333',
+                    borderRadius: '0.5rem',
+                    color: '#f9fafb',
+                    fontSize: '0.9rem',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fetchRawUsers()}
+                  disabled={rawUsersLoading}
+                  style={{
+                    background: rawUsersLoading ? '#555' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.9rem',
+                    cursor: rawUsersLoading ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {rawUsersLoading ? 'Reloading…' : 'Reload'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => downloadCsv(filteredRawUsers, 'users-debug.csv')}
+                  style={{
+                    background: '#1f2937',
+                    color: '#e5e7eb',
+                    border: '1px solid #4b5563',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Download CSV
+                </button>
+              </div>
+              {rawUsersError && (
+                <p style={{ color: '#fca5a5', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                  {rawUsersError}
+                </p>
+              )}
+              {rawUsersLoading && filteredRawUsers.length === 0 ? (
+                <p style={{ opacity: 0.7 }}>Loading raw users…</p>
+              ) : filteredRawUsers.length === 0 ? (
+                <p style={{ opacity: 0.7 }}>No users match the current filter.</p>
+              ) : (
+                <div
+                  style={{
+                    maxWidth: '100%',
+                    overflowX: 'auto',
+                    borderRadius: '0.75rem',
+                    border: '1px solid #27272a',
+                  }}
+                >
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #333', background: '#020617' }}>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>id</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>username</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>email</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>auth_id</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>role</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>status</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>created_at</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>last_login</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRawUsers.map((u: any) => (
+                        <tr key={u.id} style={{ borderBottom: '1px solid #27272a' }}>
+                          <td style={{ padding: '0.4rem' }}>{u.id}</td>
+                          <td style={{ padding: '0.4rem' }}>{u.username}</td>
+                          <td style={{ padding: '0.4rem' }}>{u.email || '—'}</td>
+                          <td style={{ padding: '0.4rem' }}>{u.auth_id || '—'}</td>
+                          <td style={{ padding: '0.4rem' }}>{u.role}</td>
+                          <td style={{ padding: '0.4rem' }}>{u.status}</td>
+                          <td style={{ padding: '0.4rem' }}>{u.created_at}</td>
+                          <td style={{ padding: '0.4rem' }}>{u.last_login || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Feedback Section */}
@@ -1296,6 +1520,7 @@ export default function AdminPage() {
                       />
                     </th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Username</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Email</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Role</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Status</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>Cloud Uploads</th>
@@ -1323,6 +1548,9 @@ export default function AdminPage() {
                         )}
                       </td>
                       <td style={{ padding: '0.75rem' }}>{u.username}</td>
+                      <td style={{ padding: '0.75rem', fontSize: '0.85rem', opacity: 0.8 }}>
+                        {u.email || '—'}
+                      </td>
                       <td style={{ padding: '0.75rem' }}>
                         {editingUser === u.id ? (
                           <select
@@ -1664,6 +1892,127 @@ export default function AdminPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+        </div>
+
+        {/* Debug: Raw Rooms (Supabase) */}
+        <div style={{ background: '#1a1a2e', padding: '1.5rem', borderRadius: '0.75rem', marginBottom: '2rem' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              cursor: 'pointer',
+            }}
+            onClick={() => {
+              const next = !showRawRooms;
+              setShowRawRooms(next);
+              if (next && rawRooms.length === 0 && !rawRoomsLoading) {
+                fetchRawRooms();
+              }
+            }}
+          >
+            <h2 style={{ margin: 0 }}>Debug: Raw Rooms (Supabase)</h2>
+            <span style={{ fontSize: '1.5rem', opacity: 0.7 }}>{showRawRooms ? '−' : '+'}</span>
+          </div>
+          {showRawRooms && (
+            <div style={{ marginTop: '1rem' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                <input
+                  type="text"
+                  value={rawRoomsFilter}
+                  onChange={(e) => setRawRoomsFilter(e.target.value)}
+                  placeholder="Filter by room name or invite code..."
+                  style={{
+                    minWidth: '220px',
+                    maxWidth: '320px',
+                    padding: '0.5rem 0.75rem',
+                    background: '#0f0f1e',
+                    border: '1px solid #333',
+                    borderRadius: '0.5rem',
+                    color: '#f9fafb',
+                    fontSize: '0.9rem',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fetchRawRooms()}
+                  disabled={rawRoomsLoading}
+                  style={{
+                    background: rawRoomsLoading ? '#555' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.9rem',
+                    cursor: rawRoomsLoading ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {rawRoomsLoading ? 'Reloading…' : 'Reload'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => downloadCsv(filteredRawRooms, 'rooms-debug.csv')}
+                  style={{
+                    background: '#1f2937',
+                    color: '#e5e7eb',
+                    border: '1px solid #4b5563',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Download CSV
+                </button>
+              </div>
+              {rawRoomsError && (
+                <p style={{ color: '#fca5a5', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                  {rawRoomsError}
+                </p>
+              )}
+              {rawRoomsLoading && filteredRawRooms.length === 0 ? (
+                <p style={{ opacity: 0.7 }}>Loading raw rooms…</p>
+              ) : filteredRawRooms.length === 0 ? (
+                <p style={{ opacity: 0.7 }}>No rooms match the current filter.</p>
+              ) : (
+                <div
+                  style={{
+                    maxWidth: '100%',
+                    overflowX: 'auto',
+                    borderRadius: '0.75rem',
+                    border: '1px solid #27272a',
+                  }}
+                >
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #333', background: '#020617' }}>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>id</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>name</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>status</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>artist_id</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>invite_code</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>created_at</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>last_accessed</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRawRooms.map((r: any) => (
+                        <tr key={r.id} style={{ borderBottom: '1px solid #27272a' }}>
+                          <td style={{ padding: '0.4rem' }}>{r.id}</td>
+                          <td style={{ padding: '0.4rem' }}>{r.name}</td>
+                          <td style={{ padding: '0.4rem' }}>{r.status}</td>
+                          <td style={{ padding: '0.4rem' }}>{r.artist_id}</td>
+                          <td style={{ padding: '0.4rem' }}>{r.invite_code}</td>
+                          <td style={{ padding: '0.4rem' }}>{r.created_at}</td>
+                          <td style={{ padding: '0.4rem' }}>{r.last_accessed || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </div>
