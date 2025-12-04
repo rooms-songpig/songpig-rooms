@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingUser) {
-      // User exists, update avatar/email and optionally upgrade role
+      // User exists, update avatar/email and optionally adjust role
       const updates: any = {};
       if (avatarUrl !== undefined) {
         updates.avatar_url = avatarUrl;
@@ -39,12 +39,35 @@ export async function POST(request: NextRequest) {
         updates.email = email;
       }
 
-      // Allow upgrading a listener to artist if signupRole explicitly requested it
-      if (
-        role === 'artist' &&
-        existingUser.role === 'listener'
-      ) {
-        updates.role = 'artist';
+      // If the user was previously soft-deleted, treat this as a fresh signup:
+      // - Reactivate the account
+      // - Reset role based on the requested signupRole (artist/reviewer)
+      if (existingUser.status === 'deleted') {
+        updates.status = 'active';
+
+        let newRole: 'artist' | 'listener' = 'listener';
+        if (role === 'artist' || role === 'listener') {
+          newRole = role;
+        } else if (
+          existingUser.role === 'artist' ||
+          existingUser.role === 'listener'
+        ) {
+          // Fallback: keep non-admin role if one was already set
+          newRole = existingUser.role;
+        }
+        // Important: if they were an admin before but are now deleted,
+        // we do NOT restore admin automatically.
+        updates.role = newRole;
+      } else {
+        // Normal upgrade path: allow upgrading a listener to artist
+        // if signupRole explicitly requested it. We never auto-upgrade
+        // admins or downgrade artists here.
+        if (
+          role === 'artist' &&
+          existingUser.role === 'listener'
+        ) {
+          updates.role = 'artist';
+        }
       }
 
       let updatedUser = existingUser;
