@@ -6,6 +6,10 @@
 **Core Objective:**  
 Build the simplest possible A/B audio comparison platform that artists love using and reviewers love participating in — and then expand into a global music testing ecosystem.
 
+> **Note:**  
+> This document is a forward-looking roadmap. It describes planned phases and features beyond the current implementation.  
+> For what is live today, see `HANDOFF_SUMMARY.md`. For the detailed target MVP behavior, see `handoff_mvp.md`.
+
 ---
 
 # TABLE OF CONTENTS
@@ -223,10 +227,6 @@ Shows:
 
 ---
 
-If you're ready for the next block, say:
-
-### **“next”**
-
 # 4. PHASE 2 — HIGH-IMPACT ENHANCEMENTS (VIRAL + TRUST + ARTIST VALUE)
 
 **Goal:** After MVP is stable, add the features that make SongPig *spread* and make artists *love it even more*.  
@@ -426,11 +426,6 @@ Gamifies engagement without overwhelming new users.
 **END OF SECTION 2.**
 
 ---
-
-If you're ready for **SECTION 3**, say:
-
-### **“next”**
-
 
 # 5. PHASE 3 — ENGAGEMENT & RETENTION SYSTEMS
 **Goal:** Once MVP + Phase 2 are stable, we shift to features that keep users coming back and make SongPig part of the artist workflow.**

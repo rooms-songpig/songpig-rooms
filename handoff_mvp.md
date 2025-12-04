@@ -1,12 +1,11 @@
-🧩 HANDOFF_SONGPIG_MVP.md — SECTION 1/6
-
-Paste this into your file’s beginning:
-
 # SongPig MVP Handoff Document  
 **Version:** 1.0  
 **Last Updated:** 2025-12-05  
 **Author:** System Architecture & Product AI  
 **Purpose:** Technical + product handoff for building the SongPig MVP  
+
+> **Note:**  
+> This document describes the *target* MVP behavior for SongPig. Some items may be partially implemented or planned; `HANDOFF_SUMMARY.md` is the source of truth for what is live today.
 
 ---
 
@@ -244,27 +243,6 @@ OAuth redirect URLs
 
 
 ---
-
-### ✅ **When you're ready, say:  
-**“Next section”**  
-
-And I will deliver **Section 2/6** immediately.
-
-This prevents chat overload and keeps everything clean and digestible.
-
-Ready when you are.
-
-You said:
-next
-ChatGPT said:
-
-Perfect — continuing exactly where we left off.
-
-Here is:
-
-🧩 HANDOFF_SONGPIG_MVP.md — SECTION 2/6
-
-Paste this directly after Section 1.
 
 # 3. 👥 Roles & Permissions
 
@@ -509,22 +487,6 @@ Starter rooms DO NOT interfere with artist data.
 
 
 ---
-
-# When you're ready, say:
-
-### **“Next section”**
-
-And I will deliver **SECTION 3/6**, covering **Access Modes, Reviewer Experience, and Artist Dashboard**.
-
-You said:
-section 3 now
-ChatGPT said:
-
-Here we go — continuing with the full handoff.
-
-🧩 HANDOFF_SONGPIG_MVP.md — SECTION 3/6
-
-Paste this immediately after Section 2.
 
 # 5. 🔐 Room Access Modes
 
@@ -992,25 +954,11 @@ Request Room
 
 ---
 
-**End of SECTION 3/6**
+**End of section 3**
 
 
 
 When you're ready:
-
-Say: “Next section”
-
-And I will deliver Section 4/6: Admin Panel, Debugging Tools, and API specs.
-
-You said:
-next section
-ChatGPT said:
-
-Here we go — continuing with the full handoff.
-
-🧩 HANDOFF_SONGPIG_MVP.md — SECTION 4/6
-
-Paste this after Section 3.
 
 # 14. 🛠 Admin Panel (MVP Technical Specification)
 
@@ -1423,27 +1371,9 @@ No critical console errors
 
 Admin panel fully functional
 
-END OF SECTION 4/6
+END OF SECTION 4
 
 ---
-
-When ready:
-
-### **Say: “Next section”**
-
-And I will deliver **Section 5/6: Diagrams, Examples, and Implementation Notes**.
-
-You said:
-next section
-ChatGPT said:
-
-Great — continuing with the full handoff doc.
-
-Here is:
-
-🧩 HANDOFF_SONGPIG_MVP.md — SECTION 5/6
-
-Paste this immediately after Section 4.
 
 # 19. 📊 Expanded ASCII Diagrams (Critical Flows)
 
@@ -1818,25 +1748,9 @@ Color-coded access mode
 
 Shows artist’s guidance
 
-END OF SECTION 5/6
+END OF SECTION 5
 
 ---
-
-When you’re ready:
-
-### **Say: “Final section”**
-
-And I’ll deliver **Section 6/6 — The final wrap-up & completeness signature + integration notes for Cursor/Vercel/Supabase**.
-
-You said:
-section 6
-ChatGPT said:
-
-Here it is — the final part of the Handoff document.
-
-🧩 HANDOFF_SONGPIG_MVP.md — SECTION 6/6
-
-Paste this directly after Section 5.
 
 # 25. 🧩 Integration Notes (Cursor + Vercel + Supabase)
 

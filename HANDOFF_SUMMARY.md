@@ -4,6 +4,17 @@
 **Primary Domain:** `ab.songpig.com` (migrated from `rooms.songpig.com`)  
 **Status:** Auth, environments, and admin tools are stable; feature work continues.
 
+> **Document Map (start here)**
+>
+> - `HANDOFF_SUMMARY.md` – Current implementation state, environments, auth, admin tools, and immediate remaining work/backlog.
+> - `handoff_mvp.md` – Target MVP product + technical spec for SongPig’s A/B experience (some items may be in-progress or not yet implemented).
+> - `SONGPIG AB test PRODUCT ROADMAP.md` – Multi-phase roadmap from MVP → trust/virality → monetization and long-term evolution.
+>
+> For any new Cursor session:
+> 1. Read this file (`HANDOFF_SUMMARY.md`) to understand what’s live today.
+> 2. Use `handoff_mvp.md` when you need the desired MVP behavior for a feature.
+> 3. Use `SONGPIG AB test PRODUCT ROADMAP.md` only when planning beyond MVP or prioritizing phases.
+
 ---
 
 ## 1. High-Level Overview
