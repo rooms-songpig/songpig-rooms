@@ -396,7 +396,99 @@ Immediate next steps:
 3. Fix the hydration warning for the FeedbackButton.
 4. Optionally refine the admin debug grids (sorting, more filters) and continue copy/branding polish.
 ```
+## 7. Remaining Work / Open Items
 
+1. **Realtime comments implementation**
+   - Recreate `app/lib/realtime.ts` for Supabase Realtime subscriptions.
+   - Wire it into `app/room/[id]/page.tsx` to:
+     - Subscribe to new comments.
+     - Show the floating “new comments” notification bar.
+   - Ensure Supabase Realtime is enabled for relevant tables.
+
+2. **Avatar upload API**
+   - Implement `app/api/users/avatar/route.ts` to:
+     - Accept avatar file metadata / upload token.
+     - Store avatars (Supabase Storage or R2), update `users.avatar_url`.
+     - Handle deletion / replacement of existing avatars.
+   - Confirm bucket and security rules are correct.
+
+3. **Hydration warning for FeedbackButton**
+   - Fix React hydration warning by ensuring any `window`/`localStorage` or auth-dependent logic runs in `useEffect` only.
+   - Avoid reading browser-only state during SSR.
+
+4. **Additional admin UX polish**
+   - Enhance sorting/filtering in the debug grids (e.g., sort by `role`, `status`, `created_at`).
+   - Consider adding an explicit “is_super_admin” indicator column in Raw Users for clarity.
+
+5. **Copy / branding**
+   - Continue auditing copy for consistent “Song Pig A/B testing” branding.
+   - Ensure role labels (Reviewer vs listener) are consistent across landing page, about page, dashboard, and admin.
+
+---
+
+## 8. Backlog (from ROADMAP_STATUS.md)
+
+These items are not in the immediate “Remaining Work” list but are captured in the broader roadmap for future iterations.
+
+### 8.1 Storage & Admin Tools
+
+- **Storage upgrade request admin UI**: Build an admin screen to view and manage requests hitting `/api/support/storage-upgrade`.
+- **Automatic storage tracking**: Update `storage_used_bytes` automatically when songs are uploaded/deleted.
+- **Byte-based storage quota enforcement**: Enforce `storage_limit_bytes` at the byte level, not just by song count.
+- **Admin UI for per-artist storage limits (MB)**: Allow admins to adjust storage caps per artist from the dashboard.
+- **Admin UI for total platform storage**: High-level dashboard showing total storage used across the platform.
+- **Admin UI for song play counts**: Track and expose per-song playback counts.
+- **Global safety switch**: Support `CLOUDFLARE_UPLOADS_ENABLED` (or similar) to globally disable uploads in emergencies.
+
+### 8.2 User-Facing Enhancements
+
+- **Reviewer points + leaderboard system**: Gamify high-quality feedback and engagement for listeners and guest artists.
+- **Room name format refinement**: Change from `"Room Name - Artist Name"` to `"Room Name by Artist Name"` where appropriate.
+- **Exact-location comments**: Allow comments pinned to specific timestamps in songs (timeline/heat-map view).
+- **Artist responses / messaging**: Let artists reply to comments and/or message reviewers in a lightweight thread or inbox.
+- **Richer Terms page content**: Expand `/terms` with full legal copy for accounts, uploads, and privacy, beyond the current basic text.
+
+### 8.3 Technical Debt & Infrastructure
+
+- **Profanity / moderation filter**: Add automated filtering and/or flagging for inappropriate comment content.
+- **Email notifications**: Notify users of key events (new comments, room invites, feedback summaries, storage warnings).
+- **Room access improvements**: Refine private room handling, invited artists, and access rules around invite codes.
+- **Automated changelog & revision tracking**: Add a simple process (or tooling) to keep the changelog and version history up to date.
+
+---
+
+## 9. Quick Start for a New Chat / Handoff
+
+You can paste the block below into a new Cursor chat to bootstrap context:
+
+I'm working on Song Pig – a music A/B testing platform where artists run private listening rooms and reviewers vote on song versions.
+
+Current state (Dec 2025):
+- Production is at https://ab.songpig.com (migrated from rooms.songpig.com).
+- Environments (local, staging, prod) all share consistent Supabase + Google OAuth config.
+- Email/password auth and Google OAuth (including role-aware signup on /register) are working.
+- User status semantics:
+  - active = normal
+  - disabled = banned (blocked even via Google)
+  - deleted = soft-deleted; on next Google signup they come back as artist/reviewer, never auto-admin.
+- There is a super admin account (username 'admin') that can promote/demote other admins.
+- The /admin page includes Excel-style debug grids for raw users and rooms, with CSV export.
+
+Key files:
+- app/auth/callback/page.tsx – OAuth callback handler.
+- app/api/auth/sync/route.ts – Supabase Auth ↔ app users sync logic.
+- app/lib/auth-helpers.ts and app/lib/supabase-browser.ts – session + browser Supabase client.
+- app/admin/page.tsx – admin dashboard, including Raw Users/Rooms debug panels.
+- app/api/users/debug/route.ts and app/api/rooms/debug/route.ts – raw Supabase debug endpoints.
+- HANDOFF_SUMMARY.md – high-level architecture and environment notes.
+
+Immediate next steps:
+1. Implement app/lib/realtime.ts and hook up realtime comments in app/room/[id]/page.tsx.
+2. Implement app/api/users/avatar/route.ts to back the existing avatar upload UI.
+3. Fix the hydration warning for the FeedbackButton.
+4. Optionally refine the admin debug grids (sorting, more filters) and continue copy/branding polish.---
+
+This document is intended to be the authoritative snapshot for how auth, admin, and environments are wired up as of the timestamp above. When making significant changes, update the **Last updated** line and briefly adjust the relevant sections. 
 ---
 
 This document is intended to be the authoritative snapshot for how auth, admin, and environments are wired up as of the timestamp above. When making significant changes, update the **Last updated** line and briefly adjust the relevant sections. 
