@@ -589,6 +589,11 @@ export default function AdminPage() {
     0
   );
 
+  const isSuperAdmin =
+    user &&
+    user.role === 'admin' &&
+    user.username.toLowerCase() === 'admin';
+
   // Helpers for debug grids
   const downloadCsv = (rows: any[], filename: string) => {
     if (!rows || rows.length === 0) {
@@ -1552,50 +1557,87 @@ export default function AdminPage() {
                         {u.email || '—'}
                       </td>
                       <td style={{ padding: '0.75rem' }}>
-                        {editingUser === u.id ? (
-                          <select
-                            value={editRole}
-                            onChange={(e) => setEditRole(e.target.value as any)}
-                            disabled={u.role === 'admin'}
-                            style={{
-                              background: '#0f0f1e',
-                              color: '#f9fafb',
-                              border: '1px solid #333',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.375rem',
-                            }}
-                          >
-                            <option value="admin">admin</option>
-                            <option value="artist">artist</option>
-                            <option value="listener">listener</option>
-                          </select>
-                        ) : (
-                          u.role
-                        )}
+                        {(() => {
+                          const isRowAdmin = u.role === 'admin';
+                          const isRowSuperAdmin =
+                            isRowAdmin && u.username.toLowerCase() === 'admin';
+
+                          if (editingUser === u.id) {
+                            // When editing, prevent changing super-admin's role
+                            return (
+                              <select
+                                value={editRole}
+                                onChange={(e) =>
+                                  setEditRole(e.target.value as any)
+                                }
+                                disabled={isRowSuperAdmin}
+                                style={{
+                                  background: '#0f0f1e',
+                                  color: '#f9fafb',
+                                  border: '1px solid #333',
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '0.375rem',
+                                }}
+                              >
+                                <option value="admin">admin</option>
+                                <option value="artist">artist</option>
+                                <option value="listener">listener</option>
+                              </select>
+                            );
+                          }
+
+                          if (isRowSuperAdmin) {
+                            return (
+                              <span style={{ color: '#f97316', fontWeight: 600 }}>
+                                super_admin
+                              </span>
+                            );
+                          }
+
+                          return u.role;
+                        })()}
                       </td>
                       <td style={{ padding: '0.75rem' }}>
-                        {editingUser === u.id ? (
-                          <select
-                            value={editStatus}
-                            onChange={(e) => setEditStatus(e.target.value as any)}
-                            disabled={u.role === 'admin'}
-                            style={{
-                              background: '#0f0f1e',
-                              color: '#f9fafb',
-                              border: '1px solid #333',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.375rem',
-                            }}
-                          >
-                            <option value="active">active</option>
-                            <option value="disabled">disabled</option>
-                            <option value="deleted">deleted</option>
-                          </select>
-                        ) : (
-                          <span style={{ color: u.status === 'active' ? '#10b981' : u.status === 'disabled' ? '#ef4444' : '#888' }}>
-                            {u.status}
-                          </span>
-                        )}
+                        {(() => {
+                          const isRowAdmin = u.role === 'admin';
+                          const isRowSuperAdmin =
+                            isRowAdmin && u.username.toLowerCase() === 'admin';
+
+                          if (editingUser === u.id) {
+                            return (
+                              <select
+                                value={editStatus}
+                                onChange={(e) =>
+                                  setEditStatus(e.target.value as any)
+                                }
+                                disabled={isRowSuperAdmin}
+                                style={{
+                                  background: '#0f0f1e',
+                                  color: '#f9fafb',
+                                  border: '1px solid #333',
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '0.375rem',
+                                }}
+                              >
+                                <option value="active">active</option>
+                                <option value="disabled">disabled</option>
+                                <option value="deleted">deleted</option>
+                              </select>
+                            );
+                          }
+
+                          const color =
+                            u.status === 'active'
+                              ? '#10b981'
+                              : u.status === 'disabled'
+                              ? '#ef4444'
+                              : '#888';
+                          return (
+                            <span style={{ color }}>
+                              {u.status}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td style={{ padding: '0.75rem' }}>
                         {editingUser === u.id ? (
@@ -1635,55 +1677,74 @@ export default function AdminPage() {
                         )}
                       </td>
                       <td style={{ padding: '0.75rem' }}>
-                        {editingUser === u.id ? (
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {(() => {
+                          const isRowAdmin = u.role === 'admin';
+                          const isRowSuperAdmin =
+                            isRowAdmin && u.username.toLowerCase() === 'admin';
+                          const canEdit =
+                            !isRowSuperAdmin &&
+                            (isSuperAdmin || !isRowAdmin);
+
+                          if (editingUser === u.id) {
+                            return (
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                  onClick={() => handleUpdateUser(u.id)}
+                                  style={{
+                                    background: '#10b981',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '0.375rem',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={cancelEditing}
+                                  style={{
+                                    background: '#666',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '0.375rem',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            );
+                          }
+
+                          return (
                             <button
-                              onClick={() => handleUpdateUser(u.id)}
+                              onClick={() => canEdit && startEditing(u)}
+                              disabled={!canEdit}
                               style={{
-                                background: '#10b981',
+                                background: !canEdit ? '#555' : '#3b82f6',
                                 color: 'white',
                                 border: 'none',
                                 padding: '0.25rem 0.75rem',
                                 borderRadius: '0.375rem',
                                 fontSize: '0.85rem',
-                                cursor: 'pointer',
+                                cursor: !canEdit ? 'not-allowed' : 'pointer',
                               }}
+                              title={
+                                !canEdit
+                                  ? isRowSuperAdmin
+                                    ? 'Super admin account cannot be modified'
+                                    : 'Admin accounts can only be modified by the super admin'
+                                  : 'Edit user'
+                              }
                             >
-                              Save
+                              Edit
                             </button>
-                            <button
-                              onClick={cancelEditing}
-                              style={{
-                                background: '#666',
-                                color: 'white',
-                                border: 'none',
-                                padding: '0.25rem 0.75rem',
-                                borderRadius: '0.375rem',
-                                fontSize: '0.85rem',
-                                cursor: 'pointer',
-                              }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => startEditing(u)}
-                            disabled={u.role === 'admin'}
-                            style={{
-                              background: u.role === 'admin' ? '#555' : '#3b82f6',
-                              color: 'white',
-                              border: 'none',
-                              padding: '0.25rem 0.75rem',
-                              borderRadius: '0.375rem',
-                              fontSize: '0.85rem',
-                              cursor: u.role === 'admin' ? 'not-allowed' : 'pointer',
-                            }}
-                            title={u.role === 'admin' ? 'Admin accounts cannot be modified' : 'Edit user'}
-                          >
-                            Edit
-                          </button>
-                        )}
+                          );
+                        })()}
                       </td>
                     </tr>
                   ))}

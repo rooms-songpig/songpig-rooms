@@ -24,6 +24,9 @@ export default function UserProfile() {
   
   if (!user) return null;
 
+  const isSuperAdmin =
+    user.role === 'admin' && user.username.toLowerCase() === 'admin';
+
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -57,8 +60,10 @@ export default function UserProfile() {
         top: 0,
         left: 0,
         right: 0,
-        background: '#1a1a2e',
-        borderBottom: '2px solid #fbbf24',
+        background: isSuperAdmin
+          ? 'linear-gradient(135deg, #0f172a 0%, #1f2937 40%, #4b5563 100%)'
+          : '#1a1a2e',
+        borderBottom: isSuperAdmin ? '3px solid #f97316' : '2px solid #fbbf24',
         borderRadius: '0.75rem',
         zIndex: 1000,
         padding: '0.75rem 1rem',
@@ -147,8 +152,12 @@ export default function UserProfile() {
             <div style={{ fontWeight: '500', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {user.username}
             </div>
-            <div style={{ fontSize: '0.75rem', opacity: 0.7, textTransform: 'capitalize' }}>
-              {user.role === 'listener' ? 'Reviewer' : user.role}
+            <div style={{ fontSize: '0.75rem', opacity: 0.75, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {isSuperAdmin
+                ? 'SUPER ADMIN'
+                : user.role === 'listener'
+                ? 'Reviewer'
+                : user.role}
             </div>
           </div>
         </div>
