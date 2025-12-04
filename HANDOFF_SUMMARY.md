@@ -1,251 +1,390 @@
-# Handoff Summary - Song Pig A/B Testing Platform
+# Handoff Summary – Song Pig A/B Testing Platform
 
-**Date:** December 2025  
-**Domain Migration:** `rooms.songpig.com` → `ab.songpig.com`  
-**Status:** In Progress
-
----
-
-## 🎯 What We Accomplished This Session
-
-### 1. Google OAuth Implementation ✅
-- **Status:** Code written, needs configuration
-- **Files Created:**
-  - `app/auth/callback/route.ts` - OAuth callback handler
-  - `app/lib/supabase-browser.ts` - Browser-side Supabase client
-  - `app/api/auth/sync/route.ts` - Syncs Supabase Auth users with app users table
-  - `supabase-auth-migration.sql` - Database migration for `auth_id` and `avatar_url` columns
-- **Files Updated:**
-  - `app/login/page.tsx` - Beautiful new design with Google sign-in button
-  - `app/register/page.tsx` - Role selection + Google sign-up option
-  - `app/lib/auth-helpers.ts` - Added session support and sync functions
-  - `app/lib/users.ts` - Added `authId` and `avatarUrl` fields
-
-**⚠️ CRITICAL:** The following files were created but are currently missing and need to be restored:
-- `app/auth/callback/route.ts` ❌ MISSING
-- `app/lib/supabase-browser.ts` ❌ MISSING
-- `app/api/auth/sync/route.ts` ❌ MISSING
-- `supabase-auth-migration.sql` ❌ MISSING
-
-### 2. Enhanced Artist Dashboard ✅
-- **File:** `app/dashboard/page.tsx` (moved from `app/page.tsx`)
-- **Features:**
-  - Hero section with gradient stats cards
-  - Song performance table with win rates and trends (📈📉 indicators)
-  - Recent feedback section with notification badges
-  - Improved visual hierarchy and animations
-  - Time-based greeting ("Good morning/afternoon/evening")
-
-### 3. Mobile Fixes ✅
-- **File:** `app/globals.css`
-- **Changes:**
-  - Added `overflow-x: hidden !important` to prevent side-scrolling
-  - Added `overscroll-behavior-y: contain` for Android pull-to-refresh
-  - Added `touch-action: pan-y` for proper mobile scrolling
-- **File:** `app/layout.tsx`
-- **Changes:** Added proper viewport meta tags
-
-### 4. Real-time Comments ✅
-- **File:** `app/lib/realtime.ts` - Supabase Realtime subscriptions
-- **File:** `app/room/[id]/page.tsx` - Added realtime subscription for new comments
-- **Feature:** Floating notification bar when new comments arrive
-- **Animation:** Added `@keyframes slideDown` to `app/globals.css`
-
-**⚠️ CRITICAL:** `app/lib/realtime.ts` ❌ MISSING - needs restoration
-
-### 5. Profile Pictures ✅
-- **File:** `app/api/users/avatar/route.ts` - Avatar upload/delete API
-- **Files Updated:**
-  - `app/components/UserProfile.tsx` - Shows avatar or gradient initials ✅ EXISTS
-  - `app/profile/page.tsx` - Avatar upload with preview, setup flow ✅ EXISTS
-  - `app/api/users/[id]/route.ts` - Added `avatarUrl` to allowed updates ✅ EXISTS
-
-**⚠️ CRITICAL:** `app/api/users/avatar/route.ts` ❌ MISSING - needs restoration
-
-### 6. Public Landing Page ✅
-- **File:** `app/page.tsx` - Marketing landing page for non-logged-in users
-- **Features:**
-  - Hero section with value proposition
-  - "How It Works" features section
-  - "For Artists" section with sample voting UI
-  - CTA sections
-  - Footer with links
-- **Routing:** Moved authenticated dashboard to `app/dashboard/page.tsx` ✅ EXISTS
-- **Updated redirects:** All login/register flows now redirect to `/dashboard`
-
-**⚠️ CRITICAL:** `app/page.tsx` ❌ MISSING (git shows deleted) - needs restoration
-
-### 7. Terms of Service Page ✅
-- **File:** `app/terms/page.tsx` - Comprehensive terms covering account, content, privacy, etc.
-
-**⚠️ CRITICAL:** `app/terms/page.tsx` ❌ MISSING - needs restoration
+**Last updated:** 2025-12-04 10:38 UTC (Julian: 2025-338 10:38)  
+**Primary Domain:** `ab.songpig.com` (migrated from `rooms.songpig.com`)  
+**Status:** Auth, environments, and admin tools are stable; feature work continues.
 
 ---
 
-## 🚧 What Still Needs To Be Done
+## 1. High-Level Overview
 
-### Critical - Domain Migration Configuration
+- **Framework:** Next.js 16 (App Router, TypeScript, Turbopack), React 19  
+- **Backend:** Next.js API routes + Supabase (Postgres, Auth; Realtime planned)  
+- **Storage:** Cloudflare R2 for audio  
+- **Deployment:** Vercel (Node 20)
+- **Core roles:**
+  - `admin` – full control; includes a built-in **super admin** account (username `admin`)
+  - `artist` – creates rooms, uploads songs, can also review
+  - `listener` – “Reviewer” in the UI; joins rooms to vote and comment
 
-#### 1. Vercel Domain Setup (IN PROGRESS)
-- ✅ Added `ab.songpig.com` to Vercel project
-- ✅ Selected "Redirect old domain to new" option
-- ⏳ Waiting for DNS propagation
-- **Next:** Verify domain is live at `https://ab.songpig.com`
+**Branches and environments**
 
-#### 2. Supabase Configuration (PENDING)
-Once domain is live:
-- Go to **Supabase Dashboard → Authentication → URL Configuration**
-- **Site URL:** `https://ab.songpig.com`
-- **Redirect URLs:** Add `https://ab.songpig.com/auth/callback`
+- `main` → Production at `https://ab.songpig.com`
+- `staging` → Vercel preview/staging deployment from the `staging` branch
+- Local dev → `http://localhost:3000`
 
-#### 3. Google OAuth Configuration (PENDING)
-Once domain is live:
-- Go to **Google Cloud Console → APIs & Services → Credentials**
-- Find your OAuth 2.0 Client ID
-- **Authorized JavaScript origins:** Add `https://ab.songpig.com`
-- **Authorized redirect URIs:** Keep existing Supabase callback URL (no change needed)
-
-#### 4. Database Migration (PENDING)
-- Run `supabase-auth-migration.sql` in Supabase SQL Editor
-- This adds `auth_id` and `avatar_url` columns to `users` table
-
-### High Priority - Restore Missing Files ⚠️ CRITICAL
-
-**Git status confirms these files are missing and need to be restored:**
-
-1. **`app/auth/callback/route.ts`** ❌ - OAuth callback handler
-2. **`app/lib/supabase-browser.ts`** ❌ - Browser Supabase client with auth
-3. **`app/api/auth/sync/route.ts`** ❌ - User sync endpoint
-4. **`app/lib/realtime.ts`** ❌ - Real-time subscriptions
-5. **`app/api/users/avatar/route.ts`** ❌ - Avatar upload API
-6. **`app/page.tsx`** ❌ - Landing page (git shows deleted)
-7. **`app/terms/page.tsx`** ❌ - Terms page
-8. **`supabase-auth-migration.sql`** ❌ - Database migration
-
-**Action:** Check git history or previous chat to restore these files. They contain critical functionality for:
-- Google OAuth login
-- Real-time comment updates
-- Profile picture uploads
-- Public landing page
-
-### Medium Priority - Branding Update
-
-Update all references from "Song Pig Listening Rooms" to "Song Pig" or "Song Pig A/B":
-- Page titles and metadata
-- Header/nav branding
-- About page copy
-- Footer text
-- Email templates (if any)
+All three environments now share consistent Supabase and Google OAuth behavior.
 
 ---
 
-## 📁 Current File Structure
+## 2. Environments & External Configuration
 
-```
-app/
-├── dashboard/
-│   └── page.tsx          # Authenticated dashboard (moved from root)
-├── login/
-│   └── page.tsx          # Updated with Google OAuth
-├── register/
-│   └── page.tsx          # Updated with Google OAuth
-├── profile/
-│   └── page.tsx          # Avatar upload support
-├── room/[id]/
-│   └── page.tsx          # Real-time comments (needs realtime.ts)
-├── components/
-│   └── UserProfile.tsx   # Avatar display
-├── lib/
-│   ├── auth-helpers.ts   # Updated with session support
-│   └── users.ts          # Added authId, avatarUrl fields
-└── globals.css           # Mobile fixes
+### 2.1 Environment variables (local + Vercel)
 
-⚠️ MISSING FILES (need restoration):
-- app/auth/callback/route.ts
-- app/lib/supabase-browser.ts
-- app/api/auth/sync/route.ts
-- app/lib/realtime.ts
-- app/api/users/avatar/route.ts
-- app/page.tsx (landing page)
-- app/terms/page.tsx
-- supabase-auth-migration.sql
-```
-
----
-
-## 🔑 Environment Variables Needed
+Key vars (set in `.env.local` and Vercel → Project → Settings → Environment Variables):
 
 ```bash
-# Supabase (Required)
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://xkholdgzgnhelzgkklwg.supabase.co
+# IMPORTANT: use the legacy anon key (JWT starting with `eyJ...`), not `sb-publishable_...`
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...        # Legacy anon key
+SUPABASE_SERVICE_ROLE_KEY=eyJ...           # Legacy service_role key (server-side only)
 
-# Cloudflare R2 (For audio uploads)
-CLOUDFLARE_ACCOUNT_ID=your_account_id
-CLOUDFLARE_R2_ACCESS_KEY_ID=your_access_key
-CLOUDFLARE_R2_SECRET_ACCESS_KEY=your_secret_key
+# App URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000  # local
+# On Vercel, NEXT_PUBLIC_APP_URL is set to:
+# - https://ab.songpig.com for Production
+# - the preview URL (or generic) for Preview/Deploys
+
+# Cloudflare R2 (audio uploads)
+CLOUDFLARE_ACCOUNT_ID=...
+CLOUDFLARE_R2_ACCESS_KEY_ID=...
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=...
 CLOUDFLARE_R2_BUCKET_NAME=songpig-audio
-CLOUDFLARE_R2_PUBLIC_URL=your_r2_public_url
-
-# Google OAuth (Configure in Google Cloud Console)
-# No env vars needed - configured in Supabase Dashboard
+CLOUDFLARE_R2_PUBLIC_URL=...
 ```
 
+**Vercel notes**
+
+- Supabase env vars (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) are defined at the **project level**, not overridden by empty/incorrect Preview-only values.
+- Deployment Protection / Vercel Authentication must be **disabled or bypassed** for preview deployments so OAuth redirects can return to the app instead of a Vercel login wall.
+
+### 2.2 Supabase Auth URLs
+
+In **Supabase Dashboard → Authentication → URL Configuration**:
+
+- **Site URL (production):** `https://ab.songpig.com`
+- **Additional redirect URLs:**
+  - `http://localhost:3000/auth/callback`
+  - `https://ab.songpig.com/auth/callback`
+  - `https://<your-vercel-preview-domain>/auth/callback`  
+    (you can also use a wildcard preview pattern if supported)
+
+Auth provider callback remains:
+
+- `https://xkholdgzgnhelzgkklwg.supabase.co/auth/v1/callback`
+
+### 2.3 Google OAuth
+
+In **Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID**:
+
+- **Authorized JavaScript origins:**
+  - `http://localhost:3000`
+  - `https://ab.songpig.com`
+  - `https://<your-vercel-preview-domain>`
+
+- **Authorized redirect URIs:**
+  - `https://xkholdgzgnhelzgkklwg.supabase.co/auth/v1/callback`
+
+Supabase is configured to use this Google client for the `google` provider.
+
 ---
 
-## 🎯 Next Steps Priority Order
+## 3. Auth & Session Flows
 
-1. **Restore deleted files** (if actually deleted - verify first)
-2. **Complete Vercel domain setup** - Wait for DNS propagation, verify domain works
-3. **Run database migration** - Execute `supabase-auth-migration.sql`
-4. **Configure Supabase Auth URLs** - Update Site URL and Redirect URLs
-5. **Configure Google OAuth** - Add `ab.songpig.com` to authorized origins
-6. **Test Google OAuth flow** - Sign in with Google, verify user sync works
-7. **Update branding** - Change "Listening Rooms" → "A/B" throughout app
-8. **Test real-time comments** - Verify Supabase Realtime subscriptions work
-9. **Test avatar uploads** - Verify Supabase Storage bucket exists and works
+### 3.1 Local session model
 
----
+- Implemented in `app/lib/auth-helpers.ts`:
+  - `getCurrentUser()` / `setCurrentUser()` store a normalized user object in `localStorage`.
+  - `getAuthHeaders()` sets `x-user-id`, `x-user-role`, `x-user-name` for all API calls.
+  - `logout()` clears local storage and broadcasts an auth change event.
+- This local session is the source of truth for the UI (dashboard, admin, rooms, profile).
+- Supabase Auth tokens (via `supabaseBrowser`) are used only for Supabase Auth / OAuth.
 
-## 🐛 Known Issues / Notes
+### 3.2 Email/password login (`/login`)
 
-- **Supabase Storage:** Avatar uploads require an `avatars` bucket in Supabase Storage. Create it if it doesn't exist.
-- **Supabase Realtime:** Must be enabled in Supabase Dashboard → Database → Replication
-- **Google OAuth:** Requires Google Cloud Console project setup (if not already done)
-- **Domain:** Currently migrating from `rooms.songpig.com` to `ab.songpig.com`
+- UI: `app/login/page.tsx`
+- API: `app/api/auth/login/route.ts`
+  - Verifies `username` + `password` via `userStore.authenticate`.
+  - Returns user without `passwordHash`.
+- On success, client:
+  - Calls `setCurrentUser(user)` and redirects:
+    - `admin` → `/admin`
+    - others → `/dashboard`
 
----
+### 3.3 Email/password registration (`/register`)
 
-## 📝 Quick Start for New Chat
+- UI: `app/register/page.tsx`
+- API: `app/api/auth/register/route.ts`
+- Register screen:
+  - Requires `username`, `password`.
+  - Optional email.
+  - **Required account type**: Artist or Reviewer (radio buttons).
+- Behavior:
+  - New user is created in `users` table with role `artist` or `listener`.
+  - On success:
+    - `setCurrentUser(userData)`.
+    - Redirect to `/dashboard?welcome=artist|reviewer`.
 
-**Copy this into new chat:**
+### 3.4 Google OAuth – login & role-aware signup
 
+#### Initiation
+
+- **Login page (`/login`)**:
+  - `supabaseBrowser.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${origin}/auth/callback` } })`
+  - No explicit role; `/api/auth/sync` defaults new users to `listener` (Reviewer).
+
+- **Register page (`/register`)**:
+  - User must choose account type first:
+    - The Google button label updates to:
+      - `Sign up with Google as Artist` or
+      - `Sign up with Google as Reviewer`
+  - Attempting Google signup without choosing a role shows a clear error.
+  - When clicked, it calls:
+    - `supabaseBrowser.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${origin}/auth/callback?signupRole=${role}`, ... } })`
+
+#### OAuth callback (`/auth/callback`)
+
+- UI: `app/auth/callback/page.tsx` (client component, wrapped in `<Suspense>`).
+- Responsibilities:
+  1. Read tokens from URL hash; call `supabaseBrowser.auth.setSession(...)`.
+  2. Fallback to `supabaseBrowser.auth.getSession()` if needed.
+  3. If session has a user:
+     - Call `/api/auth/sync` with:
+       - `supabaseUserId`, `email`, `name`, `avatarUrl`, `role: signupRole?`.
+     - Store returned app user via `setCurrentUser`.
+     - Redirect:
+       - `admin` → `/admin`
+       - `artist` → `/dashboard?welcome=artist`
+       - `listener` → `/dashboard?welcome=reviewer`
+  4. On errors:
+     - Show a short message and redirect back to `/login?error=auth_failed` (or similar).
+
+#### Auth sync (`/api/auth/sync`)
+
+- File: `app/api/auth/sync/route.ts`
+- Input:
+
+```ts
+{
+  supabaseUserId: string;
+  email?: string | null;
+  name?: string | null;
+  avatarUrl?: string | null;
+  role?: 'artist' | 'listener' | string | null; // from signupRole when present
+}
 ```
-I'm working on Song Pig - a music A/B testing platform (rebranding from "Listening Rooms" to "A/B").
 
-Current state:
-- Just migrated domain from rooms.songpig.com to ab.songpig.com
-- Implemented Google OAuth (code written, needs configuration)
-- Enhanced artist dashboard with stats and real-time feedback
-- Added profile pictures, real-time comments, mobile fixes
-- Created landing page and terms page
+- Behavior:
+  - **Existing user (by `auth_id`):**
+    - If `status === 'disabled'` → **403 "Account disabled"** (hard ban; cannot log in, including via Google).
+    - If `status === 'deleted'`:
+      - Treat this as a **fresh signup**:
+        - Set `status = 'active'`.
+        - Set `role` based on requested `role`:
+          - `artist` or `listener` if provided.
+          - If previous role was artist/listener, may reuse that.
+        - **Never** restore `admin` automatically for deleted accounts.
+      - Updates avatar/email fields as needed.
+    - Normal path (non-deleted, non-disabled):
+      - Optionally upgrade `listener` → `artist` if `role === 'artist'`.
+      - Keep admins as admins unless explicitly changed by super admin.
+  - **New user (no `auth_id` match):**
+    - Derive username from email or name.
+    - Default role to:
+      - `artist` or `listener` if provided.
+      - Otherwise `listener`.
+    - Insert into `users` with sensible storage defaults.
 
-Immediate needs:
-1. Verify if files were deleted (check git status)
-2. Restore any missing files if needed
-3. Complete domain migration configuration (Supabase, Google OAuth)
-4. Run database migration for auth_id and avatar_url columns
-5. Update branding from "Listening Rooms" to "A/B"
+The endpoint always returns the normalized app user object (without password hash) used by `setCurrentUser`.
+
+---
+
+## 4. User Status & Admin Rules
+
+### 4.1 Status semantics
+
+User records in `users` have a `status` field:
+
+- `active` – normal, allowed to log in and use features based on role.
+- `disabled` – **banned**:
+  - Email/password auth fails.
+  - Google/OAuth auth is blocked by `/api/auth/sync` with `403 Account disabled`.
+  - Only an admin (ideally super admin) can set status back to `active`.
+- `deleted` – soft delete:
+  - Hidden from the main admin users list.
+  - If the same Google account signs up again later:
+    - `/api/auth/sync` reactivates the record as `active`.
+    - Sets role based on the **new** selection (Artist/Reviewer).
+    - Does **not** restore any previous admin role.
+
+This matches a common industry pattern:
+
+- **Disabled = banned** (locked until admin re-enables).  
+- **Deleted = “fired” but allowed to return later as a normal user.**
+
+### 4.2 Super admin vs normal admin
+
+- The built-in `admin` user (username `admin`, role `admin`) is treated as **super admin**.
+- Only this account can:
+  - Change the role or status of other admin accounts.
+  - Demote admins to artist/reviewer or mark them deleted/disabled.
+- Enforcement:
+  - **Server-side:** `app/api/users/[id]/route.ts` checks:
+    - Prevents non-super-admins from modifying admin accounts.
+    - Protects the super admin account from being changed or deleted.
+  - **UI-side:** `app/admin/page.tsx`:
+    - Shows the `admin` row as `super_admin` in orange and disables its Edit button.
+    - Allows Edit for other admins only when logged in as `admin`.
+
+---
+
+## 5. Admin UI & Debug Tools
+
+### 5.1 Admin dashboard (`/admin`)
+
+- File: `app/admin/page.tsx`
+- Visible only to logged-in users with role `admin`.
+- Includes:
+  - Summary stats (users, rooms, songs, comments).
+  - **All Users** table:
+    - Columns: username, email, role, status, created/last_login, etc.
+    - Edit controls for role/status:
+      - Regular admins cannot modify admin accounts.
+      - Super admin can edit other admins; cannot modify its own `admin` row.
+  - **Rooms overview** for high-level room stats.
+
+### 5.2 Raw Users (Supabase) – Excel-style debug view
+
+- Endpoint: `app/api/users/debug/route.ts`
+  - GET `/api/users/debug` – admin-only.
+  - Verifies the caller is an active admin via `userStore.getUser`.
+  - Returns raw `users` table rows, ordered by `created_at DESC`.
+- UI:
+  - Collapsible panel in `/admin` labeled “Debug: Raw Users (Supabase)”.
+  - Wide, scrollable table that mirrors the underlying Supabase data:
+    - `id`, `username`, `email`, `auth_id`, `role`, `status`,
+      `created_at`, `last_login`, storage-related fields, etc.
+  - Client-side text filter (search by username/email).
+  - “Download CSV” button to export the current dataset for Excel.
+
+### 5.3 Raw Rooms (Supabase) – Excel-style debug view
+
+- Endpoint: `app/api/rooms/debug/route.ts`
+  - GET `/api/rooms/debug` – admin-only.
+  - Verifies the caller is an active admin.
+  - Returns raw `rooms` rows, ordered by `created_at DESC`.
+- UI:
+  - Collapsible “Debug: Raw Rooms (Supabase)” panel in `/admin`.
+  - Columns include: `id`, `name`, `status`, `artist_id`, `invite_code`,
+    `created_at`, `last_accessed`, and other room metadata.
+  - Client-side text filter on room name/invite code.
+  - CSV export button for opening in Excel.
+
+These tools are intended for **debugging and verification**, especially for:
+
+- Confirming Google-created users are present with correct `auth_id`, `email`, and `role`.
+- Confirming rooms are correctly linked to artists via `artist_id`.
+
+---
+
+## 6. Key Files & Modules (Current)
+
+- **Auth & session**
+  - `app/lib/auth-helpers.ts` – localStorage user session, auth headers, logout.
+  - `app/lib/supabase-browser.ts` – browser Supabase client with auth.
+  - `app/lib/supabase-server.ts` – server-side Supabase client using service_role key.
+  - `app/api/auth/login/route.ts` – username/password login.
+  - `app/api/auth/register/route.ts` – username/password registration.
+  - `app/auth/callback/page.tsx` – OAuth callback handler UI.
+  - `app/api/auth/sync/route.ts` – Supabase Auth ↔ app `users` sync logic.
+
+- **Users & admin**
+  - `app/lib/users.ts` – userStore; handles fetching/updating users with roles/status.
+  - `app/api/users/[id]/route.ts` – single-user fetch/update, enforces super-admin rules.
+  - `app/api/users/debug/route.ts` – raw users debug endpoint.
+  - `app/admin/page.tsx` – admin dashboard + debug grids.
+
+- **Rooms & data**
+  - `app/api/rooms/*` – rooms CRUD, songs, win-rates, comments, etc.
+  - `app/api/rooms/debug/route.ts` – raw rooms debug endpoint.
+
+- **UI**
+  - `app/page.tsx` – public marketing/landing page.
+  - `app/dashboard/page.tsx` – authenticated dashboard for artists/reviewers.
+  - `app/login/page.tsx` – login screen with Google button.
+  - `app/register/page.tsx` – registration with role choice + Google signup.
+  - `app/room/[id]/page.tsx` – listening room experience (comparisons, voting, comments).
+  - `app/profile/page.tsx` – profile screen (avatar upload UI present; API incomplete).
+  - `app/components/UserProfile.tsx` – sticky header with username/role; shows SUPER ADMIN styling for `admin`.
+
+---
+
+## 7. Remaining Work / Open Items
+
+1. **Realtime comments implementation**
+   - Recreate `app/lib/realtime.ts` for Supabase Realtime subscriptions.
+   - Wire it into `app/room/[id]/page.tsx` to:
+     - Subscribe to new comments.
+     - Show the floating “new comments” notification bar.
+   - Ensure Supabase Realtime is enabled for relevant tables.
+
+2. **Avatar upload API**
+   - Implement `app/api/users/avatar/route.ts` to:
+     - Accept avatar file metadata / upload token.
+     - Store avatars (Supabase Storage or R2), update `users.avatar_url`.
+     - Handle deletion / replacement of existing avatars.
+   - Confirm bucket and security rules are correct.
+
+3. **Hydration warning for FeedbackButton**
+   - Fix React hydration warning by ensuring any `window`/`localStorage` or auth-dependent logic runs in `useEffect` only.
+   - Avoid reading browser-only state during SSR.
+
+4. **Additional admin UX polish**
+   - Enhance sorting/filtering in the debug grids (e.g., sort by `role`, `status`, `created_at`).
+   - Consider adding an explicit “is_super_admin” indicator column in Raw Users for clarity.
+
+5. **Copy / branding**
+   - Continue auditing copy for consistent “Song Pig A/B testing” branding.
+   - Ensure role labels (Reviewer vs listener) are consistent across landing page, about page, dashboard, and admin.
+
+---
+
+## 8. Quick Start for a New Chat / Handoff
+
+You can paste the block below into a new Cursor chat to bootstrap context:
+
+```text
+I'm working on Song Pig – a music A/B testing platform where artists run private listening rooms and reviewers vote on song versions.
+
+Current state (Dec 2025):
+- Production is at https://ab.songpig.com (migrated from rooms.songpig.com).
+- Environments (local, staging, prod) all share consistent Supabase + Google OAuth config.
+- Email/password auth and Google OAuth (including role-aware signup on /register) are working.
+- User status semantics:
+  - active = normal
+  - disabled = banned (blocked even via Google)
+  - deleted = soft-deleted; on next Google signup they come back as artist/reviewer, never auto-admin.
+- There is a super admin account (username 'admin') that can promote/demote other admins.
+- The /admin page includes Excel-style debug grids for raw users and rooms, with CSV export.
 
 Key files:
-- app/dashboard/page.tsx - Main dashboard
-- app/login/page.tsx - Google OAuth login
-- HANDOFF_SUMMARY.md - Full context
+- app/auth/callback/page.tsx – OAuth callback handler.
+- app/api/auth/sync/route.ts – Supabase Auth ↔ app users sync logic.
+- app/lib/auth-helpers.ts and app/lib/supabase-browser.ts – session + browser Supabase client.
+- app/admin/page.tsx – admin dashboard, including Raw Users/Rooms debug panels.
+- app/api/users/debug/route.ts and app/api/rooms/debug/route.ts – raw Supabase debug endpoints.
+- HANDOFF_SUMMARY.md – high-level architecture and environment notes.
+
+Immediate next steps:
+1. Implement app/lib/realtime.ts and hook up realtime comments in app/room/[id]/page.tsx.
+2. Implement app/api/users/avatar/route.ts to back the existing avatar upload UI.
+3. Fix the hydration warning for the FeedbackButton.
+4. Optionally refine the admin debug grids (sorting, more filters) and continue copy/branding polish.
 ```
 
 ---
 
-**Last Updated:** December 2025  
-**Domain:** `ab.songpig.com` (migrating from `rooms.songpig.com`)
+This document is intended to be the authoritative snapshot for how auth, admin, and environments are wired up as of the timestamp above. When making significant changes, update the **Last updated** line and briefly adjust the relevant sections. 
+
 
