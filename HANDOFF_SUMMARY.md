@@ -23,6 +23,20 @@
 - `staging` → Vercel preview/staging deployment from the `staging` branch
 - Local dev → `http://localhost:3000`
 
+High-level flow:
+
+```text
+Local Dev (http://localhost:3000)
+    │
+    ├── push feature branch → optional Vercel preview (per-branch URL)
+    │
+    ├── merge to `staging` → Vercel staging/preview environment
+    │        (https://songpig-rooms-git-staging-*.vercel.app)
+    │
+    └── merge to `main` → Production
+             (https://ab.songpig.com)
+```
+
 All three environments now share consistent Supabase and Google OAuth behavior.
 
 ---
