@@ -813,9 +813,9 @@ export default function RoomPage() {
       roomId,
     });
 
-    // CRITICAL: Enforce MAX 2 songs for draft rooms
-    if (room.status === 'draft' && room.songs.length >= 2) {
-      setToast({ message: 'Draft rooms can only have 2 songs. Change status to Active to add more songs.', type: 'error' });
+    // CRITICAL: Enforce MAX 2 songs for all rooms (strict A/B: Version A and Version B only)
+    if (room.songs.length >= 2) {
+      setToast({ message: 'Rooms can only have 2 songs (Version A and Version B).', type: 'error' });
       return;
     }
 

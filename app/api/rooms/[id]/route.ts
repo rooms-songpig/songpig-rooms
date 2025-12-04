@@ -39,6 +39,24 @@ export async function GET(
     
     console.log('Room found:', room.id, room.name);
 
+    // Enforce status-based visibility
+    // Draft rooms: only owner and admins can view
+    if (
+      room.status === 'draft' &&
+      userRole !== 'admin' &&
+      room.artistId !== (userId || '')
+    ) {
+      return NextResponse.json(
+        { error: 'You do not have access to this room' },
+        { status: 403 }
+      );
+    }
+
+    // Deleted rooms: hidden from everyone except admins (treat as 404 for non-admins)
+    if (room.status === 'deleted' && userRole !== 'admin') {
+      return NextResponse.json({ error: 'Room not found' }, { status: 404 });
+    }
+
     // Check access permissions
     if (userRole === 'admin') {
       // Admins can access any room

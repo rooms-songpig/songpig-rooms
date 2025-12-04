@@ -54,6 +54,8 @@ export interface Room {
   inviteCode: string;
   accessType: 'private' | 'invited-artists' | 'invite-code';
   status: 'draft' | 'active' | 'archived' | 'deleted';
+  // Flag for globally visible starter rooms on the reviewer dashboard
+  isStarterRoom: boolean;
   createdAt: number;
   updatedAt?: number;
   lastAccessed?: number;
@@ -72,6 +74,7 @@ interface DbRoom {
   invite_code: string;
   access_type: 'private' | 'invited-artists' | 'invite-code';
   status: 'draft' | 'active' | 'archived' | 'deleted';
+  is_starter_room: boolean | null;
   created_at: string;
   updated_at: string | null;
   last_accessed: string | null;
@@ -236,6 +239,8 @@ async function loadFullRoom(dbRoom: DbRoom): Promise<Room> {
     inviteCode: dbRoom.invite_code,
     accessType: dbRoom.access_type,
     status: dbRoom.status,
+    // Treat null as false for older rows
+    isStarterRoom: !!dbRoom.is_starter_room,
     createdAt: new Date(dbRoom.created_at).getTime(),
     updatedAt: dbRoom.updated_at ? new Date(dbRoom.updated_at).getTime() : undefined,
     lastAccessed: dbRoom.last_accessed ? new Date(dbRoom.last_accessed).getTime() : undefined,
@@ -457,7 +462,14 @@ export const dataStore = {
       return undefined;
     }
 
-    return loadFullRoom(data as DbRoom);
+    const room = await loadFullRoom(data as DbRoom);
+
+    // Invites should only work for active rooms
+    if (room.status !== 'active') {
+      return undefined;
+    }
+
+    return room;
   },
 
   // Get all rooms
@@ -975,6 +987,38 @@ export const dataStore = {
 
   // Update room status
   async updateRoomStatus(roomId: string, status: 'draft' | 'active' | 'archived' | 'deleted'): Promise<boolean> {
+    // If we are deleting the room, proactively remove any Cloudflare-hosted audio
+    if (status === 'deleted') {
+      const { data: songsData, error: songsError } = await supabaseServer
+        .from('songs')
+        .select('id, storage_type, storage_key')
+        .eq('room_id', roomId);
+
+      if (!songsError && songsData) {
+        for (const song of songsData as { id: string; storage_type: SongStorageType | null; storage_key: string | null }[]) {
+          if (song.storage_type === 'cloudflare' && song.storage_key) {
+            const deleted = await deleteFile(song.storage_key);
+            if (!deleted) {
+              logger.warn('Failed to delete Cloudflare file while deleting room', {
+                roomId,
+                songId: song.id,
+                storageKey: song.storage_key,
+              });
+            }
+          }
+        }
+
+        // After deleting files, blank out URLs and storage keys so audio is no longer playable
+        await supabaseServer
+          .from('songs')
+          .update({
+            url: '',
+            storage_key: null,
+          })
+          .eq('room_id', roomId);
+      }
+    }
+
     const { error } = await supabaseServer
       .from('rooms')
       .update({

@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS rooms (
   invite_code TEXT NOT NULL UNIQUE,
   access_type TEXT NOT NULL DEFAULT 'invite-code' CHECK (access_type IN ('private', 'invited-artists', 'invite-code')),
   status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'archived', 'deleted')),
+  -- Whether this is a globally available Starter Room for reviewers
+  is_starter_room BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ,
   last_accessed TIMESTAMPTZ
@@ -100,6 +102,13 @@ CREATE INDEX IF NOT EXISTS idx_comparisons_song_b_id ON comparisons(song_b_id);
 CREATE INDEX IF NOT EXISTS idx_comparisons_winner_id ON comparisons(winner_id);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
+
+-- Additional safe-guard migrations (idempotent) -----------------------------
+
+-- Ensure is_starter_room exists on rooms (older databases may not have it)
+ALTER TABLE rooms
+ADD COLUMN IF NOT EXISTS is_starter_room BOOLEAN NOT NULL DEFAULT false;
+
 
 -- Unique constraint for comparisons: one vote per user per song pair
 -- This prevents duplicate votes for the same pair

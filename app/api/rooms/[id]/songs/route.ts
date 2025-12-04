@@ -40,6 +40,14 @@ export async function POST(
       );
     }
 
+    // Enforce strict A/B: a room can have at most 2 songs total
+    if (room.songs.length >= 2) {
+      return NextResponse.json(
+        { error: 'Rooms can only have 2 songs (Version A and Version B).' },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const { 
       title, 

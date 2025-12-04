@@ -53,6 +53,21 @@ interface SongStat {
   winRate: number;
 }
 
+interface StarterRoomSummary {
+  id: string;
+  name: string;
+  artistName?: string;
+  createdAt: string;
+}
+
+interface ReviewedRoomSummary {
+  id: string;
+  name: string;
+  artistName?: string;
+  lastReviewedAt: string;
+  preferredSongTitle?: string;
+}
+
 export default function Home() {
   const router = useRouter();
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -74,6 +89,12 @@ export default function Home() {
   const [showAllSongs, setShowAllSongs] = useState(false);
   const [welcomeRole, setWelcomeRole] = useState<'artist' | 'reviewer' | null>(null);
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
+
+  // Reviewer dashboard data
+  const [starterRooms, setStarterRooms] = useState<StarterRoomSummary[]>([]);
+  const [reviewedRooms, setReviewedRooms] = useState<ReviewedRoomSummary[]>([]);
+  const [loadingReviewerRooms, setLoadingReviewerRooms] = useState(false);
+  const [reviewerError, setReviewerError] = useState<string | null>(null);
 
   const formatRoomNameWithArtist = useCallback(
     (value: string) => {
@@ -156,11 +177,43 @@ export default function Home() {
     }
   }, [router, fetchArtistStats]);
 
+  const isArtist = user?.role === 'artist' || user?.role === 'admin';
+
+  const fetchReviewerRooms = useCallback(async () => {
+    try {
+      setLoadingReviewerRooms(true);
+      setReviewerError(null);
+      const res = await fetch('/api/rooms/reviewer', {
+        headers: getAuthHeaders(),
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      if (res.ok && !data.error) {
+        setStarterRooms(data.starterRooms || []);
+        setReviewedRooms(data.reviewedRooms || []);
+      } else if (data.error) {
+        setReviewerError(data.error);
+      }
+    } catch (error) {
+      console.error('Failed to fetch reviewer rooms:', error);
+      setReviewerError('Failed to load rooms you can review.');
+    } finally {
+      setLoadingReviewerRooms(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (user) {
       fetchRooms();
     }
   }, [statusFilter, user]);
+
+  // Load reviewer dashboard data when a reviewer logs in
+  useEffect(() => {
+    if (user && !isArtist) {
+      fetchReviewerRooms();
+    }
+  }, [user, isArtist, fetchReviewerRooms]);
 
   useEffect(() => {
     if (showCreateForm && roomNameRef.current) {
@@ -305,8 +358,6 @@ export default function Home() {
   if (!user) {
     return null;
   }
-
-  const isArtist = user.role === 'artist' || user.role === 'admin';
 
   return (
     <main
@@ -579,6 +630,302 @@ export default function Home() {
             >
               🎵 Join a Room
             </Link>
+          </div>
+        )}
+
+        {/* Reviewer Dashboard - Starter Rooms & History */}
+        {!isArtist && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem',
+              marginBottom: '2rem',
+            }}
+          >
+            {/* Rooms you can review (Starter Rooms) */}
+            <div
+              style={{
+                background: 'rgba(26, 26, 46, 0.7)',
+                padding: '1.5rem',
+                borderRadius: '0.75rem',
+                border: '1px solid rgba(59,130,246,0.35)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '1rem',
+                  gap: '0.5rem',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: '1.1rem',
+                    margin: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                  }}
+                >
+                  🎯 Rooms you can review
+                </h2>
+                {starterRooms.length > 0 && (
+                  <span
+                    style={{
+                      fontSize: '0.8rem',
+                      opacity: 0.7,
+                    }}
+                  >
+                    Starter rooms curated by SongPig
+                  </span>
+                )}
+              </div>
+              {loadingReviewerRooms ? (
+                <p style={{ opacity: 0.8 }}>Loading rooms…</p>
+              ) : reviewerError ? (
+                <p style={{ opacity: 0.8, color: '#f97373' }}>{reviewerError}</p>
+              ) : starterRooms.length === 0 ? (
+                <p style={{ opacity: 0.8 }}>
+                  No starter rooms available right now. Check back soon or join a room with an invite code.
+                </p>
+              ) : (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.75rem',
+                  }}
+                >
+                  {starterRooms.map((room) => (
+                    <Link
+                      key={room.id}
+                      href={`/room/${room.id}`}
+                      style={{
+                        display: 'block',
+                        textDecoration: 'none',
+                        background: 'rgba(15,15,30,0.8)',
+                        padding: '1rem',
+                        borderRadius: '0.75rem',
+                        border: '1px solid rgba(59,130,246,0.4)',
+                        color: '#f9fafb',
+                        transition: 'border-color 0.2s, transform 0.2s, background 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#60a5fa';
+                        e.currentTarget.style.background = 'rgba(15,15,35,0.95)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(59,130,246,0.4)';
+                        e.currentTarget.style.background = 'rgba(15,15,30,0.8)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          gap: '0.75rem',
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h3
+                            style={{
+                              margin: 0,
+                              marginBottom: '0.25rem',
+                              fontSize: '1rem',
+                              fontWeight: 600,
+                              wordBreak: 'break-word',
+                            }}
+                          >
+                            {room.name}
+                          </h3>
+                          {room.artistName && (
+                            <p
+                              style={{
+                                margin: 0,
+                                fontSize: '0.85rem',
+                                opacity: 0.75,
+                              }}
+                            >
+                              by <span style={{ fontWeight: 500 }}>{room.artistName}</span>
+                            </p>
+                          )}
+                        </div>
+                        <span
+                          style={{
+                            fontSize: '0.75rem',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '999px',
+                            background: 'rgba(59,130,246,0.2)',
+                            border: '1px solid rgba(59,130,246,0.6)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Starter Room
+                        </span>
+                      </div>
+                      <p
+                        style={{
+                          margin: '0.75rem 0 0 0',
+                          fontSize: '0.8rem',
+                          opacity: 0.7,
+                        }}
+                      >
+                        Tap to enter, listen to both versions, and leave one great comment + vote.
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Rooms you've reviewed */}
+            <div
+              style={{
+                background: 'rgba(15,15,30,0.8)',
+                padding: '1.5rem',
+                borderRadius: '0.75rem',
+                border: '1px solid rgba(148,163,184,0.35)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '1rem',
+                  gap: '0.5rem',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: '1.1rem',
+                    margin: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                  }}
+                >
+                  ✅ Rooms you’ve reviewed
+                </h2>
+                {reviewedRooms.length > 0 && (
+                  <span
+                    style={{
+                      fontSize: '0.8rem',
+                      opacity: 0.75,
+                    }}
+                  >
+                    {reviewedRooms.length} room{reviewedRooms.length === 1 ? '' : 's'}
+                  </span>
+                )}
+              </div>
+              {reviewedRooms.length === 0 ? (
+                <p style={{ opacity: 0.8 }}>
+                  Once you review a room, it will show up here so you can revisit your feedback.
+                </p>
+              ) : (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.75rem',
+                  }}
+                >
+                  {reviewedRooms.map((room) => (
+                    <Link
+                      key={room.id}
+                      href={`/room/${room.id}`}
+                      style={{
+                        display: 'block',
+                        textDecoration: 'none',
+                        background: 'rgba(15,23,42,0.9)',
+                        padding: '1rem',
+                        borderRadius: '0.75rem',
+                        border: '1px solid rgba(148,163,184,0.5)',
+                        color: '#f9fafb',
+                        transition: 'border-color 0.2s, background 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#e5e7eb';
+                        e.currentTarget.style.background = 'rgba(15,23,52,0.95)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(148,163,184,0.5)';
+                        e.currentTarget.style.background = 'rgba(15,23,42,0.9)';
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          gap: '0.75rem',
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h3
+                            style={{
+                              margin: 0,
+                              marginBottom: '0.25rem',
+                              fontSize: '1rem',
+                              fontWeight: 600,
+                              wordBreak: 'break-word',
+                            }}
+                          >
+                            {room.name}
+                          </h3>
+                          {room.artistName && (
+                            <p
+                              style={{
+                                margin: 0,
+                                fontSize: '0.85rem',
+                                opacity: 0.75,
+                              }}
+                            >
+                              by <span style={{ fontWeight: 500 }}>{room.artistName}</span>
+                            </p>
+                          )}
+                        </div>
+                        <span
+                          style={{
+                            fontSize: '0.75rem',
+                            opacity: 0.7,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {new Date(room.lastReviewedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          marginTop: '0.5rem',
+                          fontSize: '0.8rem',
+                          opacity: 0.8,
+                        }}
+                      >
+                        {room.preferredSongTitle ? (
+                          <span>
+                            You preferred:{' '}
+                            <span style={{ fontWeight: 500 }}>{room.preferredSongTitle}</span>
+                          </span>
+                        ) : (
+                          <span>Your vote has been recorded.</span>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
