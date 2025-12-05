@@ -809,6 +809,8 @@ export default function RoomPage() {
     }
 
     const currentUserId = currentUser.id;
+    // Capture song count before adding so we can detect when we've reached 2/2
+    const songsBeforeAddition = room.songs.length;
     logger.info('Adding song - user verification', { 
       userIdFromStorage: currentUserId, 
       userIdState: userId, 
@@ -989,7 +991,15 @@ export default function RoomPage() {
         // Show success message - but don't replace any existing error toasts
         const currentToast = toast;
         if (!currentToast || currentToast.type !== 'error') {
-          setToast({ message: `Song "${data.song.title}" added successfully!`, type: 'success' });
+          // If this was the second song (2/2), make that explicit so it's hard to miss
+          if (songsBeforeAddition === 1) {
+            setToast({
+              message: '2/2 songs added! Room is ready. Change status to Active to compare songs.',
+              type: 'success',
+            });
+          } else {
+            setToast({ message: `Song "${data.song.title}" added successfully!`, type: 'success' });
+          }
         }
         
         // Wait longer for the song to be fully persisted in Supabase
@@ -1387,6 +1397,8 @@ export default function RoomPage() {
         width: '100%',
         boxSizing: 'border-box',
         position: 'relative',
+        touchAction: 'pan-y',
+        overscrollBehaviorX: 'none',
       }}
     >
       <PageLabel pageName={`Room: ${room?.name || roomId || 'Loading'}`} />

@@ -119,6 +119,19 @@ export default function Home() {
     });
   }, [formatRoomNameWithArtist]);
 
+  // Format \"Rooms you've reviewed\" timestamps in the viewer's local time with explicit AM/PM
+  const formatReviewedAt = useCallback((timestamp: string) => {
+    if (!timestamp) return '';
+    return new Date(timestamp).toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }, []);
+
   const fetchArtistStats = useCallback(async () => {
     try {
       const res = await fetch('/api/artist/stats', {
@@ -902,7 +915,7 @@ export default function Home() {
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {new Date(room.lastReviewedAt).toLocaleString()}
+                  {formatReviewedAt(room.lastReviewedAt)}
                 </span>
                       </div>
                       <div
