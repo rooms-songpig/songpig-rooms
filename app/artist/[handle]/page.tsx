@@ -99,7 +99,36 @@ export default async function ArtistProfilePage({ params }: ArtistPageProps) {
   const avatarInitial = (displayName || artistHandle).charAt(0).toUpperCase();
 
   const socialLinks = artist.socialLinks || {};
-  const sameAs = Object.values(socialLinks).filter((url) => !!url && typeof url === 'string');
+  const linkItems = [
+    socialLinks.website && {
+      key: 'website',
+      label: 'Website',
+      icon: '🌐',
+      url: socialLinks.website as string,
+    },
+    socialLinks.x && {
+      key: 'x',
+      label: 'Twitter',
+      icon: '𝕏',
+      url: socialLinks.x as string,
+    },
+    socialLinks.instagram && {
+      key: 'instagram',
+      label: 'Instagram',
+      icon: '📸',
+      url: socialLinks.instagram as string,
+    },
+    (socialLinks.support || socialLinks.tipping) && {
+      key: 'support',
+      label: 'Support',
+      icon: '💛',
+      url: (socialLinks.support || socialLinks.tipping) as string,
+    },
+  ].filter(Boolean) as { key: string; label: string; icon: string; url: string }[];
+
+  const sameAs = linkItems
+    .map((item) => item.url)
+    .filter((url) => !!url && typeof url === 'string' && /^https?:\/\//i.test(url));
 
   const profilePath = `/artist/${artistHandle}`;
 
@@ -277,8 +306,8 @@ export default async function ArtistProfilePage({ params }: ArtistPageProps) {
               </section>
             )}
 
-            {/* Social / support links placeholder (future) */}
-            {sameAs.length > 0 && (
+            {/* Social / support links */}
+            {linkItems.length > 0 && (
               <section aria-label="Artist links">
                 <h2
                   style={{
@@ -298,10 +327,10 @@ export default async function ArtistProfilePage({ params }: ArtistPageProps) {
                     gap: '0.5rem',
                   }}
                 >
-                  {sameAs.map((url) => (
+                  {linkItems.map((item) => (
                     <a
-                      key={url}
-                      href={url}
+                      key={item.key}
+                      href={item.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
@@ -312,9 +341,13 @@ export default async function ArtistProfilePage({ params }: ArtistPageProps) {
                         color: '#e5e7eb',
                         textDecoration: 'none',
                         background: 'rgba(15,23,42,0.7)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
                       }}
                     >
-                      {url.replace(/^https?:\/\//, '')}
+                      <span>{item.icon}</span>
+                      <span>{item.label}</span>
                     </a>
                   ))}
                 </div>
