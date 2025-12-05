@@ -108,7 +108,7 @@ export default async function ChangelogPage() {
   return (
     <main
       style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         background: '#050816',
         color: '#f9fafb',
         padding: '0 1rem 3rem',

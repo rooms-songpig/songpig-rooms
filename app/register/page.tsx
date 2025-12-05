@@ -119,7 +119,7 @@ function RegisterContent() {
   return (
     <main
       style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         background: '#050816',
         color: '#f9fafb',
         fontFamily:
@@ -399,7 +399,7 @@ export default function RegisterPage() {
     <Suspense fallback={
       <main
         style={{
-          minHeight: '100vh',
+          minHeight: '100dvh',
           background: '#050816',
           color: '#f9fafb',
           fontFamily:

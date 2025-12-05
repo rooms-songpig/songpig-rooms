@@ -15,7 +15,7 @@ export default function AboutPage() {
 
   return (
     <main style={{ 
-      minHeight: '100vh', 
+      minHeight: '100dvh', 
       background: '#0f0f23', 
       color: '#fff', 
       display: 'flex',

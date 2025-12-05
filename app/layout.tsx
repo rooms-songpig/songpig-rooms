@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Footer from "@/app/components/Footer";
@@ -20,6 +20,15 @@ export const metadata: Metadata = {
   description: "Private rooms to A/B your songs with friends. Invite-only. Votes and comments stay private.",
 };
 
+// CRITICAL: Fix for iOS/Chrome mobile keyboard causing horizontal float/drift
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  interactiveWidget: "resizes-content", // Forces page to resize when keyboard opens
+};
+
 // Only show deployment banner in non-production environments by default.
 // You can force it on in production by setting NEXT_PUBLIC_SHOW_DEPLOYMENT_BANNER="true".
 const showDeploymentBanner =
@@ -38,7 +47,7 @@ export default function RootLayout({
         style={{ 
           display: 'flex', 
           flexDirection: 'column', 
-          minHeight: '100vh',
+          minHeight: '100dvh',
           overflowX: 'hidden',
           maxWidth: '100vw',
         }}

@@ -105,7 +105,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main style={{ minHeight: '100vh', background: '#0f0f23', color: '#fff', padding: '2rem' }}>
+      <main style={{ minHeight: '100dvh', background: '#0f0f23', color: '#fff', padding: '2rem' }}>
         <UserProfile />
         <div style={{ textAlign: 'center', padding: '3rem' }}>
           <p>Loading...</p>
@@ -119,7 +119,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main style={{ minHeight: '100vh', background: '#0f0f23', color: '#fff', padding: '2rem' }}>
+    <main style={{ minHeight: '100dvh', background: '#0f0f23', color: '#fff', padding: '2rem' }}>
       <PageLabel pageName="Profile" />
       <UserProfile />
       <div style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '2rem' }}>

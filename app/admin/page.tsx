@@ -644,7 +644,7 @@ export default function AdminPage() {
     return (
       <main
         style={{
-          minHeight: '100vh',
+          minHeight: '100dvh',
           background: '#050816',
           color: '#f9fafb',
           display: 'flex',
@@ -660,7 +660,7 @@ export default function AdminPage() {
   return (
     <main
       style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         background: '#050816',
         color: '#f9fafb',
         fontFamily:

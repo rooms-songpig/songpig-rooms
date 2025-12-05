@@ -176,7 +176,7 @@ function AuthCallbackContent() {
   return (
     <main
       style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         background: '#050816',
         color: '#f9fafb',
         fontFamily:
@@ -233,7 +233,7 @@ export default function AuthCallbackPage() {
       fallback={
         <main
           style={{
-            minHeight: '100vh',
+            minHeight: '100dvh',
             background: '#050816',
             color: '#f9fafb',
             fontFamily:

@@ -352,7 +352,7 @@ export default function Home() {
     return (
       <main
         style={{
-          minHeight: '100vh',
+          minHeight: '100dvh',
           background: 'linear-gradient(135deg, #050816 0%, #0a1628 50%, #050816 100%)',
           color: '#f9fafb',
           display: 'flex',
@@ -375,7 +375,7 @@ export default function Home() {
   return (
     <main
       style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         background: 'linear-gradient(135deg, #050816 0%, #0a1628 50%, #050816 100%)',
         color: '#f9fafb',
         fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
