@@ -3,17 +3,12 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { userStore, type User } from '@/app/lib/users';
 
-type ArtistPageParams = {
-  handle: string;
-};
-
 type ArtistPageProps = {
-  params: ArtistPageParams;
+  params: Promise<{ handle: string }>;
 };
 
-async function getArtistFromParams(params: ArtistPageParams): Promise<User | null> {
-  const rawHandle = params.handle || '';
-  const trimmed = rawHandle.trim();
+async function getArtistFromHandle(rawHandle: string): Promise<User | null> {
+  const trimmed = (rawHandle || '').trim();
   if (!trimmed) return null;
 
   // Support both /artist/BestKidRocker and /artist/@BestKidRocker
@@ -38,7 +33,8 @@ function stringToHslColor(str: string, s: number, l: number): string {
 }
 
 export async function generateMetadata({ params }: ArtistPageProps): Promise<Metadata> {
-  const artist = await getArtistFromParams(params);
+  const { handle } = await params;
+  const artist = await getArtistFromHandle(handle);
 
   if (!artist) {
     return {
@@ -47,9 +43,9 @@ export async function generateMetadata({ params }: ArtistPageProps): Promise<Met
     };
   }
 
-  const handle = artist.username;
-  const displayName = artist.displayName || handle;
-  const title = `${displayName} (@${handle}) · SongPig`;
+  const artistHandle = artist.username;
+  const displayName = artist.displayName || artistHandle;
+  const title = `${displayName} (@${artistHandle}) · SongPig`;
 
   const baseDescription =
     artist.bio && artist.bio.trim().length > 0
@@ -68,7 +64,7 @@ export async function generateMetadata({ params }: ArtistPageProps): Promise<Met
       title,
       description,
       type: 'profile',
-      url: `/artist/${handle}`,
+      url: `/artist/${artistHandle}`,
       images: ogImage ? [ogImage] : undefined,
     },
     twitter: {
@@ -81,14 +77,15 @@ export async function generateMetadata({ params }: ArtistPageProps): Promise<Met
 }
 
 export default async function ArtistProfilePage({ params }: ArtistPageProps) {
-  const artist = await getArtistFromParams(params);
+  const { handle } = await params;
+  const artist = await getArtistFromHandle(handle);
 
   if (!artist) {
     notFound();
   }
 
-  const handle = artist.username;
-  const displayName = artist.displayName || handle;
+  const artistHandle = artist.username;
+  const displayName = artist.displayName || artistHandle;
   const roleLabel =
     artist.role === 'artist'
       ? 'Artist'
@@ -96,21 +93,21 @@ export default async function ArtistProfilePage({ params }: ArtistPageProps) {
       ? 'Artist / Admin'
       : 'Reviewer';
 
-  const bannerBase = stringToHslColor(handle, 70, 45);
-  const bannerAccent = stringToHslColor(`${handle}-accent`, 70, 30);
+  const bannerBase = stringToHslColor(artistHandle, 70, 45);
+  const bannerAccent = stringToHslColor(`${artistHandle}-accent`, 70, 30);
 
-  const avatarInitial = (displayName || handle).charAt(0).toUpperCase();
+  const avatarInitial = (displayName || artistHandle).charAt(0).toUpperCase();
 
   const socialLinks = artist.socialLinks || {};
   const sameAs = Object.values(socialLinks).filter((url) => !!url && typeof url === 'string');
 
-  const profilePath = `/artist/${handle}`;
+  const profilePath = `/artist/${artistHandle}`;
 
   const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': artist.role === 'artist' || artist.role === 'admin' ? 'MusicGroup' : 'Person',
     name: displayName,
-    alternateName: `@${handle}`,
+    alternateName: `@${artistHandle}`,
     url: profilePath,
     description: artist.bio || undefined,
     image: artist.avatarUrl || undefined,
@@ -167,7 +164,9 @@ export default async function ArtistProfilePage({ params }: ArtistPageProps) {
           <div
             style={{
               padding: '1.5rem 1.5rem 1.75rem',
-              marginTop: '-64px',
+              marginTop: '-48px',
+              position: 'relative',
+              zIndex: 1,
               display: 'flex',
               flexDirection: 'column',
               gap: '1.5rem',
@@ -243,7 +242,7 @@ export default async function ArtistProfilePage({ params }: ArtistPageProps) {
                     opacity: 0.85,
                   }}
                 >
-                  <span style={{ fontWeight: 500 }}>@{handle}</span> ·{' '}
+                  <span style={{ fontWeight: 500 }}>@{artistHandle}</span> ·{' '}
                   <span style={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.8rem' }}>
                     {roleLabel}
                   </span>
