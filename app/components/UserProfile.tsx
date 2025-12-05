@@ -179,6 +179,21 @@ export default function UserProfile() {
               Admin Dashboard
             </Link>
           )}
+          <Link
+            href="/profile"
+            style={{
+              padding: '0.5rem 1rem',
+              background: '#1a1a2e',
+              color: '#f9fafb',
+              border: '1px solid #333',
+              borderRadius: '0.375rem',
+              fontSize: '0.85rem',
+              fontWeight: '500',
+              textDecoration: 'none',
+            }}
+          >
+            Profile
+          </Link>
           <button
             onClick={handleLogout}
             style={{
