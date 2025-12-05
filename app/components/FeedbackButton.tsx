@@ -13,9 +13,9 @@ export default function FeedbackButton() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<AuthUser | null>(() =>
-    typeof window === 'undefined' ? null : getCurrentUser()
-  );
+  // Start with no user on both server and client; sync from local state in an effect
+  // to avoid hydration mismatches from reading window/localStorage during render.
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
     const syncUser = () => setUser(getCurrentUser());
