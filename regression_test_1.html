@@ -1,0 +1,609 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.6">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="en"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;SongPig Rooms – QA Test Map&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>:root {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: #0b1020;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #e5e7eb;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>body {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin: 0;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>padding: 0;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>display: flex;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>justify-content: center;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>min-height: 100vh;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.app {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>max-width: 900px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>width: 100%;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>padding: 24px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>box-sizing: border-box;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>h1 {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-top: 0;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 1.8rem;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-bottom: 0.25rem;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.subtitle {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-bottom: 1.5rem;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #9ca3af;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 0.95rem;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.card {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: #111827;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border-radius: 12px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>padding: 18px 20px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>box-shadow: 0 12px 25px rgba(0,0,0,0.35);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border: 1px solid #1f2933;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-bottom: 16px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.test-header {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>display: flex;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>justify-content: space-between;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>align-items: baseline;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>gap: 12px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-bottom: 8px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.section-label {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 0.8rem;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>text-transform: uppercase;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>letter-spacing: 0.08em;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #9ca3af;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.test-title {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 1.05rem;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-weight: 600;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.progress {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 0.9rem;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #9ca3af;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>text-align: right;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.test-details {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 0.92rem;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>line-height: 1.5;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>white-space: pre-wrap;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-top: 8px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.comment-label {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 0.85rem;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-top: 16px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-bottom: 4px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #d1d5db;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>textarea {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>width: 100%;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>min-height: 80px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>resize: vertical;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border-radius: 8px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border: 1px solid #374151;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: #020617;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #e5e7eb;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>padding: 8px 10px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 0.9rem;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>box-sizing: border-box;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>textarea:focus {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>outline: 2px solid #4f46e5;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>outline-offset: 1px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border-color: transparent;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.actions {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>display: flex;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>flex-wrap: wrap;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>gap: 10px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-top: 12px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>align-items: center;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>button {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border: none;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border-radius: 999px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>padding: 8px 14px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 0.9rem;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>cursor: pointer;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>display: inline-flex;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>align-items: center;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>gap: 6px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>transition: transform 0.07s ease, box-shadow 0.07s ease, background 0.1s ease;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>button:active {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>transform: scale(0.96);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>box-shadow: 0 0 0 rgba(0,0,0,0);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.btn-pass {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: #10b981;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #022c22;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>box-shadow: 0 6px 15px rgba(16,185,129,0.3);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.btn-fail {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: #ef4444;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #7f1d1d;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>box-shadow: 0 6px 15px rgba(239,68,68,0.3);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.btn-secondary {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: #111827;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #9ca3af;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border: 1px solid #374151;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>box-shadow: none;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.btn-secondary:active {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>transform: scale(0.97);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.status-pill {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>padding: 3px 10px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border-radius: 999px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 0.75rem;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>text-transform: uppercase;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>letter-spacing: 0.08em;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.status-pass {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: rgba(16,185,129,0.12);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #6ee7b7;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border: 1px solid rgba(16,185,129,0.3);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.status-fail {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: rgba(239,68,68,0.12);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #fca5a5;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border: 1px solid rgba(239,68,68,0.3);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.status-pending {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: rgba(55,65,81,0.7);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #e5e7eb;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border: 1px solid rgba(75,85,99,0.9);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.summary-card h2 {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 1.2rem;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin: 0 0 0.4rem;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.summary-note {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 0.85rem;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #9ca3af;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-bottom: 10px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>table {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>width: 100%;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border-collapse: collapse;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 0.85rem;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>th, td {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>padding: 6px 8px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border-bottom: 1px solid #1f2933;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>vertical-align: top;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>th {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>text-align: left;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #9ca3af;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-weight: 500;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.summary-status {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>white-space: nowrap;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.summary-section {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #9ca3af;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 0.8rem;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.summary-comment {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>white-space: pre-wrap;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #e5e7eb;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.footer {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-top: 18px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 0.8rem;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #6b7280;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>text-align: right;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.error {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #fecaca;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 0.8rem;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-top: 4px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>@media (max-width: 600px) {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>.test-header {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>flex-direction: column;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>align-items: flex-start;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>.progress {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>text-align: left;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1">&lt;div class="app"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;h1&gt;SongPig Rooms – Manual QA Test Map&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="subtitle"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>Step through each test, mark it &lt;i&gt;Pass&lt;/i&gt; or &lt;i&gt;Fail&lt;/i&gt;. If it fails, add a comment before moving on.</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div id="current-test" class="card"&gt;&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="card summary-card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;h2&gt;Summary&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button type="button" class="btn-secondary" onclick="renderSummary()"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>Refresh Summary</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="summary-note"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>Shows all tests with their current status and any failure notes you’ve added.</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="summary-table-wrapper"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="footer"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>This file is local-only. Refreshing the page will clear the results.</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>// Define the tests based on your checklist</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const tests = [</p>
+<p class="p1"><span class="Apple-converted-space">    </span>// 1. Setup &amp; seed data</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "1.1",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "1. Setup &amp; seed data",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Run the latest DB migration",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "Run the latest DB migration for the project so schema is current before testing."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "1.2",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "1. Setup &amp; seed data",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Apply supabase-migration.sql",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "Apply supabase-migration.sql so that rooms.is_starter_room exists in the DB."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "1.3",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "1. Setup &amp; seed data",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Verify is_starter_room column",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "Verify that rooms has an is_starter_room column (for example via the Supabase table editor)."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "1.4",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "1. Setup &amp; seed data",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Prepare admin test user",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "Prepare a test user with super admin or admin rights and dashboard access (admin)."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "1.5",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "1. Setup &amp; seed data",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Prepare artist_test user",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "Prepare a test artist user account (artist_test) via Supabase or existing auth flows."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "1.6",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "1. Setup &amp; seed data",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Prepare reviewer_test user",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "Prepare a test reviewer user account (reviewer_test) via Supabase or existing auth flows."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "1.7",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "1. Setup &amp; seed data",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Create Room A (Starter Room candidate, ACTIVE)",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "As artist_test, create Room A intended to be a Starter Room. Set its status to ACTIVE."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "1.8",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "1. Setup &amp; seed data",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Create Room B (Non-starter invite-only, ACTIVE)",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "As artist_test, create Room B as a non-starter invite-only room. Set its status to ACTIVE."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "1.9",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "1. Setup &amp; seed data",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Create Room C (DRAFT)",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "As artist_test, create Room C and leave its status as DRAFT."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// 2. Strict A/B: max 2 songs per room</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "2.1",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "2. Strict A/B: max 2 songs per room",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Create draft Room D from dashboard",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "As artist_test, create a new draft room (Room D):\n• Go to /dashboard.\n• Click \"Create New Room\".\n• Fill name/description, submit.\nExpect: Room D appears under \"Your Rooms\" with status draft."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "2.2",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "2. Strict A/B: max 2 songs per room",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Add Version A and Version B only",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "From Room D page:\n• Add Song 1 (Version A).\n• Add Song 2 (Version B).\nVerify both appear and playback works for each."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "2.3",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "2. Strict A/B: max 2 songs per room",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Attempt to add a third song to Room D (draft)",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "While Room D is still draft:\n• Try adding Song 3 via the UI.\nExpect:\n• Addition is blocked.\n• A toast appears with text like “Rooms can only have 2 songs (Version A and Version B).”\n• No third song row appears.\n• In network tab, POST /api/rooms/[id]/songs should return 400."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "2.4",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "2. Strict A/B: max 2 songs per room",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Promote Room D to ACTIVE and re-test song limit",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "Change Room D status to ACTIVE via the status controls in the room header.\nThen try adding another song.\nExpect:\n• Same behavior as before—toast error and 400 from API.\nConfirms strict A/B holds regardless of status."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// 3. Room status &amp; invite semantics</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "3.1",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "3. Room status &amp; invite semantics",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Draft room invite via /join is blocked",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "With Room C still in DRAFT:\n• As artist_test, copy Room C’s invite code.\n• Log in as reviewer_test.\n• Visit /join and enter Room C’s code.\nExpect: “Room not found” or a non-success response; reviewer_test cannot join a draft room."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "3.2",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "3. Room status &amp; invite semantics",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Draft room direct URL is forbidden",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "With Room C still in DRAFT:\n• As reviewer_test, directly visit /room/[id] for Room C.\nExpect: 403 with message like “You do not have access to this room.”"</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "3.3",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "3. Room status &amp; invite semantics",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Active Room B via invite works",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "Ensure Room B is ACTIVE.\n• As artist_test, copy Room B’s invite code.\n• As reviewer_test, go to /join and enter the invite code.\nExpect: You are redirected into /room/[id] and see the A/B comparison interface.\nConfirms invites only work on active rooms."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "3.4",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "3. Room status &amp; invite semantics",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Archived behavior for Room B",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "As artist_test or admin:\n• Set Room B’s status to ARCHIVED.\nAs reviewer_test:\n• Try /join + Room B’s invite code.\n• Try opening /room/[id] directly.\nExpect:\n• Cannot newly join via invite (depending on current logic).\n• Room does not appear as a starter room.\nNote: If reviewer_test had previously reviewed this room, later check that it still shows under “Rooms you’ve reviewed” in section 5."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "3.5",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "3. Room status &amp; invite semantics",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Deleted behavior &amp; audio/IP for Room D",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "As artist_test or admin:\n• Set Room D’s status to DELETED.\nAs reviewer_test:\n• Try visiting /room/[id] for Room D.\nExpect: 404-style error or “Room not found”.\nAs admin:\n• Inspect songs table entries for Room D’s songs.\nExpect:\n• url is blank, storage_key is null.\n• In UI (if forced loaded as admin), audio players should not be able to play deleted audio.\nOptionally verify in Cloudflare R2 that corresponding objects have been removed."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// 4. Starter rooms: data &amp; API</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "4.1",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "4. Starter rooms: data &amp; API",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Mark Room A as a Starter Room in DB",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "In the DB or admin UI, set for Room A only:\n• rooms.status = 'active'\n• rooms.is_starter_room = true"</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "4.2",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "4. Starter rooms: data &amp; API",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "API sanity check: /api/rooms/reviewer",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "While logged in as reviewer_test, call GET /api/rooms/reviewer (via browser dev tools or REST client).\nExpect response:\n• starterRooms includes Room A with id/name/artistName.\n• reviewedRooms is empty before any vote."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "4.3",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "4. Starter rooms: data &amp; API",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Non-starter active room excluded from starter list",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "Ensure:\n• Room B is ACTIVE.\n• Room B has is_starter_room = false.\nCall GET /api/rooms/reviewer as reviewer_test.\nExpect: Room B is not included in starterRooms."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// 5. Reviewer dashboard UX</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "5.1",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "5. Reviewer dashboard UX",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Reviewer dashboard before any reviews",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "Log in as reviewer_test and go to /dashboard.\nExpect:\n• Existing \"Welcome reviewer\" hero still shows.\n• “Rooms you can review” section shows Room A as a Starter Room card.\n• “Rooms you’ve reviewed” section shows an empty-state message explaining it will populate after you review rooms."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "5.2",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "5. Reviewer dashboard UX",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Complete a review in a Starter Room",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "As reviewer_test:\n• Click the Room A card from “Rooms you can review” to go into /room/[id].\n• Listen to both versions (A/B) and ensure playback works.\n• Leave a comment and cast a vote so a comparison row is created.\nReturn to /dashboard.\nExpect:\n• Room A is no longer in “Rooms you can review”.\n• Room A appears under “Rooms you’ve reviewed” with room title, artist name, last-reviewed date, and text like “You preferred: [song title]” if the winner title can be resolved."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "5.3",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "5. Reviewer dashboard UX",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Multiple reviews, order &amp; persistence",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "Repeat with another Starter Room (or temporarily toggle a second room to is_starter_room = true and review it).\nAfter reviewing two rooms:\n• “Rooms you’ve reviewed” shows two entries.\n• Entries are sorted by most recent review date.\n• Reload the page and confirm the order and contents are stable across refresh."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// 6. Responsiveness &amp; polish</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "6.1",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "6. Responsiveness &amp; polish",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Mobile layout – reviewer dashboard",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "In browser dev tools, set viewport to ~375×812 (iPhone-like).\nAs reviewer_test, visit /dashboard.\nExpect:\n• “Rooms you can review” and “Rooms you’ve reviewed” cards stack vertically.\n• Text is readable with no horizontal scrolling.\n• Cards and buttons are easy to tap (min-height ~44px)."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "6.2",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "6. Responsiveness &amp; polish",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Mobile layout – room view",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "With viewport ~375×812, visit /room/[id] as reviewer_test.\nExpect:\n• A/B players, vote buttons, and comment section all fit comfortably.\n• No horizontal scroll is introduced."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "6.3",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "6. Responsiveness &amp; polish",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Tablet &amp; desktop layout",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "Test at ~768px width (tablet) and typical desktop widths.\nExpect:\n• Spacing, typography, and hover effects remain clean and not cluttered.\n• Long room names and artist names wrap gracefully without breaking the layout."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// 7. Quick regression checks</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "7.1",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "7. Quick regression checks",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Artist dashboard sanity",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "Log in as artist_test and visit /dashboard.\nExpect:\n• Artist stats appear as before.\n• “Create New Room” and “Your Rooms” sections behave as before.\n• Status badges (draft/active/archived/deleted) still render correctly and link into rooms."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: "7.2",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>section: "7. Quick regression checks",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: "Admin tools still work",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>details: "Log in as admin.\nExpect:\n• /admin still loads.\n• Users table and Raw Users/Rooms debug panels work (no 500s).\n• You can still change room status via existing admin/owner controls without breaking the new reviewer flows."</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>let currentIndex = 0;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>function renderCurrentTest() {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const container = document.getElementById("current-test");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const t = tests[currentIndex];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>const total = tests.length;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const status = t.status || "pending";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const comment = t.comment || "";</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>let statusLabel = "Pending";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let statusClass = "status-pending";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (status === "pass") {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>statusLabel = "Passed";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>statusClass = "status-pass";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>} else if (status === "fail") {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>statusLabel = "Failed";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>statusClass = "status-fail";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>container.innerHTML = `</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="test-header"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="section-label"&gt;${t.section}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="test-title"&gt;${t.id} – ${t.title}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div style="text-align:right;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="progress"&gt;Test ${currentIndex + 1} of ${total}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="status-pill ${statusClass}"&gt;${statusLabel}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="test-details"&gt;${escapeHtml(t.details)}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="comment-label"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>Comment (required if this test fails):</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;textarea id="comment-input" placeholder="Add notes here for failures, edge cases, or anything unexpected..."&gt;${escapeHtml(comment)}&lt;/textarea&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div id="error-message" class="error"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="actions"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button type="button" class="btn-pass" onclick="markAndNext('pass')"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>✅ Mark Pass &amp; Next</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button type="button" class="btn-fail" onclick="markAndNext('fail')"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>❌ Mark Fail &amp; Next</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button type="button" class="btn-secondary" onclick="goPrev()" ${currentIndex === 0 ? "disabled" : ""}&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>← Previous</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button type="button" class="btn-secondary" onclick="goNext()" ${currentIndex === total - 1 ? "disabled" : ""}&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>Skip / Next →</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>function markAndNext(status) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const textarea = document.getElementById("comment-input");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const errorEl = document.getElementById("error-message");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const comment = textarea.value.trim();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (status === "fail" &amp;&amp; comment.length === 0) {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>errorEl.textContent = "Please add a brief comment before marking this test as failed.";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>errorEl.textContent = "";</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>tests[currentIndex].status = status;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>tests[currentIndex].comment = comment;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (currentIndex &lt; tests.length - 1) {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>currentIndex++;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>renderCurrentTest();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Last test: just re-render to update status</p>
+<p class="p1"><span class="Apple-converted-space">      </span>renderCurrentTest();</p>
+<p class="p1"><span class="Apple-converted-space">      </span>alert("You’ve reached the last test. Check the Summary section below for an overview.");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>renderSummary();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>function goPrev() {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (currentIndex &gt; 0) {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Save comment but do not change status</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const textarea = document.getElementById("comment-input");</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (textarea) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>tests[currentIndex].comment = textarea.value;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>currentIndex--;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>renderCurrentTest();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>function goNext() {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (currentIndex &lt; tests.length - 1) {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Save comment but do not change status</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const textarea = document.getElementById("comment-input");</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (textarea) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>tests[currentIndex].comment = textarea.value;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>currentIndex++;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>renderCurrentTest();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>function renderSummary() {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const wrapper = document.getElementById("summary-table-wrapper");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const rows = tests.map(t =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const status = t.status || "pending";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let label = "Pending";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let statusClass = "status-pending";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (status === "pass") {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>label = "Pass";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>statusClass = "status-pass";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>} else if (status === "fail") {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>label = "Fail";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>statusClass = "status-fail";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>return `</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;tr&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;td class="summary-section"&gt;${t.section}&lt;br&gt;&lt;strong&gt;${t.id}&lt;/strong&gt;&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;td&gt;${escapeHtml(t.title)}&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;td class="summary-status"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;span class="status-pill ${statusClass}"&gt;${label}&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;td class="summary-comment"&gt;${t.comment ? escapeHtml(t.comment) : ""}&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/tr&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}).join("");</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>wrapper.innerHTML = `</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;table&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;thead&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;tr&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;th&gt;Section / ID&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;th&gt;Test&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;th&gt;Status&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;th&gt;Comments (on Fail)&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/tr&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/thead&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;tbody&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>${rows}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/tbody&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/table&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>function escapeHtml(str) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (!str) return "";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return String(str)</p>
+<p class="p1"><span class="Apple-converted-space">      </span>.replace(/&amp;/g, "&amp;amp;")</p>
+<p class="p1"><span class="Apple-converted-space">      </span>.replace(/&lt;/g, "&amp;lt;")</p>
+<p class="p1"><span class="Apple-converted-space">      </span>.replace(/&gt;/g, "&amp;gt;")</p>
+<p class="p1"><span class="Apple-converted-space">      </span>.replace(/"/g, "&amp;quot;");</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// Initial render</p>
+<p class="p1"><span class="Apple-converted-space">  </span>renderCurrentTest();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>renderSummary();</p>
+<p class="p1">&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>

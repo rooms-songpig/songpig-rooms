@@ -35,6 +35,10 @@ interface CommentThreadProps {
   isGuest: boolean;
   onCommentAdded: () => void;
   formatTimestamp: (timestamp: number) => string;
+  // When false, the thread becomes read-only (no new comments/replies/reactions)
+  canComment?: boolean;
+  // Optional explanation shown when comments are read-only
+  disabledMessage?: string;
 }
 
 const REACTIONS = [
@@ -457,6 +461,8 @@ export default function CommentThread({
   isGuest,
   onCommentAdded,
   formatTimestamp,
+  canComment = true,
+  disabledMessage,
 }: CommentThreadProps) {
   const [newCommentText, setNewCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -474,7 +480,7 @@ export default function CommentThread({
   });
 
   const handleSubmitComment = async () => {
-    if (!newCommentText.trim() || !currentUserId) return;
+    if (!canComment || !newCommentText.trim() || !currentUserId) return;
 
     setSubmitting(true);
     try {
@@ -508,7 +514,7 @@ export default function CommentThread({
       position: 'relative',
     }}>
       {/* Add comment form */}
-      {!isGuest && (
+      {canComment && !isGuest && (
         <div style={{ 
           marginBottom: '1.5rem', 
           width: '100%', 
@@ -563,7 +569,19 @@ export default function CommentThread({
         </div>
       )}
 
-      {isGuest && (
+      {!canComment && disabledMessage && (
+        <p
+          style={{
+            opacity: 0.7,
+            fontSize: '0.9rem',
+            marginBottom: '1rem',
+            fontStyle: 'italic',
+          }}
+        >
+          {disabledMessage}
+        </p>
+      )}
+      {isGuest && canComment && !disabledMessage && (
         <p style={{ opacity: 0.6, fontSize: '0.9rem', marginBottom: '1rem', fontStyle: 'italic' }}>
           Register to leave comments and reactions
         </p>
@@ -584,7 +602,7 @@ export default function CommentThread({
               songId={songId}
               roomId={roomId}
               currentUserId={currentUserId}
-              isGuest={isGuest}
+              isGuest={isGuest || !canComment}
               onCommentAdded={onCommentAdded}
               formatTimestamp={formatTimestamp}
             />

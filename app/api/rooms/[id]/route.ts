@@ -47,14 +47,17 @@ export async function GET(
       room.artistId !== (userId || '')
     ) {
       return NextResponse.json(
-        { error: 'You do not have access to this room' },
+        { error: 'You do not have access to this room', errorCode: 'ROOM_DRAFT_NO_ACCESS' },
         { status: 403 }
       );
     }
 
     // Deleted rooms: hidden from everyone except admins (treat as 404 for non-admins)
     if (room.status === 'deleted' && userRole !== 'admin') {
-      return NextResponse.json({ error: 'Room not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Room has been removed', errorCode: 'ROOM_DELETED' },
+        { status: 404 }
+      );
     }
 
     // Check access permissions

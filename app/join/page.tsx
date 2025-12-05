@@ -24,10 +24,25 @@ function JoinPageContent() {
       const res = await fetch(`/api/rooms/invite/${code.toUpperCase()}`);
       const data = await res.json();
 
-      if (data.room) {
+      if (res.ok && data.room) {
         router.push(`/room/${data.room.id}`);
       } else {
-        setError('Room not found. Please check your invite code.');
+        // More specific messaging based on errorCode/status
+        if (data.errorCode === 'ROOM_NOT_ACTIVE') {
+          if (data.status === 'draft') {
+            setError('This room is being prepared. Please check back later.');
+          } else if (data.status === 'archived') {
+            setError('This room has been archived and is no longer accepting new listeners.');
+          } else if (data.status === 'deleted') {
+            setError('This room has been removed by the artist or an admin.');
+          } else {
+            setError('This room is not currently accepting visitors.');
+          }
+        } else if (data.errorCode === 'ROOM_NOT_FOUND') {
+          setError('Room not found. Please check your invite code.');
+        } else {
+          setError(data.error || 'Failed to join room. Please try again.');
+        }
         setAutoJoining(false);
       }
     } catch (err) {

@@ -94,6 +94,9 @@ export default function RoomPage() {
   const songUrlRef = useRef<HTMLInputElement>(null);
   const [autoVersion2, setAutoVersion2] = useState(false);
   const [acceptedUploadTerms, setAcceptedUploadTerms] = useState(false);
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [editRoomName, setEditRoomName] = useState('');
+  const [editRoomDescription, setEditRoomDescription] = useState('');
   // Cloud upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -1185,6 +1188,11 @@ export default function RoomPage() {
   };
 
   const handleComparison = async (winnerId: string) => {
+    if (!room || !isReviewable) {
+      setToast({ message: 'This room is not accepting new votes right now.', type: 'info' });
+      return;
+    }
+
     if (isGuest) {
       setToast({ message: 'Please register to vote on songs', type: 'info' });
       return;
@@ -1225,6 +1233,11 @@ export default function RoomPage() {
   };
 
   const handleAddComment = async (songId: string, parentCommentId?: string) => {
+    if (!room || !isReviewable) {
+      setToast({ message: 'This room is not accepting new comments right now.', type: 'info' });
+      return;
+    }
+
     if (isGuest) {
       setToast({ message: 'Please register to leave comments', type: 'info' });
       return;
@@ -1274,6 +1287,41 @@ export default function RoomPage() {
     setReplyText('');
   };
 
+  const handleSaveRoomDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!room || !isOwnerOrAdmin) return;
+
+    try {
+      const res = await fetch(`/api/rooms/${roomId}/meta`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          name: editRoomName,
+          description: editRoomDescription,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setToast({
+          message: data.error || 'Failed to update room details',
+          type: 'error',
+        });
+      } else {
+        setToast({
+          message: 'Room details updated',
+          type: 'success',
+        });
+        setIsEditingDetails(false);
+        fetchRoom();
+      }
+    } catch (error) {
+      setToast({
+        message: 'Failed to update room details',
+        type: 'error',
+      });
+    }
+  };
+
   // formatDate is now replaced by formatTimestamp utility
 
   if (loading) {
@@ -1320,6 +1368,9 @@ export default function RoomPage() {
       </main>
     );
   }
+
+  const isOwnerOrAdmin = room.artistId === userId || user?.role === 'admin';
+  const isReviewable = room.status === 'active';
 
   return (
     <main
@@ -1454,11 +1505,144 @@ export default function RoomPage() {
                   {room.description}
                 </p>
               )}
+              {isOwnerOrAdmin && room.status === 'draft' && !isEditingDetails && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditingDetails(true);
+                    setEditRoomName(room.name);
+                    setEditRoomDescription(room.description || '');
+                  }}
+                  style={{
+                    marginTop: '0.25rem',
+                    marginBottom: '0.5rem',
+                    background: '#1f2937',
+                    color: '#e5e7eb',
+                    border: '1px solid #374151',
+                    padding: '0.25rem 0.6rem',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ✏️ Edit room details
+                </button>
+              )}
+              {isOwnerOrAdmin && room.status === 'draft' && isEditingDetails && (
+                <form
+                  onSubmit={handleSaveRoomDetails}
+                  style={{
+                    marginTop: '0.5rem',
+                    marginBottom: '0.75rem',
+                    padding: '0.75rem',
+                    borderRadius: '0.5rem',
+                    background: '#020617',
+                    border: '1px solid #111827',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label
+                      style={{
+                        display: 'block',
+                        marginBottom: '0.25rem',
+                        fontSize: '0.8rem',
+                        opacity: 0.8,
+                      }}
+                    >
+                      Room name
+                    </label>
+                    <input
+                      type="text"
+                      value={editRoomName}
+                      onChange={(e) => setEditRoomName(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem 0.75rem',
+                        borderRadius: '0.375rem',
+                        border: '1px solid #374151',
+                        background: '#020617',
+                        color: '#e5e7eb',
+                        fontSize: '0.9rem',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label
+                      style={{
+                        display: 'block',
+                        marginBottom: '0.25rem',
+                        fontSize: '0.8rem',
+                        opacity: 0.8,
+                      }}
+                    >
+                      Description
+                    </label>
+                    <textarea
+                      value={editRoomDescription}
+                      onChange={(e) => setEditRoomDescription(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem 0.75rem',
+                        borderRadius: '0.375rem',
+                        border: '1px solid #374151',
+                        background: '#020617',
+                        color: '#e5e7eb',
+                        fontSize: '0.9rem',
+                        minHeight: '60px',
+                        resize: 'vertical',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '0.5rem',
+                      flexWrap: 'wrap',
+                      marginTop: '0.25rem',
+                    }}
+                  >
+                    <button
+                      type="submit"
+                      style={{
+                        background: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.4rem 0.9rem',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingDetails(false)}
+                      style={{
+                        background: 'transparent',
+                        color: '#9ca3af',
+                        border: '1px solid #4b5563',
+                        padding: '0.4rem 0.9rem',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
               {room.status === 'draft' && (
                 <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '0.5rem' }}>
                   {room.songs.length}/2 songs added
                 </p>
               )}
+              {isOwnerOrAdmin && (
               <div style={{ 
                 display: 'flex', 
                 gap: '1rem', 
@@ -1544,6 +1728,7 @@ export default function RoomPage() {
                   Copy Room Link
                 </button>
               </div>
+              )}
             </div>
             {/* Room Status Controls (Owner/Admin Only) */}
             {(room.artistId === userId || user?.role === 'admin') && (
@@ -1778,49 +1963,51 @@ export default function RoomPage() {
             flexDirection: isMobile ? 'column' : 'row',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              gap: '0.5rem',
-              background: '#1a1a2e',
-              padding: '0.25rem',
-              borderRadius: '0.5rem',
-            }}
-          >
-            <button
-              onClick={() => setViewMode('compare')}
+          {isOwnerOrAdmin && (
+            <div
               style={{
-                background: viewMode === 'compare' ? '#3b82f6' : 'transparent',
-                color: 'white',
-                border: 'none',
-                padding: isMobile ? '0.75rem 1rem' : '0.5rem 1rem',
-                borderRadius: '0.375rem',
-                cursor: 'pointer',
-                fontWeight: '500',
-                fontSize: isMobile ? '0.85rem' : '0.9rem',
-                minHeight: isMobile ? '44px' : 'auto',
+                display: 'flex',
+                gap: '0.5rem',
+                background: '#1a1a2e',
+                padding: '0.25rem',
+                borderRadius: '0.5rem',
               }}
             >
-              Compare Mode
-            </button>
-            <button
-              onClick={() => setViewMode('browse')}
-              style={{
-                background: viewMode === 'browse' ? '#3b82f6' : 'transparent',
-                color: 'white',
-                border: 'none',
-                padding: isMobile ? '0.75rem 1rem' : '0.5rem 1rem',
-                borderRadius: '0.375rem',
-                cursor: 'pointer',
-                fontWeight: '500',
-                fontSize: isMobile ? '0.85rem' : '0.9rem',
-                minHeight: isMobile ? '44px' : 'auto',
-              }}
-            >
-              Browse All Songs
-            </button>
-          </div>
-          {room && (room.artistId === userId || user?.role === 'admin') && room.status === 'draft' && viewMode === 'compare' && room.songs.length < 2 && (
+              <button
+                onClick={() => setViewMode('compare')}
+                style={{
+                  background: viewMode === 'compare' ? '#3b82f6' : 'transparent',
+                  color: 'white',
+                  border: 'none',
+                  padding: isMobile ? '0.75rem 1rem' : '0.5rem 1rem',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  fontSize: isMobile ? '0.85rem' : '0.9rem',
+                  minHeight: isMobile ? '44px' : 'auto',
+                }}
+              >
+                Compare Mode
+              </button>
+              <button
+                onClick={() => setViewMode('browse')}
+                style={{
+                  background: viewMode === 'browse' ? '#3b82f6' : 'transparent',
+                  color: 'white',
+                  border: 'none',
+                  padding: isMobile ? '0.75rem 1rem' : '0.5rem 1rem',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  fontSize: isMobile ? '0.85rem' : '0.9rem',
+                  minHeight: isMobile ? '44px' : 'auto',
+                }}
+              >
+                Browse All Songs
+              </button>
+            </div>
+          )}
+          {room && isOwnerOrAdmin && room.status === 'draft' && viewMode === 'compare' && room.songs.length < 2 && (
             <button
               onClick={() => setShowAddSong(!showAddSong)}
               style={{
@@ -1839,7 +2026,7 @@ export default function RoomPage() {
           )}
         </div>
 
-        {showAddSong && viewMode === 'compare' && (
+        {showAddSong && viewMode === 'compare' && isOwnerOrAdmin && room.status === 'draft' && (
           <div
             style={{
               background: '#1a1a2e',
@@ -2498,6 +2685,14 @@ export default function RoomPage() {
                           isGuest={isGuest}
                           onCommentAdded={fetchRoom}
                           formatTimestamp={formatTimestamp}
+                          canComment={isReviewable && !isGuest}
+                          disabledMessage={
+                            !isReviewable
+                              ? room.status === 'draft'
+                                ? 'Comments are read-only while this room is in draft.'
+                                : 'Comments are read-only for this room.'
+                              : undefined
+                          }
                         />
                       </div>
                     </div>
@@ -2642,6 +2837,14 @@ export default function RoomPage() {
                       isGuest={isGuest}
                       onCommentAdded={fetchRoom}
                       formatTimestamp={formatTimestamp}
+                      canComment={isReviewable && !isGuest}
+                      disabledMessage={
+                        !isReviewable
+                          ? room.status === 'draft'
+                            ? 'Comments are read-only while this room is in draft.'
+                            : 'Comments are read-only for this room.'
+                          : undefined
+                      }
                     />
                   </div>
                 </div>
@@ -2748,6 +2951,14 @@ export default function RoomPage() {
                       isGuest={isGuest}
                       onCommentAdded={fetchRoom}
                       formatTimestamp={formatTimestamp}
+                      canComment={isReviewable && !isGuest}
+                      disabledMessage={
+                        !isReviewable
+                          ? room.status === 'draft'
+                            ? 'Comments are read-only while this room is in draft.'
+                            : 'Comments are read-only for this room.'
+                          : undefined
+                      }
                     />
                   </div>
                 </div>

@@ -2052,6 +2052,7 @@ export default function AdminPage() {
                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>id</th>
                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>name</th>
                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>status</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>is_starter_room</th>
                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>artist_id</th>
                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>invite_code</th>
                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>created_at</th>
@@ -2064,6 +2065,7 @@ export default function AdminPage() {
                           <td style={{ padding: '0.4rem' }}>{r.id}</td>
                           <td style={{ padding: '0.4rem' }}>{r.name}</td>
                           <td style={{ padding: '0.4rem' }}>{r.status}</td>
+                          <td style={{ padding: '0.4rem' }}>{String(r.is_starter_room ?? false)}</td>
                           <td style={{ padding: '0.4rem' }}>{r.artist_id}</td>
                           <td style={{ padding: '0.4rem' }}>{r.invite_code}</td>
                           <td style={{ padding: '0.4rem' }}>{r.created_at}</td>

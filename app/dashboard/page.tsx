@@ -473,7 +473,7 @@ export default function Home() {
             {/* Stats Grid */}
             <div style={{ 
               display: 'grid', 
-              gridTemplateColumns: 'repeat(4, 1fr)', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
               gap: '1rem',
               marginBottom: '1.5rem',
             }}>
@@ -895,15 +895,15 @@ export default function Home() {
                             </p>
                           )}
                         </div>
-                        <span
-                          style={{
-                            fontSize: '0.75rem',
-                            opacity: 0.7,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {new Date(room.lastReviewedAt).toLocaleDateString()}
-                        </span>
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    opacity: 0.7,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {new Date(room.lastReviewedAt).toLocaleString()}
+                </span>
                       </div>
                       <div
                         style={{
