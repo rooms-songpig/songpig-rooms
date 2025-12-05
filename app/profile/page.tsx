@@ -218,6 +218,10 @@ export default function ProfilePage() {
                 fontSize: '1rem',
               }}
             />
+            <p style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '0.35rem' }}>
+              Your public handle will appear as <span style={{ fontWeight: 600 }}>@
+              {username || 'yourname'}</span>.
+            </p>
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>

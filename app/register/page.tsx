@@ -279,7 +279,7 @@ function RegisterContent() {
                 opacity: 0.9,
               }}
             >
-              Username *
+              Username / @handle *
             </label>
             <input
               type="text"
@@ -296,8 +296,12 @@ function RegisterContent() {
                 color: '#f9fafb',
                 fontSize: '1rem',
               }}
-              placeholder="Choose a username (min 3 chars)"
+              placeholder="Choose a handle (min 3 chars, letters/numbers/_/.)"
             />
+            <p style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '0.35rem' }}>
+              Your public handle will appear as <span style={{ fontWeight: 600 }}>@
+              {username || 'yourname'}</span>.
+            </p>
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
