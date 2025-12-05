@@ -241,24 +241,26 @@ export default function UserProfile() {
             style={{
               marginTop: '0.75rem',
               marginRight: '0.75rem',
-              background: '#020617',
-              borderRadius: '0.75rem',
-              border: '1px solid rgba(148,163,184,0.6)',
-              minWidth: '190px',
-              boxShadow: '0 18px 40px rgba(0,0,0,0.7)',
-              padding: '0.5rem',
+              background: 'linear-gradient(145deg, rgba(15,23,42,0.98) 0%, rgba(2,6,23,0.99) 100%)',
+              backdropFilter: 'blur(12px)',
+              borderRadius: '1rem',
+              border: '1px solid rgba(139,92,246,0.35)',
+              minWidth: '200px',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.75), 0 0 30px rgba(139,92,246,0.15)',
+              padding: '0.6rem',
             }}
           >
             <div
               style={{
-                padding: '0.5rem 0.6rem 0.4rem',
-                borderBottom: '1px solid rgba(31,41,55,0.9)',
-                marginBottom: '0.25rem',
-                fontSize: '0.8rem',
-                opacity: 0.9,
+                padding: '0.6rem 0.75rem 0.5rem',
+                borderBottom: '1px solid rgba(139,92,246,0.25)',
+                marginBottom: '0.35rem',
+                fontSize: '0.78rem',
+                color: '#94a3b8',
               }}
             >
-              Signed in as <strong>{user.username}</strong>
+              Signed in as{' '}
+              <strong style={{ color: '#e5e7eb' }}>{user.username}</strong>
             </div>
             {user.role === 'admin' && (
               <Link
@@ -266,14 +268,15 @@ export default function UserProfile() {
                 onClick={() => setMobileMenuOpen(false)}
                 style={{
                   display: 'block',
-                  padding: '0.6rem 0.7rem',
-                  borderRadius: '0.5rem',
+                  padding: '0.65rem 0.75rem',
+                  borderRadius: '0.6rem',
                   color: '#e5e7eb',
                   textDecoration: 'none',
                   fontSize: '0.9rem',
+                  background: 'rgba(59,130,246,0.12)',
                 }}
               >
-                Admin Dashboard
+                🛠️ Admin Dashboard
               </Link>
             )}
             <Link
@@ -281,32 +284,33 @@ export default function UserProfile() {
               onClick={() => setMobileMenuOpen(false)}
               style={{
                 display: 'block',
-                padding: '0.6rem 0.7rem',
-                borderRadius: '0.5rem',
+                padding: '0.65rem 0.75rem',
+                borderRadius: '0.6rem',
                 color: '#e5e7eb',
                 textDecoration: 'none',
                 fontSize: '0.9rem',
+                marginTop: '0.15rem',
               }}
             >
-              Profile
+              👤 Profile
             </Link>
             <button
               type="button"
               onClick={handleLogout}
               style={{
                 width: '100%',
-                marginTop: '0.25rem',
-                padding: '0.6rem 0.7rem',
-                borderRadius: '0.5rem',
+                marginTop: '0.35rem',
+                padding: '0.65rem 0.75rem',
+                borderRadius: '0.6rem',
                 border: 'none',
-                background: '#111827',
-                color: '#f9fafb',
+                background: 'rgba(239,68,68,0.1)',
+                color: '#fca5a5',
                 fontSize: '0.9rem',
                 textAlign: 'left',
                 cursor: 'pointer',
               }}
             >
-              Logout
+              🚪 Logout
             </button>
           </div>
         </div>
