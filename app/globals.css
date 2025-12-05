@@ -3,9 +3,21 @@
 @tailwind utilities;
 
 :root {
+  /* Core dark theme colors */
   --foreground-rgb: 249, 250, 251;
   --background-start-rgb: 5, 8, 22;
   --background-end-rgb: 5, 8, 22;
+
+  /* SongPig brand palette */
+  --sp-bg: #020617;
+  --sp-surface: #050816;
+  --sp-surface-soft: #0b1220;
+  --sp-primary: #a855f7; /* purple */
+  --sp-accent-teal: #22d3ee;
+  --sp-accent-yellow: #facc15;
+  --sp-border-subtle: rgba(148, 163, 184, 0.35);
+  --sp-text-primary: #f9fafb;
+  --sp-text-muted: #9ca3af;
 }
 
 /* ==============================================
@@ -28,12 +40,9 @@ html {
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background:
+    radial-gradient(circle at top, rgba(15, 23, 42, 0.85) 0, transparent 55%),
+    linear-gradient(135deg, #020617 0%, #050816 45%, #0b1120 100%);
   /* Ensure body fills viewport height dynamically (keyboard-aware) */
   min-height: 100dvh;
 }

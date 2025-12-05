@@ -16,8 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Song Pig Listening Rooms",
-  description: "Private rooms to A/B your songs with friends. Invite-only. Votes and comments stay private.",
+  title: "SongPig A/B Testing",
+  description:
+    "SongPig is a private A/B testing playground for artists and reviewers—upload two versions, invite trusted ears, and get focused votes and comments.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 // CRITICAL: Fix for iOS/Chrome mobile keyboard causing horizontal float/drift

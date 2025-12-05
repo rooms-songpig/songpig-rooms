@@ -4,14 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, logout } from '@/app/lib/auth-helpers';
 import Link from 'next/link';
+import SongPigLogo from '@/app/components/SongPigLogo';
 
 export default function UserProfile() {
   const router = useRouter();
   const user = getCurrentUser();
-  const [showMenu, setShowMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     const checkMobile = () => {
@@ -27,27 +25,6 @@ export default function UserProfile() {
   const isSuperAdmin =
     user.role === 'admin' && user.username.toLowerCase() === 'admin';
 
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        menuRef.current &&
-        buttonRef.current &&
-        !menuRef.current.contains(event.target as Node) &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
-        setShowMenu(false);
-      }
-    };
-
-    if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
-  }, [showMenu]);
-
   const handleLogout = () => {
     logout();
     router.push('/login');
@@ -62,8 +39,8 @@ export default function UserProfile() {
         right: 0,
         background: isSuperAdmin
           ? 'linear-gradient(135deg, #0f172a 0%, #1f2937 40%, #4b5563 100%)'
-          : '#1a1a2e',
-        borderBottom: isSuperAdmin ? '3px solid #f97316' : '2px solid #fbbf24',
+          : 'rgba(15, 23, 42, 0.96)',
+        borderBottom: isSuperAdmin ? '3px solid #f97316' : '1px solid rgba(148,163,184,0.5)',
         borderRadius: '0.75rem',
         zIndex: 1000,
         padding: '0.75rem 1rem',
@@ -73,104 +50,99 @@ export default function UserProfile() {
         boxSizing: 'border-box',
       }}
     >
-      <div style={{ 
-        maxWidth: '100%', 
-        margin: '0 auto',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '1rem',
-        flexWrap: 'wrap',
-        position: 'relative',
-        overflowX: 'hidden',
-      }}>
-        {/* Main Title - Centered, hidden on very small screens */}
-        <Link
-          href="/"
+      <div
+        style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '1rem',
+          flexWrap: 'wrap',
+          position: 'relative',
+          overflowX: 'hidden',
+        }}
+      >
+        {/* Left: Logo + user summary */}
+        <div
           style={{
-            position: 'absolute',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            textDecoration: 'none',
-            zIndex: 1,
-            width: '100%',
-            maxWidth: '600px',
-            padding: '0 1rem',
-            display: isMobile ? 'none' : 'block', // Hide on mobile to prevent overlap
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.9rem',
+            flex: 1,
+            minWidth: 0,
+            zIndex: 2,
           }}
         >
-          <h1
-            style={{
-              fontSize: 'clamp(0.9rem, 3vw, 1.5rem)',
-              fontWeight: '700',
-              background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              margin: 0,
-              textAlign: 'center',
-              letterSpacing: '0.05em',
-              wordBreak: 'break-word',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              maxWidth: '100%',
-            }}
-          >
-            SongPig A/B Testing
-          </h1>
-        </Link>
-        
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '0.75rem', 
-          flex: 1, 
-          position: 'relative', 
-          zIndex: 2,
-          minWidth: 0, // Allow flex shrink
-        }}>
+          <SongPigLogo href="/" size={isMobile ? 'sm' : 'md'} />
+
           <div
-            ref={buttonRef}
             style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              background: '#3b82f6',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: '600',
-              fontSize: '1rem',
-              cursor: 'pointer',
-              flexShrink: 0,
+              gap: '0.6rem',
+              minWidth: 0,
             }}
-            onClick={() => setShowMenu(!showMenu)}
-            title="Profile"
           >
-            {user.username.charAt(0).toUpperCase()}
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: '500', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {user.username}
-            </div>
             <div
               style={{
-                fontSize: '0.8rem',
-                opacity: 0.85,
-                fontStyle: 'italic',
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background:
+                  'radial-gradient(circle at 20% 0%, #60a5fa 0, #3b82f6 45%, #1d4ed8 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 600,
+                fontSize: '1rem',
+                flexShrink: 0,
               }}
+              title={user.username}
             >
-              {isSuperAdmin
-                ? 'Super admin'
-                : user.role === 'listener'
-                ? 'Reviewer'
-                : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+              {user.username.charAt(0).toUpperCase()}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontWeight: 500,
+                  fontSize: '0.9rem',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {user.username}
+              </div>
+              <div
+                style={{
+                  fontSize: '0.8rem',
+                  opacity: 0.85,
+                  fontStyle: 'italic',
+                }}
+              >
+                {isSuperAdmin
+                  ? 'Super admin'
+                  : user.role === 'listener'
+                  ? 'Reviewer'
+                  : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+              </div>
             </div>
           </div>
         </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', position: 'relative', zIndex: 2 }}>
+
+        {/* Right: actions */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            flexWrap: 'wrap',
+            position: 'relative',
+            zIndex: 2,
+          }}
+        >
           {user.role === 'admin' && (
             <Link
               href="/admin"
@@ -219,65 +191,6 @@ export default function UserProfile() {
           </button>
         </div>
       </div>
-      
-      {/* Profile Menu */}
-      {showMenu && (
-        <div
-          ref={menuRef}
-          style={{
-            position: 'absolute',
-            top: '100%',
-            right: 0,
-            background: '#020617',
-            border: '1px solid #334155',
-            borderRadius: '0.75rem',
-            padding: '0.5rem',
-            marginTop: '0.75rem',
-            minWidth: '220px',
-            maxWidth: '90vw',
-            boxShadow: '0 18px 45px rgba(0, 0, 0, 0.55)',
-            zIndex: 1001,
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Link
-            href="/profile"
-            style={{
-              display: 'block',
-              padding: '0.75rem 0.9rem',
-              color: '#fff',
-              textDecoration: 'none',
-              borderRadius: '0.5rem',
-              fontSize: '0.9rem',
-              background: 'transparent',
-            }}
-            onClick={() => setShowMenu(false)}
-          >
-            Edit Profile
-          </Link>
-          <button
-            type="button"
-            onClick={() => {
-              setShowMenu(false);
-              handleLogout();
-            }}
-            style={{
-              width: '100%',
-              marginTop: '0.25rem',
-              padding: '0.7rem 0.9rem',
-              borderRadius: '0.5rem',
-              border: 'none',
-              background: '#111827',
-              color: '#f9fafb',
-              fontSize: '0.9rem',
-              textAlign: 'left',
-              cursor: 'pointer',
-            }}
-          >
-            Logout
-          </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -392,8 +392,8 @@ export default async function ArtistProfilePage({ params }: ArtistPageProps) {
                   opacity: 0.8,
                 }}
               >
-                Public room summaries will appear here in a future release. For now, invited listeners
-                can access this artist&apos;s rooms directly via invite links.
+                Public SongPig room summaries will appear here in a future release. For now,
+                invited listeners can access this artist&apos;s rooms directly via invite links.
               </p>
             </section>
           </div>
