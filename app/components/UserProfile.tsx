@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, logout } from '@/app/lib/auth-helpers';
 import Link from 'next/link';
@@ -11,6 +11,8 @@ export default function UserProfile() {
   const user = getCurrentUser();
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+  const mobileTriggerRef = useRef<HTMLButtonElement | null>(null);
   
   useEffect(() => {
     const checkMobile = () => {
@@ -20,6 +22,33 @@ export default function UserProfile() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (
+        !target ||
+        (mobileMenuRef.current &&
+          mobileMenuRef.current.contains(target)) ||
+        (mobileTriggerRef.current &&
+          mobileTriggerRef.current.contains(target))
+      ) {
+        return;
+      }
+      setMobileMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [mobileMenuOpen]);
   
   if (!user) return null;
 
@@ -39,13 +68,9 @@ export default function UserProfile() {
         top: 0,
         left: 0,
         right: 0,
-        background: isSuperAdmin
-          ? 'linear-gradient(135deg, #0f172a 0%, #1f2937 40%, #4b5563 100%)'
-          : 'rgba(15, 23, 42, 0.96)',
-        borderBottom: isSuperAdmin ? '3px solid #f97316' : '1px solid rgba(148,163,184,0.5)',
-        borderRadius: '0.75rem',
+        padding: '0.5rem 0 0.75rem',
+        background: 'linear-gradient(180deg, rgba(2,6,23,0.96) 0%, rgba(15,23,42,0.9) 60%, rgba(15,23,42,0) 100%)',
         zIndex: 1000,
-        padding: '0.75rem 1rem',
         backdropFilter: 'blur(10px)',
         overflowX: 'hidden',
         maxWidth: '100vw',
@@ -54,8 +79,16 @@ export default function UserProfile() {
     >
       <div
         style={{
-          maxWidth: '1200px',
+          maxWidth: '1000px',
           margin: '0 auto',
+          padding: '0.35rem 0.75rem',
+          borderRadius: '0.75rem',
+          border: isSuperAdmin
+            ? '2px solid #f97316'
+            : '1px solid rgba(148,163,184,0.5)',
+          background: isSuperAdmin
+            ? 'linear-gradient(135deg, #0f172a 0%, #1f2937 40%, #4b5563 100%)'
+            : 'rgba(15, 23, 42, 0.96)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -148,9 +181,10 @@ export default function UserProfile() {
           {isMobile ? (
             <>
               <button
+                ref={mobileTriggerRef}
                 type="button"
                 aria-label="Open menu"
-                onClick={() => setMobileMenuOpen(true)}
+                onClick={() => setMobileMenuOpen((open) => !open)}
                 style={{
                   width: 40,
                   height: 40,
@@ -224,63 +258,37 @@ export default function UserProfile() {
       {/* Mobile quick menu */}
       {isMobile && mobileMenuOpen && (
         <div
-          onClick={() => setMobileMenuOpen(false)}
+          ref={mobileMenuRef}
           style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15,23,42,0.6)',
-            backdropFilter: 'blur(6px)',
-            zIndex: 1500,
-            display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'flex-start',
+            position: 'absolute',
+            top: 'calc(100% + 0.6rem)',
+            right: '1rem',
+            background:
+              'linear-gradient(145deg, rgba(15,23,42,0.98) 0%, rgba(2,6,23,0.99) 100%)',
+            borderRadius: '1rem',
+            border: '1px solid rgba(139,92,246,0.35)',
+            minWidth: '200px',
+            boxShadow:
+              '0 20px 50px rgba(0,0,0,0.75), 0 0 30px rgba(139,92,246,0.15)',
+            padding: '0.6rem',
+            zIndex: 1200,
           }}
         >
           <div
-            onClick={(e) => e.stopPropagation()}
             style={{
-              marginTop: '0.75rem',
-              marginRight: '0.75rem',
-              background: 'linear-gradient(145deg, rgba(15,23,42,0.98) 0%, rgba(2,6,23,0.99) 100%)',
-              backdropFilter: 'blur(12px)',
-              borderRadius: '1rem',
-              border: '1px solid rgba(139,92,246,0.35)',
-              minWidth: '200px',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.75), 0 0 30px rgba(139,92,246,0.15)',
-              padding: '0.6rem',
+              padding: '0.6rem 0.75rem 0.5rem',
+              borderBottom: '1px solid rgba(139,92,246,0.25)',
+              marginBottom: '0.35rem',
+              fontSize: '0.78rem',
+              color: '#94a3b8',
             }}
           >
-            <div
-              style={{
-                padding: '0.6rem 0.75rem 0.5rem',
-                borderBottom: '1px solid rgba(139,92,246,0.25)',
-                marginBottom: '0.35rem',
-                fontSize: '0.78rem',
-                color: '#94a3b8',
-              }}
-            >
-              Signed in as{' '}
-              <strong style={{ color: '#e5e7eb' }}>{user.username}</strong>
-            </div>
-            {user.role === 'admin' && (
-              <Link
-                href="/admin"
-                onClick={() => setMobileMenuOpen(false)}
-                style={{
-                  display: 'block',
-                  padding: '0.65rem 0.75rem',
-                  borderRadius: '0.6rem',
-                  color: '#e5e7eb',
-                  textDecoration: 'none',
-                  fontSize: '0.9rem',
-                  background: 'rgba(59,130,246,0.12)',
-                }}
-              >
-                🛠️ Admin Dashboard
-              </Link>
-            )}
+            Signed in as{' '}
+            <strong style={{ color: '#e5e7eb' }}>{user.username}</strong>
+          </div>
+          {user.role === 'admin' && (
             <Link
-              href="/profile"
+              href="/admin"
               onClick={() => setMobileMenuOpen(false)}
               style={{
                 display: 'block',
@@ -289,30 +297,45 @@ export default function UserProfile() {
                 color: '#e5e7eb',
                 textDecoration: 'none',
                 fontSize: '0.9rem',
-                marginTop: '0.15rem',
+                background: 'rgba(59,130,246,0.12)',
               }}
             >
-              👤 Profile
+              🛠️ Admin Dashboard
             </Link>
-            <button
-              type="button"
-              onClick={handleLogout}
-              style={{
-                width: '100%',
-                marginTop: '0.35rem',
-                padding: '0.65rem 0.75rem',
-                borderRadius: '0.6rem',
-                border: 'none',
-                background: 'rgba(239,68,68,0.1)',
-                color: '#fca5a5',
-                fontSize: '0.9rem',
-                textAlign: 'left',
-                cursor: 'pointer',
-              }}
-            >
-              🚪 Logout
-            </button>
-          </div>
+          )}
+          <Link
+            href="/profile"
+            onClick={() => setMobileMenuOpen(false)}
+            style={{
+              display: 'block',
+              padding: '0.65rem 0.75rem',
+              borderRadius: '0.6rem',
+              color: '#e5e7eb',
+              textDecoration: 'none',
+              fontSize: '0.9rem',
+              marginTop: '0.15rem',
+            }}
+          >
+            👤 Profile
+          </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            style={{
+              width: '100%',
+              marginTop: '0.35rem',
+              padding: '0.65rem 0.75rem',
+              borderRadius: '0.6rem',
+              border: 'none',
+              background: 'rgba(239,68,68,0.1)',
+              color: '#fca5a5',
+              fontSize: '0.9rem',
+              textAlign: 'left',
+              cursor: 'pointer',
+            }}
+          >
+            🚪 Logout
+          </button>
         </div>
       )}
     </div>
