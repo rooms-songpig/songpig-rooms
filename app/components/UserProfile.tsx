@@ -204,14 +204,15 @@ export default function UserProfile() {
           style={{
             position: 'absolute',
             top: '100%',
-            left: 0,
-            background: '#1a1a2e',
-            border: '1px solid #333',
-            borderRadius: '0.5rem',
+            right: 0,
+            background: '#020617',
+            border: '1px solid #334155',
+            borderRadius: '0.75rem',
             padding: '0.5rem',
-            marginTop: '0.5rem',
-            minWidth: '200px',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+            marginTop: '0.75rem',
+            minWidth: '220px',
+            maxWidth: '90vw',
+            boxShadow: '0 18px 45px rgba(0, 0, 0, 0.55)',
             zIndex: 1001,
           }}
           onClick={(e) => e.stopPropagation()}
@@ -220,19 +221,38 @@ export default function UserProfile() {
             href="/profile"
             style={{
               display: 'block',
-              padding: '0.75rem',
+              padding: '0.75rem 0.9rem',
               color: '#fff',
               textDecoration: 'none',
-              borderBottom: '1px solid #333',
+              borderRadius: '0.5rem',
               fontSize: '0.9rem',
+              background: 'transparent',
             }}
             onClick={() => setShowMenu(false)}
           >
             Edit Profile
           </Link>
-          <div style={{ padding: '0.5rem', fontSize: '0.85rem', opacity: 0.7, marginTop: '0.5rem' }}>
-            Profile picture upload coming soon!
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setShowMenu(false);
+              handleLogout();
+            }}
+            style={{
+              width: '100%',
+              marginTop: '0.25rem',
+              padding: '0.7rem 0.9rem',
+              borderRadius: '0.5rem',
+              border: 'none',
+              background: '#111827',
+              color: '#f9fafb',
+              fontSize: '0.9rem',
+              textAlign: 'left',
+              cursor: 'pointer',
+            }}
+          >
+            Logout
+          </button>
         </div>
       )}
     </div>
