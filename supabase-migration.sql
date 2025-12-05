@@ -7,12 +7,20 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  -- Username doubles as the public @handle (unique, case-insensitive via index below)
   username TEXT NOT NULL UNIQUE,
   email TEXT,
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('admin', 'artist', 'listener')),
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'disabled', 'deleted')),
+  -- Short bio shown on artist profile and rooms
   bio TEXT,
+  -- Optional display name for the artist/band (can differ from username/@handle)
+  display_name TEXT,
+  -- Optional profile avatar image URL
+  avatar_url TEXT,
+  -- Flexible JSON blob for social/support links (website, X, Instagram, tipping, etc.)
+  social_links JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   last_login TIMESTAMPTZ
 );
@@ -101,6 +109,8 @@ CREATE INDEX IF NOT EXISTS idx_comparisons_song_a_id ON comparisons(song_a_id);
 CREATE INDEX IF NOT EXISTS idx_comparisons_song_b_id ON comparisons(song_b_id);
 CREATE INDEX IF NOT EXISTS idx_comparisons_winner_id ON comparisons(winner_id);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+-- Case-insensitive uniqueness for usernames/handles (prevents KidRock vs kidrock duplicates)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users (LOWER(username));
 CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 
 -- Additional safe-guard migrations (idempotent) -----------------------------
@@ -108,6 +118,16 @@ CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 -- Ensure is_starter_room exists on rooms (older databases may not have it)
 ALTER TABLE rooms
 ADD COLUMN IF NOT EXISTS is_starter_room BOOLEAN NOT NULL DEFAULT false;
+
+-- Ensure new profile-related columns exist on users (idempotent for older databases)
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS display_name TEXT;
+
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS social_links JSONB;
 
 
 -- Unique constraint for comparisons: one vote per user per song pair

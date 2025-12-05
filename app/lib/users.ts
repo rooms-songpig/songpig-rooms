@@ -2,9 +2,32 @@
 import bcrypt from 'bcryptjs';
 import { supabaseServer } from './supabase-server';
 
+// Username / handle rules
+const MIN_USERNAME_LENGTH = 3;
+const MAX_USERNAME_LENGTH = 24;
+const USERNAME_REGEX = /^[a-zA-Z0-9_.]+$/;
+
+function normalizeUsernameInput(raw: string): string {
+  return raw.trim();
+}
+
+function validateUsername(username: string): string | null {
+  const value = normalizeUsernameInput(username);
+  if (value.length < MIN_USERNAME_LENGTH || value.length > MAX_USERNAME_LENGTH) {
+    return `Username must be between ${MIN_USERNAME_LENGTH} and ${MAX_USERNAME_LENGTH} characters.`;
+  }
+  if (!USERNAME_REGEX.test(value)) {
+    return 'Username can only contain letters, numbers, underscores, and periods.';
+  }
+  return null;
+}
+
 export interface User {
   id: string;
+  // Username doubles as the public @handle (unique, case-insensitive via DB index)
   username: string;
+  // Optional display name for artist/band; can differ from username/@handle
+  displayName?: string;
   email?: string;
   passwordHash: string;
   role: 'admin' | 'artist' | 'listener';
@@ -12,6 +35,10 @@ export interface User {
   createdAt: number;
   lastLogin?: number;
   bio?: string;
+  // Optional profile avatar image URL
+  avatarUrl?: string;
+  // Flexible social/support links (website, x, instagram, tipping, etc.)
+  socialLinks?: Record<string, string>;
   // Managed upload / storage fields (optional for backward compatibility)
   allowManagedUploads?: boolean;
   maxCloudSongs?: number;
@@ -30,6 +57,9 @@ interface DbUser {
   bio: string | null;
   created_at: string;
   last_login: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  social_links: Record<string, string> | null;
   // Managed uploads / storage columns
   allow_managed_uploads?: boolean | null;
   max_cloud_songs?: number | null;
@@ -49,6 +79,9 @@ function dbUserToUser(dbUser: DbUser): User {
     createdAt: new Date(dbUser.created_at).getTime(),
     lastLogin: dbUser.last_login ? new Date(dbUser.last_login).getTime() : undefined,
     bio: dbUser.bio || undefined,
+    displayName: dbUser.display_name || undefined,
+    avatarUrl: dbUser.avatar_url || undefined,
+    socialLinks: dbUser.social_links || undefined,
     allowManagedUploads: dbUser.allow_managed_uploads ?? undefined,
     maxCloudSongs: dbUser.max_cloud_songs ?? undefined,
     storageLimitBytes: dbUser.storage_limit_bytes ?? null,
@@ -65,6 +98,9 @@ function userToDbUser(user: Partial<User>): Partial<DbUser> {
   if (user.role !== undefined) dbUser.role = user.role;
   if (user.status !== undefined) dbUser.status = user.status;
   if (user.bio !== undefined) dbUser.bio = user.bio || null;
+   if (user.displayName !== undefined) dbUser.display_name = user.displayName || null;
+   if (user.avatarUrl !== undefined) dbUser.avatar_url = user.avatarUrl || null;
+   if (user.socialLinks !== undefined) dbUser.social_links = user.socialLinks || null;
   if (user.createdAt !== undefined) dbUser.created_at = new Date(user.createdAt).toISOString();
   if (user.lastLogin !== undefined) dbUser.last_login = user.lastLogin ? new Date(user.lastLogin).toISOString() : null;
    if (user.allowManagedUploads !== undefined) {
@@ -108,11 +144,17 @@ export const userStore = {
     email: string | undefined,
     role: 'admin' | 'artist' | 'listener' = 'listener'
   ): Promise<User> {
-    // Check if username already exists
+    const normalizedUsername = normalizeUsernameInput(username);
+    const validationError = validateUsername(normalizedUsername);
+    if (validationError) {
+      throw new Error(validationError);
+    }
+
+    // Check if username already exists (case-insensitive)
     const { data: existing } = await supabaseServer
       .from('users')
       .select('id')
-      .ilike('username', username.trim())
+      .ilike('username', normalizedUsername)
       .neq('status', 'deleted')
       .single();
 
@@ -126,7 +168,7 @@ export const userStore = {
     const { data: insertData, error: insertError } = await supabaseServer
       .from('users')
       .insert({
-        username: username.trim(),
+        username: normalizedUsername,
         email: email?.trim() || null,
         password_hash: passwordHash,
         role,
@@ -288,7 +330,7 @@ export const userStore = {
     return dbUserToUser(data as DbUser);
   },
 
-  // Get user by username
+  // Get user by username (handle)
   async getUserByUsername(username: string): Promise<User | undefined> {
     const { data, error } = await supabaseServer
       .from('users')
@@ -304,16 +346,49 @@ export const userStore = {
     return dbUserToUser(data as DbUser);
   },
 
+  // Get user by email
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const trimmed = email.trim();
+    if (!trimmed) return undefined;
+
+    const { data, error } = await supabaseServer
+      .from('users')
+      .select('*')
+      .ilike('email', trimmed)
+      .neq('status', 'deleted')
+      .single();
+
+    if (error || !data) {
+      return undefined;
+    }
+
+    return dbUserToUser(data as DbUser);
+  },
+
   // Authenticate user
-  async authenticate(username: string, password: string): Promise<User | null> {
-    const user = await this.getUserByUsername(username);
+  async authenticate(identifier: string, password: string): Promise<User | null> {
+    const raw = identifier?.trim();
+    if (!raw) {
+      return null;
+    }
+
+    let user: User | undefined;
+
+    // Treat values that look like emails as email login; otherwise use username/@handle
+    if (raw.includes('@') && raw.includes('.')) {
+      user = await this.getUserByEmail(raw);
+    } else {
+      const normalized = raw.startsWith('@') ? raw.slice(1) : raw;
+      user = await this.getUserByUsername(normalized);
+    }
+
     if (!user) {
       return null;
     }
 
     // Check if user is active (disabled or deleted users cannot login)
     if (user.status !== 'active') {
-      console.log('Login attempt for inactive user:', username, 'status:', user.status);
+      console.log('Login attempt for inactive user:', identifier, 'status:', user.status);
       return null;
     }
 
@@ -374,8 +449,13 @@ export const userStore = {
       }
     }
 
-    // Check username uniqueness if changing
+    // Check username validity + uniqueness if changing
     if (updates.username && updates.username !== user.username) {
+      const validationError = validateUsername(updates.username);
+      if (validationError) {
+        throw new Error(validationError);
+      }
+
       const existing = await this.getUserByUsername(updates.username);
       if (existing && existing.id !== id) {
         throw new Error('Username already exists');

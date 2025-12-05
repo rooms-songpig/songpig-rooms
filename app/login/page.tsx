@@ -15,7 +15,8 @@ const SHOW_DEV_HELPERS =
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState('');
+  // Identifier can be either email or @handle/username
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -56,7 +57,7 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) return;
+    if (!identifier.trim() || !password.trim()) return;
 
     setLoading(true);
     setError('');
@@ -65,7 +66,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ identifier, password }),
       });
 
       const data = await res.json();
@@ -203,12 +204,12 @@ export default function LoginPage() {
                 opacity: 0.9,
               }}
             >
-              Username
+              Email or @handle
             </label>
             <input
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
               style={{
                 width: '100%',
@@ -219,7 +220,7 @@ export default function LoginPage() {
                 color: '#f9fafb',
                 fontSize: '1rem',
               }}
-              placeholder="Enter your username"
+              placeholder="Enter your email or @handle"
             />
           </div>
 
@@ -254,7 +255,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading || !username.trim() || !password.trim()}
+            disabled={loading || !identifier.trim() || !password.trim()}
             style={{
               width: '100%',
               background: loading ? '#555' : '#3b82f6',
@@ -311,7 +312,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setUsername('admin');
+                  setIdentifier('admin');
                   setPassword('admin123');
                 }}
                 style={{
@@ -330,7 +331,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setUsername('jean');
+                  setIdentifier('jean');
                   setPassword('jean123');
                 }}
                 style={{
@@ -349,7 +350,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setUsername('bob');
+                  setIdentifier('bob');
                   setPassword('bob123');
                 }}
                 style={{

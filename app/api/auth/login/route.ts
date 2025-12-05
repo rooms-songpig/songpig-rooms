@@ -5,20 +5,23 @@ import { userStore } from '@/app/lib/users';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, password } = body;
+    const { identifier, username, password } = body;
 
-    if (!username || !password) {
+    // Support both new `identifier` field and legacy `username` field from older clients
+    const loginIdentifier: string | undefined = identifier ?? username;
+
+    if (!loginIdentifier || !password) {
       return NextResponse.json(
-        { error: 'Username and password are required' },
+        { error: 'Email or username and password are required' },
         { status: 400 }
       );
     }
 
-    const user = await userStore.authenticate(username, password);
+    const user = await userStore.authenticate(loginIdentifier, password);
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Invalid username or password' },
+        { error: 'Invalid email/username or password' },
         { status: 401 }
       );
     }

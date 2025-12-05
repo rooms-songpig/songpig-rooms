@@ -18,3 +18,6 @@ ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 COMMENT ON COLUMN users.auth_id IS 'Supabase Auth user ID for OAuth integration';
 COMMENT ON COLUMN users.avatar_url IS 'URL to user profile picture';
 
+
+
+
