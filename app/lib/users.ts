@@ -344,6 +344,21 @@ export const userStore = {
       .single();
 
     if (error || !data) {
+      // In development, surface Supabase errors clearly so routes like /artist/[handle]
+      // don't silently return 404s when the underlying DB/config is broken.
+      if (process.env.NODE_ENV !== 'production' && error) {
+        console.error('getUserByUsername Supabase error:', {
+          username,
+          code: (error as any).code,
+          message: (error as any).message,
+          details: (error as any).details,
+        });
+        throw new Error(
+          `Supabase error in getUserByUsername for "${username}". ` +
+            'Check your NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY and RLS policies.'
+        );
+      }
+
       return undefined;
     }
 
