@@ -118,6 +118,18 @@ export default async function ArtistProfilePage({ params }: ArtistPageProps) {
       icon: '📸',
       url: socialLinks.instagram as string,
     },
+    socialLinks.facebook && {
+      key: 'facebook',
+      label: 'Facebook',
+      icon: '📘',
+      url: socialLinks.facebook as string,
+    },
+    socialLinks.youtube && {
+      key: 'youtube',
+      label: 'YouTube',
+      icon: '▶️',
+      url: socialLinks.youtube as string,
+    },
     (socialLinks.support || socialLinks.tipping) && {
       key: 'support',
       label: 'Support',
@@ -272,7 +284,13 @@ export default async function ArtistProfilePage({ params }: ArtistPageProps) {
                   }}
                 >
                   <span style={{ fontWeight: 500 }}>@{artistHandle}</span> ·{' '}
-                  <span style={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.8rem' }}>
+                  <span
+                    style={{
+                      fontSize: '0.85rem',
+                      opacity: 0.9,
+                      fontStyle: 'italic',
+                    }}
+                  >
                     {roleLabel}
                   </span>
                 </p>

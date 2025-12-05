@@ -99,22 +99,24 @@ export default function UserProfile() {
             display: isMobile ? 'none' : 'block', // Hide on mobile to prevent overlap
           }}
         >
-          <h1 style={{
-            fontSize: 'clamp(0.9rem, 3vw, 1.5rem)',
-            fontWeight: '700',
-            background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            margin: 0,
-            textAlign: 'center',
-            letterSpacing: '0.05em',
-            wordBreak: 'break-word',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            maxWidth: '100%',
-          }}>
-            Song Pig Listening Rooms
+          <h1
+            style={{
+              fontSize: 'clamp(0.9rem, 3vw, 1.5rem)',
+              fontWeight: '700',
+              background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              margin: 0,
+              textAlign: 'center',
+              letterSpacing: '0.05em',
+              wordBreak: 'break-word',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '100%',
+            }}
+          >
+            SongPig A/B Testing
           </h1>
         </Link>
         
@@ -152,12 +154,18 @@ export default function UserProfile() {
             <div style={{ fontWeight: '500', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {user.username}
             </div>
-            <div style={{ fontSize: '0.75rem', opacity: 0.75, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div
+              style={{
+                fontSize: '0.8rem',
+                opacity: 0.85,
+                fontStyle: 'italic',
+              }}
+            >
               {isSuperAdmin
-                ? 'SUPER ADMIN'
+                ? 'Super admin'
                 : user.role === 'listener'
                 ? 'Reviewer'
-                : user.role}
+                : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
             </div>
           </div>
         </div>

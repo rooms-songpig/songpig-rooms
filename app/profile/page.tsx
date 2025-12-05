@@ -33,6 +33,8 @@ export default function ProfilePage() {
   const [website, setWebsite] = useState('');
   const [xHandle, setXHandle] = useState('');
   const [instagram, setInstagram] = useState('');
+  const [facebook, setFacebook] = useState('');
+  const [youtube, setYoutube] = useState('');
   const [tipping, setTipping] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -70,7 +72,9 @@ export default function ProfilePage() {
         setWebsite(links.website || '');
         setXHandle(links.x || '');
         setInstagram(links.instagram || '');
-        setTipping(links.tipping || '');
+        setFacebook(links.facebook || '');
+        setYoutube(links.youtube || '');
+        setTipping(links.tipping || links.support || '');
       } else {
         router.push('/login');
       }
@@ -90,7 +94,11 @@ export default function ProfilePage() {
       if (website.trim()) socialLinks.website = website.trim();
       if (xHandle.trim()) socialLinks.x = xHandle.trim();
       if (instagram.trim()) socialLinks.instagram = instagram.trim();
-      if (tipping.trim()) socialLinks.tipping = tipping.trim();
+      if (facebook.trim()) socialLinks.facebook = facebook.trim();
+      if (youtube.trim()) socialLinks.youtube = youtube.trim();
+      if (tipping.trim()) {
+        socialLinks.support = tipping.trim();
+      }
 
       const res = await fetch(`/api/users/${user?.id}`, {
         method: 'PATCH',
@@ -200,7 +208,14 @@ export default function ProfilePage() {
               <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>
                 Account Type
               </label>
-              <p style={{ fontSize: '0.9rem', opacity: 0.9, margin: 0 }}>
+              <p
+                style={{
+                  fontSize: '0.9rem',
+                  opacity: 0.95,
+                  fontStyle: 'italic',
+                  margin: 0,
+                }}
+              >
                 {user.role === 'listener'
                   ? 'Reviewer'
                   : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
@@ -377,6 +392,46 @@ export default function ProfilePage() {
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', opacity: 0.8 }}>
+                  Facebook
+                </label>
+                <input
+                  type="url"
+                  value={facebook}
+                  onChange={(e) => setFacebook(e.target.value)}
+                  placeholder="https://facebook.com/yourpage"
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem',
+                    background: '#0f0f23',
+                    border: '1px solid #333',
+                    borderRadius: '0.5rem',
+                    color: '#fff',
+                    fontSize: '0.95rem',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', opacity: 0.8 }}>
+                  YouTube
+                </label>
+                <input
+                  type="url"
+                  value={youtube}
+                  onChange={(e) => setYoutube(e.target.value)}
+                  placeholder="https://youtube.com/@yourchannel"
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem',
+                    background: '#0f0f23',
+                    border: '1px solid #333',
+                    borderRadius: '0.5rem',
+                    color: '#fff',
+                    fontSize: '0.95rem',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', opacity: 0.8 }}>
                   Support / Tips link
                 </label>
                 <input
@@ -436,9 +491,11 @@ export default function ProfilePage() {
         <div style={{ marginTop: '2rem', padding: '1rem', background: '#1a1a2e', borderRadius: '0.75rem', fontSize: '0.9rem', opacity: 0.7 }}>
           <p>
             <strong>Role:</strong>{' '}
-            {user.role === 'listener'
-              ? 'Reviewer'
-              : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+            <span style={{ fontStyle: 'italic' }}>
+              {user.role === 'listener'
+                ? 'Reviewer'
+                : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+            </span>
           </p>
           {user.email && <p><strong>Email:</strong> {user.email}</p>}
         </div>
