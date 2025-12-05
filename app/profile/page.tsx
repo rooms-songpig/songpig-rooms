@@ -16,6 +16,8 @@ interface User {
   email?: string;
   role: 'admin' | 'artist' | 'listener';
   bio?: string;
+  displayName?: string;
+  avatarUrl?: string;
 }
 
 export default function ProfilePage() {
@@ -25,6 +27,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -55,6 +59,8 @@ export default function ProfilePage() {
         setUser(data.user);
         setUsername(data.user.username || '');
         setBio(data.user.bio || '');
+        setDisplayName(data.user.displayName || '');
+        setAvatarUrl(data.user.avatarUrl || '');
       } else {
         router.push('/login');
       }
@@ -76,6 +82,8 @@ export default function ProfilePage() {
         body: JSON.stringify({
           username,
           bio,
+          displayName,
+          avatarUrl,
         }),
       });
 
@@ -170,15 +178,78 @@ export default function ProfilePage() {
         </div>
         
         <form onSubmit={handleSave} style={{ background: '#1a1a2e', padding: '2rem', borderRadius: '0.75rem' }}>
+          <div style={{ marginBottom: '1.5rem', display: 'grid', gap: '1rem', gridTemplateColumns: '1.5fr 1.5fr' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>
+                Account Type
+              </label>
+              <p style={{ fontSize: '0.9rem', opacity: 0.9, margin: 0 }}>
+                {user.role === 'listener'
+                  ? 'Reviewer'
+                  : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+              </p>
+            </div>
+            {user.email && (
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>
+                  Email
+                </label>
+                <p style={{ fontSize: '0.9rem', opacity: 0.9, margin: 0 }}>{user.email}</p>
+              </div>
+            )}
+          </div>
+
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>
-              Username *
+              Username / @handle *
             </label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                background: '#0f0f23',
+                border: '1px solid #333',
+                borderRadius: '0.5rem',
+                color: '#fff',
+                fontSize: '1rem',
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>
+              Display Name (artist or band)
+            </label>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="e.g. The Electric Light Orchestra"
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                background: '#0f0f23',
+                border: '1px solid #333',
+                borderRadius: '0.5rem',
+                color: '#fff',
+                fontSize: '1rem',
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>
+              Avatar Image URL (optional)
+            </label>
+            <input
+              type="url"
+              value={avatarUrl}
+              onChange={(e) => setAvatarUrl(e.target.value)}
+              placeholder="https://example.com/your-photo.jpg"
               style={{
                 width: '100%',
                 padding: '0.75rem',

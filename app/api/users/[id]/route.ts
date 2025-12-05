@@ -20,6 +20,8 @@ export async function GET(
       username: user.username,
       role: user.role,
       bio: user.bio,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
     };
 
     return NextResponse.json({ user: publicUserInfo });
@@ -50,7 +52,17 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { role, status, username, bio, allowManagedUploads, maxCloudSongs } = body;
+    const {
+      role,
+      status,
+      username,
+      bio,
+      displayName,
+      avatarUrl,
+      socialLinks,
+      allowManagedUploads,
+      maxCloudSongs,
+    } = body;
 
     const user = await userStore.getUser(id);
     if (!user) {
@@ -61,7 +73,7 @@ export async function PATCH(
     const isSelfUpdate = userId === id;
     const isAdmin = userRole === 'admin';
 
-    // Only allow self-updates for username and bio
+    // Only allow self-updates for profile fields (username, bio, displayName, avatarUrl, socialLinks)
     if (isSelfUpdate && !isAdmin) {
       const updates: any = {};
       if (username !== undefined) {
@@ -69,6 +81,15 @@ export async function PATCH(
       }
       if (bio !== undefined) {
         updates.bio = bio;
+      }
+      if (displayName !== undefined) {
+        updates.displayName = displayName;
+      }
+      if (avatarUrl !== undefined) {
+        updates.avatarUrl = avatarUrl;
+      }
+      if (socialLinks !== undefined) {
+        updates.socialLinks = socialLinks;
       }
       // Prevent self from changing role or status
       if (role || status) {
@@ -115,6 +136,15 @@ export async function PATCH(
     }
     if (bio !== undefined) {
       updates.bio = bio;
+    }
+    if (displayName !== undefined) {
+      updates.displayName = displayName;
+    }
+    if (avatarUrl !== undefined) {
+      updates.avatarUrl = avatarUrl;
+    }
+    if (socialLinks !== undefined) {
+      updates.socialLinks = socialLinks;
     }
     // Admin-only: managed uploads settings
     if (allowManagedUploads !== undefined && isAdmin) {

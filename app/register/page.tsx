@@ -166,6 +166,48 @@ function RegisterContent() {
             </div>
           )}
 
+          {/* Account Type first so role is clear before choosing signup method */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontSize: '0.9rem',
+                opacity: 0.9,
+              }}
+            >
+              Account Type *
+            </label>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="role"
+                  value="artist"
+                  checked={role === 'artist'}
+                  onChange={(e) => setRole('artist')}
+                  style={{ cursor: 'pointer' }}
+                />
+                <span>Artist</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="role"
+                  value="listener"
+                  checked={role === 'listener'}
+                  onChange={(e) => setRole('listener')}
+                  style={{ cursor: 'pointer' }}
+                />
+                <span>Reviewer</span>
+              </label>
+            </div>
+            <p style={{ fontSize: '0.85rem', opacity: 0.7, marginTop: '0.5rem' }}>
+              Artists can create rooms and add songs – and every artist is also a reviewer by default.
+              Reviewers are the trusted ears who vote, comment, and help artists grow.
+            </p>
+          </div>
+
           {/* Google Sign-Up Button */}
           <button
             type="button"
@@ -212,7 +254,7 @@ function RegisterContent() {
               ? 'Sign up with Google as Artist'
               : role === 'listener'
               ? 'Sign up with Google as Reviewer'
-              : 'Sign up with Google (choose account type below)'}
+              : 'Sign up with Google (choose account type above)'}
           </button>
 
           <div
@@ -314,47 +356,6 @@ function RegisterContent() {
               }}
               placeholder="your@email.com"
             />
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label
-              style={{
-                display: 'block',
-                marginBottom: '0.5rem',
-                fontSize: '0.9rem',
-                opacity: 0.9,
-              }}
-            >
-              Account Type *
-            </label>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="role"
-                  value="artist"
-                  checked={role === 'artist'}
-                  onChange={(e) => setRole('artist')}
-                  style={{ cursor: 'pointer' }}
-                />
-                <span>Artist</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="role"
-                  value="listener"
-                  checked={role === 'listener'}
-                  onChange={(e) => setRole('listener')}
-                  style={{ cursor: 'pointer' }}
-                />
-                <span>Reviewer</span>
-              </label>
-            </div>
-            <p style={{ fontSize: '0.85rem', opacity: 0.7, marginTop: '0.5rem' }}>
-              Artists can create rooms and add songs – and every artist is also a reviewer by default.
-              Reviewers are the trusted ears who vote, comment, and help artists grow.
-            </p>
           </div>
 
           <button
