@@ -145,7 +145,11 @@ export const userStore = {
     role: 'admin' | 'artist' | 'listener' = 'listener'
   ): Promise<User> {
     const normalizedUsername = normalizeUsernameInput(username);
-    const validationError = validateUsername(normalizedUsername);
+    // Strip leading '@' if present so people can type @Handle but we store Handle
+    const cleanedUsername = normalizedUsername.startsWith('@')
+      ? normalizedUsername.slice(1)
+      : normalizedUsername;
+    const validationError = validateUsername(cleanedUsername);
     if (validationError) {
       throw new Error(validationError);
     }
@@ -154,7 +158,7 @@ export const userStore = {
     const { data: existing } = await supabaseServer
       .from('users')
       .select('id')
-      .ilike('username', normalizedUsername)
+      .ilike('username', cleanedUsername)
       .neq('status', 'deleted')
       .single();
 
@@ -168,7 +172,7 @@ export const userStore = {
     const { data: insertData, error: insertError } = await supabaseServer
       .from('users')
       .insert({
-        username: normalizedUsername,
+        username: cleanedUsername,
         email: email?.trim() || null,
         password_hash: passwordHash,
         role,
@@ -451,15 +455,23 @@ export const userStore = {
 
     // Check username validity + uniqueness if changing
     if (updates.username && updates.username !== user.username) {
-      const validationError = validateUsername(updates.username);
+      const rawUsername = normalizeUsernameInput(updates.username);
+      const cleanedUsername = rawUsername.startsWith('@')
+        ? rawUsername.slice(1)
+        : rawUsername;
+
+      const validationError = validateUsername(cleanedUsername);
       if (validationError) {
         throw new Error(validationError);
       }
 
-      const existing = await this.getUserByUsername(updates.username);
+      const existing = await this.getUserByUsername(cleanedUsername);
       if (existing && existing.id !== id) {
         throw new Error('Username already exists');
       }
+
+      // Persist the cleaned username back into updates so it's what we save
+      updates.username = cleanedUsername;
     }
 
     // Hash password if it's being updated
