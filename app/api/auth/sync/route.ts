@@ -51,25 +51,26 @@ export async function POST(request: NextRequest) {
         updates.email = email;
       }
 
-      // If the user was previously soft-deleted, treat this as a fresh signup:
-      // - Reactivate the account
-      // - Reset role based on the requested signupRole (artist/reviewer)
       if (existingUser.status === 'deleted') {
-        updates.status = 'active';
-
-        let newRole: 'artist' | 'listener' = 'listener';
+        // Only allow reactivation if this came from the explicit signup flow
+        // with a valid role (artist or listener). If the deleted user tries to
+        // sign in via the plain /login Google button (no signupRole), we treat
+        // it as "no linked account" so they must go through /register again.
         if (role === 'artist' || role === 'listener') {
-          newRole = role;
-        } else if (
-          existingUser.role === 'artist' ||
-          existingUser.role === 'listener'
-        ) {
-          // Fallback: keep non-admin role if one was already set
-          newRole = existingUser.role;
+          updates.status = 'active';
+
+          // Important: if they were an admin before but are now deleted,
+          // we do NOT restore admin automatically.
+          updates.role = role;
+        } else {
+          return NextResponse.json(
+            {
+              error: 'Previously deleted account requires signup flow.',
+              errorCode: 'APP_USER_DELETED',
+            },
+            { status: 403 }
+          );
         }
-        // Important: if they were an admin before but are now deleted,
-        // we do NOT restore admin automatically.
-        updates.role = newRole;
       } else {
         // Normal upgrade path: allow upgrading a listener to artist
         // if signupRole explicitly requested it. We never auto-upgrade
@@ -112,7 +113,22 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // User doesn't exist, create new user
+    // User doesn't exist:
+    // - If no valid role was provided, this came from the plain /login Google flow.
+    //   In that case, DO NOT auto-create an account. Instead, tell the caller there
+    //   is no linked app user so they can redirect to /register.
+    // - If a valid role (artist/listener) is provided, treat this as a first-time
+    //   signup from the /register Google flow and create the user.
+    if (role !== 'artist' && role !== 'listener') {
+      return NextResponse.json(
+        {
+          error: 'No SongPig account is linked to this Google login yet.',
+          errorCode: 'APP_USER_NOT_FOUND',
+        },
+        { status: 404 }
+      );
+    }
+
     // Generate username from email or name
     let username = '';
     if (email) {
@@ -140,11 +156,8 @@ export async function POST(request: NextRequest) {
       counter++;
     }
 
-    // Decide role for new user (artist or listener/reviewer)
-    let userRole: 'artist' | 'listener' = 'listener';
-    if (role === 'artist' || role === 'listener') {
-      userRole = role;
-    }
+    // Decide role for new user (artist or listener/reviewer) - role is validated above
+    const userRole: 'artist' | 'listener' = role;
 
     // Create user with a temporary password (they'll use OAuth)
     // Generate a random password hash since OAuth users don't need password

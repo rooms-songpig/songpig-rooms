@@ -114,20 +114,42 @@ function AuthCallbackContent() {
           }),
         });
 
+        const syncPayload = await syncResponse.json();
+
         if (!syncResponse.ok) {
-          const errorText = await syncResponse.text();
-          console.error('Error syncing user:', errorText);
+          // Use console.warn so expected flows (like redirecting new/deleted
+          // Google users to /register) don't show up as scary errors in dev.
+          console.warn('Auth sync response (non-OK):', syncPayload);
+
+          // If there is no linked app user (APP_USER_NOT_FOUND) or the account
+          // was previously deleted (APP_USER_DELETED), and we came from the
+          // plain /login Google flow (no signupRole), redirect them to
+          // /register so they can choose Artist/Reviewer and create or
+          // reactivate a proper SongPig account.
+          const isUserNotFound = syncPayload?.errorCode === 'APP_USER_NOT_FOUND';
+          const isUserDeleted = syncPayload?.errorCode === 'APP_USER_DELETED';
+
           if (!cancelled) {
-            setError('Failed to sync user account');
-            setLoading(false);
-            setTimeout(() => {
-              router.push('/login?error=sync_failed');
-            }, 2000);
+            if ((isUserNotFound || isUserDeleted) && !signupRole) {
+              setError(
+                'No active SongPig account is linked to this Google login yet. Please register and choose Artist or Reviewer.'
+              );
+              setLoading(false);
+              setTimeout(() => {
+                router.push('/register?from=google-login');
+              }, 2000);
+            } else {
+              setError('Failed to sync user account');
+              setLoading(false);
+              setTimeout(() => {
+                router.push('/login?error=sync_failed');
+              }, 2000);
+            }
           }
           return;
         }
 
-        const { user: appUser } = await syncResponse.json();
+        const { user: appUser } = syncPayload;
 
         if (!cancelled) {
           // 7) Persist user in localStorage for the app

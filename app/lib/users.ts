@@ -343,13 +343,22 @@ export const userStore = {
       .neq('status', 'deleted')
       .single();
 
-    if (error || !data) {
-      // In development, surface Supabase errors clearly so routes like /artist/[handle]
-      // don't silently return 404s when the underlying DB/config is broken.
-      if (process.env.NODE_ENV !== 'production' && error) {
+    // If no data was found, treat as "user not found"
+    if (!data) {
+      return undefined;
+    }
+
+    // In development, surface *real* Supabase errors clearly so routes like
+    // /artist/[handle] don't silently hide configuration issues. However,
+    // avoid throwing for the common "no rows returned" case, which we already
+    // treat as "not found" above.
+    if (process.env.NODE_ENV !== 'production' && error) {
+      const code = (error as any).code;
+      // PostgREST uses PGRST116 for "No rows found"
+      if (code !== 'PGRST116') {
         console.error('getUserByUsername Supabase error:', {
           username,
-          code: (error as any).code,
+          code,
           message: (error as any).message,
           details: (error as any).details,
         });
@@ -358,8 +367,6 @@ export const userStore = {
             'Check your NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY and RLS policies.'
         );
       }
-
-      return undefined;
     }
 
     return dbUserToUser(data as DbUser);

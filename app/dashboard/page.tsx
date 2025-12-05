@@ -57,6 +57,7 @@ interface StarterRoomSummary {
   id: string;
   name: string;
   artistName?: string;
+  artistHandle?: string;
   createdAt: string;
 }
 
@@ -64,6 +65,7 @@ interface ReviewedRoomSummary {
   id: string;
   name: string;
   artistName?: string;
+  artistHandle?: string;
   lastReviewedAt: string;
   preferredSongTitle?: string;
 }
@@ -767,7 +769,26 @@ export default function Home() {
                                 opacity: 0.75,
                               }}
                             >
-                              by <span style={{ fontWeight: 500 }}>{room.artistName}</span>
+                              by{' '}
+                              {room.artistHandle ? (
+                                <span
+                                  style={{
+                                    fontWeight: 500,
+                                    color: '#93c5fd',
+                                    textDecoration: 'none',
+                                    cursor: 'pointer',
+                                  }}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    router.push(`/artist/${room.artistHandle}`);
+                                  }}
+                                >
+                                  @{room.artistHandle}
+                                </span>
+                              ) : (
+                                <span style={{ fontWeight: 500 }}>{room.artistName}</span>
+                              )}
                             </p>
                           )}
                         </div>
@@ -904,7 +925,26 @@ export default function Home() {
                                 opacity: 0.75,
                               }}
                             >
-                              by <span style={{ fontWeight: 500 }}>{room.artistName}</span>
+                              by{' '}
+                              {room.artistHandle ? (
+                                <span
+                                  style={{
+                                    fontWeight: 500,
+                                    color: '#93c5fd',
+                                    textDecoration: 'none',
+                                    cursor: 'pointer',
+                                  }}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    router.push(`/artist/${room.artistHandle}`);
+                                  }}
+                                >
+                                  @{room.artistHandle}
+                                </span>
+                              ) : (
+                                <span style={{ fontWeight: 500 }}>{room.artistName}</span>
+                              )}
                             </p>
                           )}
                         </div>

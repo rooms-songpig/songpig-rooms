@@ -18,6 +18,7 @@ interface User {
   bio?: string;
   displayName?: string;
   avatarUrl?: string;
+  socialLinks?: Record<string, string>;
 }
 
 export default function ProfilePage() {
@@ -29,6 +30,10 @@ export default function ProfilePage() {
   const [bio, setBio] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [website, setWebsite] = useState('');
+  const [xHandle, setXHandle] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [tipping, setTipping] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -61,6 +66,11 @@ export default function ProfilePage() {
         setBio(data.user.bio || '');
         setDisplayName(data.user.displayName || '');
         setAvatarUrl(data.user.avatarUrl || '');
+        const links = data.user.socialLinks || {};
+        setWebsite(links.website || '');
+        setXHandle(links.x || '');
+        setInstagram(links.instagram || '');
+        setTipping(links.tipping || '');
       } else {
         router.push('/login');
       }
@@ -76,6 +86,12 @@ export default function ProfilePage() {
     e.preventDefault();
     setSaving(true);
     try {
+      const socialLinks: Record<string, string> = {};
+      if (website.trim()) socialLinks.website = website.trim();
+      if (xHandle.trim()) socialLinks.x = xHandle.trim();
+      if (instagram.trim()) socialLinks.instagram = instagram.trim();
+      if (tipping.trim()) socialLinks.tipping = tipping.trim();
+
       const res = await fetch(`/api/users/${user?.id}`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
@@ -84,6 +100,7 @@ export default function ProfilePage() {
           bio,
           displayName,
           avatarUrl,
+          socialLinks,
         }),
       });
 
@@ -290,6 +307,95 @@ export default function ProfilePage() {
             <p style={{ fontSize: '0.85rem', opacity: 0.6, marginTop: '0.5rem' }}>
               This bio will appear on your rooms and profile.
             </p>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <h2 style={{ fontSize: '1rem', margin: '0 0 0.75rem 0' }}>Links & Support</h2>
+            <p style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '0.75rem' }}>
+              Add links you want trusted listeners to see on your public profile.
+            </p>
+            <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: '1fr' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', opacity: 0.8 }}>
+                  Website
+                </label>
+                <input
+                  type="url"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://your-site.com"
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem',
+                    background: '#0f0f23',
+                    border: '1px solid #333',
+                    borderRadius: '0.5rem',
+                    color: '#fff',
+                    fontSize: '0.95rem',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', opacity: 0.8 }}>
+                  X (Twitter)
+                </label>
+                <input
+                  type="url"
+                  value={xHandle}
+                  onChange={(e) => setXHandle(e.target.value)}
+                  placeholder="https://x.com/yourhandle"
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem',
+                    background: '#0f0f23',
+                    border: '1px solid #333',
+                    borderRadius: '0.5rem',
+                    color: '#fff',
+                    fontSize: '0.95rem',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', opacity: 0.8 }}>
+                  Instagram
+                </label>
+                <input
+                  type="url"
+                  value={instagram}
+                  onChange={(e) => setInstagram(e.target.value)}
+                  placeholder="https://instagram.com/yourhandle"
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem',
+                    background: '#0f0f23',
+                    border: '1px solid #333',
+                    borderRadius: '0.5rem',
+                    color: '#fff',
+                    fontSize: '0.95rem',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', opacity: 0.8 }}>
+                  Support / Tips link
+                </label>
+                <input
+                  type="url"
+                  value={tipping}
+                  onChange={(e) => setTipping(e.target.value)}
+                  placeholder="https://buymeacoffee.com/you or https://venmo.com/you"
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem',
+                    background: '#0f0f23',
+                    border: '1px solid #333',
+                    borderRadius: '0.5rem',
+                    color: '#fff',
+                    fontSize: '0.95rem',
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>

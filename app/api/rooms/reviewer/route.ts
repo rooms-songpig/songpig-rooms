@@ -6,6 +6,7 @@ interface StarterRoomSummary {
   id: string;
   name: string;
   artistName?: string;
+  artistHandle?: string;
   createdAt: string;
 }
 
@@ -13,6 +14,7 @@ interface ReviewedRoomSummary {
   id: string;
   name: string;
   artistName?: string;
+  artistHandle?: string;
   lastReviewedAt: string;
   preferredSongTitle?: string;
 }
@@ -71,17 +73,27 @@ export async function GET(request: NextRequest) {
 
     const reviewedRoomIds = Array.from(latestByRoom.keys());
 
+    // Shared map so we can reuse artist handles for starter rooms as well
+    const artistHandleById = new Map<string, string>();
+
     let reviewedRooms: ReviewedRoomSummary[] = [];
 
     if (reviewedRoomIds.length > 0) {
-      // Load basic room info
+      // Load basic room info (including artist_id so we can resolve handles)
       const { data: roomsData, error: roomsError } = await supabaseServer
         .from('rooms')
-        .select('id, name, artist_name')
+        .select('id, name, artist_name, artist_id')
         .in('id', reviewedRoomIds)
         .neq('status', 'deleted');
 
       if (!roomsError && roomsData) {
+        const typedRooms = roomsData as {
+          id: string;
+          name: string;
+          artist_name: string | null;
+          artist_id: string | null;
+        }[];
+
         // Load song titles to resolve preferred version
         const { data: songsData, error: songsError } = await supabaseServer
           .from('songs')
@@ -99,20 +111,43 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        reviewedRooms = (roomsData as {
-          id: string;
-          name: string;
-          artist_name: string | null;
-        }[]).map((r) => {
+        // Resolve artist handles in one query
+        const artistIds = Array.from(
+          new Set(
+            typedRooms
+              .map((r) => r.artist_id)
+              .filter((id): id is string => !!id)
+          )
+        );
+        
+        if (artistIds.length > 0) {
+          const { data: artistsData, error: artistsError } = await supabaseServer
+            .from('users')
+            .select('id, username')
+            .in('id', artistIds);
+
+          if (!artistsError && artistsData) {
+            for (const u of artistsData as { id: string; username: string }[]) {
+              artistHandleById.set(u.id, u.username);
+            }
+          }
+        }
+
+        reviewedRooms = typedRooms.map((r) => {
           const meta = latestByRoom.get(r.id)!;
           const preferredSongTitle = meta.preferredSongId
             ? songTitleById.get(meta.preferredSongId) || undefined
+            : undefined;
+
+          const artistHandle = r.artist_id
+            ? artistHandleById.get(r.artist_id) || undefined
             : undefined;
 
           return {
             id: r.id,
             name: r.name,
             artistName: r.artist_name || undefined,
+            artistHandle,
             lastReviewedAt: meta.lastReviewedAt,
             preferredSongTitle,
           };
@@ -131,7 +166,7 @@ export async function GET(request: NextRequest) {
     const { data: starterRoomsData, error: starterRoomsError } =
       await supabaseServer
         .from('rooms')
-        .select('id, name, artist_name, created_at, is_starter_room, status')
+        .select('id, name, artist_name, artist_id, created_at, is_starter_room, status')
         .eq('is_starter_room', true)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
@@ -142,6 +177,33 @@ export async function GET(request: NextRequest) {
 
     const reviewedRoomIdSet = new Set(reviewedRoomIds);
 
+    // Ensure we have handles for starter room artists too
+    if (starterRoomsData && starterRoomsData.length > 0) {
+      const starterArtistIds = Array.from(
+        new Set(
+          (starterRoomsData as { artist_id: string | null }[])
+            .map((r) => r.artist_id)
+            .filter((id): id is string => !!id && !artistHandleById.has(id))
+        )
+      );
+
+      if (starterArtistIds.length > 0) {
+        const { data: starterArtists, error: starterArtistsError } =
+          await supabaseServer
+            .from('users')
+            .select('id, username')
+            .in('id', starterArtistIds);
+
+        if (!starterArtistsError && starterArtists) {
+          for (const u of starterArtists as { id: string; username: string }[]) {
+            if (!artistHandleById.has(u.id)) {
+              artistHandleById.set(u.id, u.username);
+            }
+          }
+        }
+      }
+    }
+
     const starterRooms: StarterRoomSummary[] =
       starterRoomsData
         ?.filter((r: any) => !reviewedRoomIdSet.has(r.id))
@@ -149,6 +211,7 @@ export async function GET(request: NextRequest) {
           id: r.id,
           name: normalizeText(r.name),
           artistName: r.artist_name || undefined,
+          artistHandle: r.artist_id ? artistHandleById.get(r.artist_id) || undefined : undefined,
           createdAt: r.created_at,
         })) || [];
 
