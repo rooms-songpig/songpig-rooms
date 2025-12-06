@@ -11,8 +11,8 @@ export default function UserProfile() {
   const user = getCurrentUser();
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
   
   useEffect(() => {
     const checkMobile = () => {
@@ -23,33 +23,6 @@ export default function UserProfile() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Close mobile menu when clicking outside
-  useEffect(() => {
-    if (!mobileMenuOpen) return;
-
-    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as Node | null;
-      if (
-        !target ||
-        (mobileMenuRef.current &&
-          mobileMenuRef.current.contains(target)) ||
-        (mobileTriggerRef.current &&
-          mobileTriggerRef.current.contains(target))
-      ) {
-        return;
-      }
-      setMobileMenuOpen(false);
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [mobileMenuOpen]);
-  
   if (!user) return null;
 
   const isSuperAdmin =
@@ -59,6 +32,20 @@ export default function UserProfile() {
     logout();
     router.push('/login');
     setMobileMenuOpen(false);
+  };
+
+  const toggleMobileMenu = () => {
+    if (!mobileTriggerRef.current) {
+      setMobileMenuOpen((open) => !open);
+      return;
+    }
+
+    const rect = mobileTriggerRef.current.getBoundingClientRect();
+    setMenuPosition({
+      top: rect.bottom + 8,
+      right: Math.max(window.innerWidth - rect.right - 8, 12),
+    });
+    setMobileMenuOpen((open) => !open);
   };
 
   return (
@@ -184,7 +171,7 @@ export default function UserProfile() {
                 ref={mobileTriggerRef}
                 type="button"
                 aria-label="Open menu"
-                onClick={() => setMobileMenuOpen((open) => !open)}
+                onClick={toggleMobileMenu}
                 style={{
                   width: 40,
                   height: 40,
@@ -258,37 +245,62 @@ export default function UserProfile() {
       {/* Mobile quick menu */}
       {isMobile && mobileMenuOpen && (
         <div
-          ref={mobileMenuRef}
+          onClick={() => setMobileMenuOpen(false)}
           style={{
-            position: 'absolute',
-            top: 'calc(100% + 0.6rem)',
-            right: '1rem',
-            background:
-              'linear-gradient(145deg, rgba(15,23,42,0.98) 0%, rgba(2,6,23,0.99) 100%)',
-            borderRadius: '1rem',
-            border: '1px solid rgba(139,92,246,0.35)',
-            minWidth: '200px',
-            boxShadow:
-              '0 20px 50px rgba(0,0,0,0.75), 0 0 30px rgba(139,92,246,0.15)',
-            padding: '0.6rem',
-            zIndex: 1200,
+            position: 'fixed',
+            inset: 0,
+            zIndex: 2000,
+            background: 'rgba(2,6,23,0.5)',
+            backdropFilter: 'blur(3px)',
           }}
         >
           <div
+            onClick={(e) => e.stopPropagation()}
             style={{
-              padding: '0.6rem 0.75rem 0.5rem',
-              borderBottom: '1px solid rgba(139,92,246,0.25)',
-              marginBottom: '0.35rem',
-              fontSize: '0.78rem',
-              color: '#94a3b8',
+              position: 'absolute',
+              top: menuPosition?.top ?? 80,
+              right: menuPosition?.right ?? 16,
+              background:
+                'linear-gradient(145deg, rgba(15,23,42,0.98) 0%, rgba(2,6,23,0.99) 100%)',
+              borderRadius: '1rem',
+              border: '1px solid rgba(139,92,246,0.35)',
+              minWidth: '210px',
+              boxShadow:
+                '0 25px 60px rgba(0,0,0,0.8), 0 0 25px rgba(139,92,246,0.2)',
+              padding: '0.6rem',
             }}
           >
-            Signed in as{' '}
-            <strong style={{ color: '#e5e7eb' }}>{user.username}</strong>
-          </div>
-          {user.role === 'admin' && (
+            <div
+              style={{
+                padding: '0.6rem 0.75rem 0.5rem',
+                borderBottom: '1px solid rgba(139,92,246,0.25)',
+                marginBottom: '0.35rem',
+                fontSize: '0.78rem',
+                color: '#94a3b8',
+              }}
+            >
+              Signed in as{' '}
+              <strong style={{ color: '#e5e7eb' }}>{user.username}</strong>
+            </div>
+            {user.role === 'admin' && (
+              <Link
+                href="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  display: 'block',
+                  padding: '0.65rem 0.75rem',
+                  borderRadius: '0.6rem',
+                  color: '#e5e7eb',
+                  textDecoration: 'none',
+                  fontSize: '0.9rem',
+                  background: 'rgba(59,130,246,0.12)',
+                }}
+              >
+                🛠️ Admin Dashboard
+              </Link>
+            )}
             <Link
-              href="/admin"
+              href="/profile"
               onClick={() => setMobileMenuOpen(false)}
               style={{
                 display: 'block',
@@ -297,45 +309,30 @@ export default function UserProfile() {
                 color: '#e5e7eb',
                 textDecoration: 'none',
                 fontSize: '0.9rem',
-                background: 'rgba(59,130,246,0.12)',
+                marginTop: '0.15rem',
               }}
             >
-              🛠️ Admin Dashboard
+              👤 Profile
             </Link>
-          )}
-          <Link
-            href="/profile"
-            onClick={() => setMobileMenuOpen(false)}
-            style={{
-              display: 'block',
-              padding: '0.65rem 0.75rem',
-              borderRadius: '0.6rem',
-              color: '#e5e7eb',
-              textDecoration: 'none',
-              fontSize: '0.9rem',
-              marginTop: '0.15rem',
-            }}
-          >
-            👤 Profile
-          </Link>
-          <button
-            type="button"
-            onClick={handleLogout}
-            style={{
-              width: '100%',
-              marginTop: '0.35rem',
-              padding: '0.65rem 0.75rem',
-              borderRadius: '0.6rem',
-              border: 'none',
-              background: 'rgba(239,68,68,0.1)',
-              color: '#fca5a5',
-              fontSize: '0.9rem',
-              textAlign: 'left',
-              cursor: 'pointer',
-            }}
-          >
-            🚪 Logout
-          </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              style={{
+                width: '100%',
+                marginTop: '0.35rem',
+                padding: '0.65rem 0.75rem',
+                borderRadius: '0.6rem',
+                border: 'none',
+                background: 'rgba(239,68,68,0.1)',
+                color: '#fca5a5',
+                fontSize: '0.9rem',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+            >
+              🚪 Logout
+            </button>
+          </div>
         </div>
       )}
     </div>
