@@ -7,7 +7,6 @@ import { getCurrentUser, getAuthHeaders, logout } from '@/app/lib/auth-helpers';
 import { normalizeText } from '@/app/lib/utils';
 import UserProfile from '@/app/components/UserProfile';
 import ScrollToTop from '@/app/components/ScrollToTop';
-import PageLabel from '@/app/components/PageLabel';
 
 interface Room {
   id: string;
@@ -387,8 +386,7 @@ export default function Home() {
         boxSizing: 'border-box',
       }}
     >
-      <PageLabel pageName="Home" />
-      <UserProfile />
+      <UserProfile pageName="Home" />
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 0.5rem', boxSizing: 'border-box' }}>
         {/* Welcome banner after registration / first login */}
         {showWelcomeBanner && welcomeRole && (

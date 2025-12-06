@@ -1,18 +1,30 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, logout } from '@/app/lib/auth-helpers';
 import Link from 'next/link';
 import SongPigLogo from '@/app/components/SongPigLogo';
 
-export default function UserProfile() {
+type UserProfileProps = {
+  pageName?: string;
+};
+
+export default function UserProfile({ pageName }: UserProfileProps) {
   const router = useRouter();
   const user = getCurrentUser();
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
+  const [debugCopied, setDebugCopied] = useState(false);
+  const debugButtonRef = useRef<HTMLButtonElement | null>(null);
+  const debugPopoverRef = useRef<HTMLDivElement | null>(null);
+  const [debugInfo, setDebugInfo] = useState('');
+  const [clientPath, setClientPath] = useState('');
+  const [clientHref, setClientHref] = useState('');
   
   useEffect(() => {
     const checkMobile = () => {
@@ -22,6 +34,36 @@ export default function UserProfile() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    setClientPath(window.location.pathname + window.location.search);
+    setClientHref(window.location.href);
+  }, []);
+
+  useEffect(() => {
+    if (!debugOpen) return;
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (
+        !target ||
+        debugPopoverRef.current?.contains(target) ||
+        debugButtonRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setDebugOpen(false);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [debugOpen]);
 
   if (!user) return null;
 
@@ -48,6 +90,37 @@ export default function UserProfile() {
     setMobileMenuOpen((open) => !open);
   };
 
+  const createDebugInfo = useCallback(() => {
+    const timestamp = new Date().toISOString();
+    return [
+      `Page: ${pageName ?? 'Unknown'}`,
+      `Path: ${clientPath || 'n/a'}`,
+      `URL: ${clientHref || 'n/a'}`,
+      `User: ${user?.username ?? 'unknown'} (${user?.role ?? 'unknown'})`,
+      `Status: ${user?.status ?? 'unknown'}`,
+      `Timestamp: ${timestamp}`,
+    ].join('\n');
+  }, [pageName, clientPath, clientHref, user?.username, user?.role, user?.status]);
+
+  const handleDebugToggle = () => {
+    if (!pageName) return;
+    setDebugCopied(false);
+    setDebugInfo(createDebugInfo());
+    setDebugOpen((open) => !open);
+  };
+
+  const handleCopyDebugInfo = async () => {
+    try {
+      const info = debugInfo || createDebugInfo();
+      await navigator.clipboard.writeText(info);
+      setDebugCopied(true);
+      setTimeout(() => setDebugCopied(false), 2000);
+      setDebugOpen(false);
+    } catch (error) {
+      console.warn('Failed to copy debug info', error);
+    }
+  };
+
   return (
     <div
       style={{
@@ -56,10 +129,11 @@ export default function UserProfile() {
         left: 0,
         right: 0,
         padding: '0.5rem 0 0.75rem',
-        background: 'linear-gradient(180deg, rgba(2,6,23,0.96) 0%, rgba(15,23,42,0.9) 60%, rgba(15,23,42,0) 100%)',
+        background:
+          'linear-gradient(180deg, rgba(2,6,23,0.96) 0%, rgba(15,23,42,0.9) 60%, rgba(15,23,42,0) 100%)',
         zIndex: 1000,
         backdropFilter: 'blur(10px)',
-        overflowX: 'hidden',
+        overflow: 'visible',
         maxWidth: '100vw',
         boxSizing: 'border-box',
       }}
@@ -82,7 +156,7 @@ export default function UserProfile() {
           gap: '1rem',
           flexWrap: 'wrap',
           position: 'relative',
-          overflowX: 'hidden',
+          overflow: 'visible',
         }}
       >
         {/* Left: Logo + user summary */}
@@ -96,7 +170,7 @@ export default function UserProfile() {
             zIndex: 2,
           }}
         >
-          <SongPigLogo href="/" size={isMobile ? 'sm' : 'md'} />
+          <SongPigLogo href="/" size={isMobile ? 'md' : 'lg'} />
 
           <div
             style={{
@@ -165,6 +239,79 @@ export default function UserProfile() {
             zIndex: 2,
           }}
         >
+          {pageName && (
+            <div style={{ position: 'relative' }}>
+              <button
+                ref={debugButtonRef}
+                type="button"
+                aria-label="Copy debug info"
+                onClick={handleDebugToggle}
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: '50%',
+                  border: '1px solid rgba(148,163,184,0.45)',
+                  background: 'rgba(15,23,42,0.9)',
+                  color: '#38bdf8',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                📍
+              </button>
+              {debugOpen && (
+                <div
+                  ref={debugPopoverRef}
+                  onMouseLeave={() => {
+                    if (!isTouchDevice) {
+                      setDebugOpen(false);
+                    }
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 0.4rem)',
+                    right: 0,
+                    minWidth: '220px',
+                    padding: '0.75rem',
+                    borderRadius: '0.75rem',
+                    border: '1px solid rgba(148,163,184,0.35)',
+                    background: 'rgba(15,23,42,0.97)',
+                    boxShadow: '0 20px 45px rgba(0,0,0,0.65)',
+                    zIndex: 1500,
+                  }}
+                >
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8' }}>
+                    Page: <strong style={{ color: '#f9fafb' }}>{pageName}</strong>
+                  </p>
+                  {clientPath && (
+                    <p style={{ margin: '0.4rem 0', fontSize: '0.75rem', color: '#cbd5f5' }}>
+                      {clientPath}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleCopyDebugInfo}
+                    style={{
+                      marginTop: '0.5rem',
+                      width: '100%',
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid rgba(56,189,248,0.4)',
+                      background: 'rgba(8,47,73,0.85)',
+                      color: '#e0f2fe',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {debugCopied ? 'Copied!' : 'Copy debug info'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           {isMobile ? (
             <>
               <button
@@ -256,6 +403,11 @@ export default function UserProfile() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            onMouseLeave={() => {
+              if (!isTouchDevice) {
+                setMobileMenuOpen(false);
+              }
+            }}
             style={{
               position: 'absolute',
               top: menuPosition?.top ?? 80,

@@ -11,16 +11,16 @@ type SongPigLogoProps = {
 
 const sizeMap = {
   sm: {
-    icon: 22,
+    icon: 26,
     fontSize: 16,
   },
   md: {
-    icon: 28,
-    fontSize: 18,
+    icon: 36,
+    fontSize: 20,
   },
   lg: {
-    icon: 34,
-    fontSize: 20,
+    icon: 44,
+    fontSize: 22,
   },
 };
 
@@ -36,7 +36,7 @@ export default function SongPigLogo({
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '0.45rem',
+        gap: '0.65rem',
         textDecoration: 'none',
         cursor: href ? 'pointer' : 'default',
       }}
@@ -55,21 +55,33 @@ export default function SongPigLogo({
           justifyContent: 'center',
           boxShadow: '0 8px 18px rgba(0,0,0,0.55)',
           flexShrink: 0,
+          padding: size === 'lg' ? '0.15rem' : 0,
         }}
       >
-        <span style={{ fontSize: size === 'lg' ? 18 : 16, transform: 'translateY(1px)' }}>
+        <span
+          style={{
+            fontSize: size === 'lg' ? 22 : size === 'md' ? 18 : 16,
+            transform: 'translateY(1px)',
+          }}
+        >
           🐷
         </span>
       </div>
 
       {variant === 'full' && (
-        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            lineHeight: 1.1,
+            gap: '0.15rem',
+          }}
+        >
           <span
             style={{
               fontSize: config.fontSize,
               fontWeight: 700,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
+              letterSpacing: '0.03em',
               background:
                 'linear-gradient(135deg, #a855f7 0%, #22d3ee 40%, #facc15 100%)',
               WebkitBackgroundClip: 'text',
@@ -83,10 +95,11 @@ export default function SongPigLogo({
           <span
             style={{
               fontSize: 11,
-              letterSpacing: '0.16em',
+              letterSpacing: '0.3em',
               textTransform: 'uppercase',
               color: 'rgba(226,232,240,0.85)',
               whiteSpace: 'nowrap',
+              fontWeight: 500,
             }}
           >
             A/B Testing
